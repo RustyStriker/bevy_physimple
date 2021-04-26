@@ -116,7 +116,7 @@ impl From<f32> for Mass {
 }
 
 /// The status of a `RigidBody`
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Reflect)]
 pub enum Status {
     /// Static bodies do not check for collisions.
     ///

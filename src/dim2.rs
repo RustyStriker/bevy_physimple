@@ -545,7 +545,7 @@ impl<B: JointBehaviour> Joint<B> {
 }
 
 /// The rigid body.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, )] // FIXME trait Reflect is missing
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
 pub struct RigidBody {
     /// Current position of this rigid body.
     pub position: Vec2,
@@ -1127,8 +1127,11 @@ fn solve_kinematic_for_normal(
         let mut solve = true;
         // Should be probably a better way of handling such a thing tho i dont think it will really matter
         // I might redo this thing once i redo the settings(which is probably now)
+        // Okay i have to redo it now :(
 
-        let step_angle = up_vector.dot(normal.abs()).acos();
+        // FIXME Having step breaks the collisions detection for some reason
+
+        let step_angle = up_vector.dot(normal).acos();
         if step_angle > angle_tolerance {
             if up_vector.length_squared() != 0.0 {
                 for &point in &manifold.contacts {

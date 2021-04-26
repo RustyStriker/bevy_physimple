@@ -1,12 +1,12 @@
 [package]
-name = "physme"
-description = "A simple 2d and 3d physics engine for bevy"
+name = "bevy_physimple"
+description = "A simple 2d and 3d physics engine for bevy based on physme"
 version = "0.2.5"
-authors = ["Szymon Walter <waltersz@protonmail.com>"]
+authors = ["Szymon Walter <waltersz@protonmail.com>","Aviv 'RustyStriker' Romem <avivr903@tutanota.com"]
 edition = "2018"
 readme = "README.md"
-homepage = "https://github.com/walterpie/physme"
-repository = "https://github.com/walterpie/physme"
+homepage = "https://github.com/RustyStriker/bevy_physimple"
+repository = "https://github.com/RustyStriker/bevy_physimple"
 license = "MIT"
 keywords = ["gamedev", "physics", "rigid", "real-time", "aabb"]
 categories = ["game-development"]
@@ -17,8 +17,3 @@ rstar = "0.8"
 hashbrown = "0.11.2"
 serde = "1.0"
 bevy = "0.5.0"
-
-# [dependencies.bevy]
-# version = "0.5.0"
-# git = "https://github.com/bevyengine/bevy.git"
-# rev = "97d8e4e1793ede3df8c77ed44736e800b38ff7a4"

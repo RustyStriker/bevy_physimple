@@ -1017,7 +1017,7 @@ fn solve_system(
     mut solver: EventReader<Manifold>,
     // time: Res<Time>,
     // manifolds: Res<EventWriter<Manifold>>,
-    // step: Res<GlobalStep>,
+    step: Res<GlobalStep>,
     up: Res<GlobalUp>,
     ang_tol: Res<AngularTolerance>,
     mut query: Query<&mut RigidBody>,
@@ -1067,6 +1067,10 @@ fn solve_system(
                     -manifold.normal,
                     manifold.penetration,
                     impulse,
+                    up.0,
+                    ang_tol.0,
+                    step.0,
+                    &manifold,
                 );
             }
         }
@@ -1087,6 +1091,10 @@ fn solve_system(
                     manifold.normal,
                     manifold.penetration,
                     impulse,
+                    up.0,
+                    ang_tol.0,
+                    step.0,
+                    &manifold,
                 );
             }
         }
@@ -1099,8 +1107,10 @@ fn solve_kinematic_for_normal(
     normal : Vec2, 
     pen : f32, 
     impulse : Option<Vec2>, 
-    // up_vector : Vec2, 
-    // angle_tolerance : f32
+    up_vector : Vec2, 
+    angle_tolerance : f32,
+    step : f32,
+    manifold : &Manifold,
 ) {
     // Solve for kinematic vs kinematic
     if let Some(impulse) = impulse {
@@ -1114,26 +1124,25 @@ fn solve_kinematic_for_normal(
     } 
     // Solve for kinematic vs static
     else {
-        let solve = true; // This was originally mutable 
-        // I might restore it later tho i do think that this whole step system is kinda dumb
-        // and should be something the game developers decide on(tho it is indeed easy to remove, so i might restore eventually)
-        // TODO Restore this useful feature
+        let mut solve = true;
+        // Should be probably a better way of handling such a thing tho i dont think it will really matter
+        // I might redo this thing once i redo the settings(which is probably now)
 
-        // let step_angle = up_vector.dot(normal.abs()).acos();
-        // if step_angle > angle_tolerance {
-        //     if up_vector.length_squared() != 0.0 {
-        //         for &point in &manifold.contacts {
-        //             let d = point - body.lowest_position;
-        //             let s = d.dot(up_vector);
-        //             if s < step.0 {
-        //                 let diff = a.position - a.lowest_position;
-        //                 a.lowest_position += up_vector * s;
-        //                 a.position = a.lowest_position + diff;
-        //                 solve = false;
-        //             }
-        //         }
-        //     }
-        // }
+        let step_angle = up_vector.dot(normal.abs()).acos();
+        if step_angle > angle_tolerance {
+            if up_vector.length_squared() != 0.0 {
+                for &point in &manifold.contacts {
+                    let d = point - body.lowest_position;
+                    let s = d.dot(up_vector);
+                    if s < step {
+                        let diff = body.position - body.lowest_position;
+                        body.lowest_position += up_vector * s;
+                        body.position = body.lowest_position + diff;
+                        solve = false;
+                    }
+                }
+            }
+        }
 
         if solve {
             let d = normal * pen;

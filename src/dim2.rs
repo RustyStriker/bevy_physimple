@@ -13,6 +13,7 @@ use smallvec::SmallVec;
 
 use crate::broad::{self, BoundingBox, Collider};
 use crate::common::*;
+use crate::bodies::*;
 
 /// This is what you want to add to your `App` if you want to run 2d physics simulation.
 pub struct Physics2dPlugin; // {
@@ -1016,8 +1017,7 @@ fn narrow_phase_system(
 fn solve_system(
     mut solver: EventReader<Manifold>,
     // time: Res<Time>,
-    // manifolds: Res<EventWriter<Manifold>>,
-    step: Res<GlobalStep>,
+    // step: Res<GlobalStep>,
     up: Res<GlobalUp>,
     ang_tol: Res<AngularTolerance>,
     mut query: Query<&mut RigidBody>,
@@ -1067,10 +1067,10 @@ fn solve_system(
                     -manifold.normal,
                     manifold.penetration,
                     impulse,
-                    up.0,
-                    ang_tol.0,
-                    step.0,
-                    &manifold,
+                    // up.0,
+                    // ang_tol.0,
+                    // step.0,
+                    // &manifold,
                 );
             }
         }
@@ -1091,10 +1091,10 @@ fn solve_system(
                     manifold.normal,
                     manifold.penetration,
                     impulse,
-                    up.0,
-                    ang_tol.0,
-                    step.0,
-                    &manifold,
+                    // up.0,
+                    // ang_tol.0,
+                    // step.0,
+                    // &manifold,
                 );
             }
         }
@@ -1107,10 +1107,10 @@ fn solve_kinematic_for_normal(
     normal : Vec2, 
     pen : f32, 
     impulse : Option<Vec2>, 
-    up_vector : Vec2, 
-    angle_tolerance : f32,
-    step : f32,
-    manifold : &Manifold,
+    // up_vector : Vec2, 
+    // angle_tolerance : f32,
+    // step : f32,
+    // manifold : &Manifold,
 ) {
     // Solve for kinematic vs kinematic
     if let Some(impulse) = impulse {
@@ -1124,28 +1124,28 @@ fn solve_kinematic_for_normal(
     } 
     // Solve for kinematic vs static
     else {
-        let mut solve = true;
+        let solve = true;
         // Should be probably a better way of handling such a thing tho i dont think it will really matter
         // I might redo this thing once i redo the settings(which is probably now)
         // Okay i have to redo it now :(
 
         // FIXME Having step breaks the collisions detection for some reason
 
-        let step_angle = up_vector.dot(normal).acos();
-        if step_angle > angle_tolerance {
-            if up_vector.length_squared() != 0.0 {
-                for &point in &manifold.contacts {
-                    let d = point - body.lowest_position;
-                    let s = d.dot(up_vector);
-                    if s < step {
-                        let diff = body.position - body.lowest_position;
-                        body.lowest_position += up_vector * s;
-                        body.position = body.lowest_position + diff;
-                        solve = false;
-                    }
-                }
-            }
-        }
+        // let step_angle = up_vector.dot(normal).acos();
+        // if step_angle > angle_tolerance {
+        //     if up_vector.length_squared() != 0.0 {
+        //         for &point in &manifold.contacts {
+        //             let d = point - body.lowest_position;
+        //             let s = d.dot(up_vector);
+        //             if s < step {
+        //                 let diff = body.position - body.lowest_position;
+        //                 body.lowest_position += up_vector * s;
+        //                 body.position = body.lowest_position + diff;
+        //                 solve = false;
+        //             }
+        //         }
+        //     }
+        // }
 
         if solve {
             let d = normal * pen;
@@ -1182,6 +1182,66 @@ pub struct PhysicsStep {
 impl Default for PhysicsStep {
     fn default() -> Self {
         PhysicsStep { skip: 3 }
+    }
+}
+
+/// apply gravity, movement, rotation, forces, friction and other stuff as well
+fn physics_step_system_2 (
+    time : Res<Time>,
+    friction : Res<GlobalFriction>,
+    gravity : Res<GlobalGravity>,
+    mut query : Query<&mut KinematicBody2D>,
+) {
+    let delta = time.delta_seconds();
+
+    for mut body in query.iter_mut() {
+        if !body.active {
+            continue;
+        }
+
+        // Gravity
+        if body.mass > f32::EPSILON {
+            body.linvel += gravity.0 * delta;
+        }
+        // Apply forces and such
+        let linvel = body.linvel + body.accumulator * delta;
+        let linvel = linvel + body.dynamic_acc;
+        body.linvel = linvel;
+        body.accumulator = Vec2::ZERO;
+        body.dynamic_acc = Vec2::ZERO;
+
+        // Terminal velocity cheks(per axis)
+        { // Brackets because we no longer need those variables
+            let vel = body.linvel;
+            let limit = body.terminal;
+            if vel.x.abs() > limit.x {
+                body.linvel.x = vel.x.signum() * limit.x;
+            }
+            if vel.y.abs() > limit.y {
+                body.linvel.y = vel.y.signum() * limit.y;
+            }
+            let vel = body.angvel;
+            let limit = body.ang_terminal;
+            if vel.abs() > limit {
+                body.angvel = vel.signum() * limit;
+            }
+        }
+        // Apply movement and rotation
+        let position = body.position + body.linvel * delta;
+        body.position = position;
+
+        let rotation = body.rotation + body.angvel * delta;
+        body.rotation = rotation;
+
+        // Apply friction
+        // TODO better friciton based on gravity orientation please
+        body.linvel.x *= friction.0;
+        body.angvel *= friction.0;
+
+        // Reset on_* variables
+        body.on_floor = None;
+        body.on_wall = None;
+        body.on_ceil = None;
     }
 }
 
@@ -1395,7 +1455,7 @@ impl Default for RotationMode {
 pub fn sync_transform_system(
     translation_mode: Res<TranslationMode>,
     rotation_mode: Res<RotationMode>,
-    mut query: Query<(&RigidBody, &mut Transform)>,
+    mut query : Query<(&RigidBody, &mut Transform)>,
 ) {
     for (body, mut transform) in query.iter_mut() {
         match *translation_mode {
@@ -1429,5 +1489,50 @@ pub fn sync_transform_system(
                 transform.rotation = Quat::from_rotation_z(body.rotation);
             }
         }
+    }
+}
+
+pub fn sync_transform_system_2 (
+    translation_mode: Res<TranslationMode>,
+    rotation_mode: Res<RotationMode>,
+    mut query_sensors : Query<(&Sensor2D, &mut Transform)>,
+    mut query_kinematic : Query<(&KinematicBody2D, &mut Transform)>,
+    mut query_static : Query<(&StaticBody2D, &mut Transform)>,
+) {
+    let sync = move | pos : Vec2, rot : f32, transform : &mut Transform | {
+        match *translation_mode {
+            TranslationMode::AxesXY => {
+                transform.translation.x = pos.x;
+                transform.translation.y = pos.y;
+            }
+            TranslationMode::AxesXZ => {
+                transform.translation.x = pos.x;
+                transform.translation.z = pos.y;
+            }
+            TranslationMode::AxesYZ => {
+                transform.translation.y = pos.x;
+                transform.translation.z = pos.y;
+            }
+        }
+        match *rotation_mode {
+            RotationMode::AxisX => {
+                transform.rotation = Quat::from_rotation_x(rot);
+            }
+            RotationMode::AxisY => {
+                transform.rotation = Quat::from_rotation_y(rot);
+            }
+            RotationMode::AxisZ => {
+                transform.rotation = Quat::from_rotation_z(rot);
+            }
+        }
+    };
+    for (body, mut t) in query_kinematic.iter_mut() {
+        sync(body.position,body.rotation, &mut t);
+    }
+    for (body, mut t) in query_sensors.iter_mut() {
+        sync(body.position,body.rotation, &mut t);
+    }
+    for (body, mut t) in query_static.iter_mut() {
+        sync(body.position,body.rotation, &mut t);
     }
 }

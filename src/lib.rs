@@ -93,6 +93,7 @@ pub mod broad;
 pub mod common;
 pub mod dim2;
 pub mod dim3;
+pub mod bodies;
 
 pub mod prelude2d {
     //! This module re-exports all the things you might need for 2d physics

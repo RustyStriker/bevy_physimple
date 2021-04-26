@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use physme::prelude2d::*;
+use bevy_physimple::prelude2d::*;
 
 #[derive(Default)]
 pub struct CharacterController {
@@ -13,7 +13,7 @@ fn main() {
         .add_plugin(Physics2dPlugin)
         .insert_resource(GlobalGravity(Vec2::new(0.0, -540.0)))
         .insert_resource(GlobalFriction(0.90))
-        .insert_resource(GlobalStep(0.0))
+        .insert_resource(GlobalStep(0.1))
         .insert_resource(GlobalUp(Vec2::new(0.0, 1.0)))
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
@@ -193,6 +193,19 @@ fn setup(
     //                     .with_offset(Vec2::new(30.0,30.0))
     //                     .with_rigidness(2.0)
     //     );
+
+    // spawn a sensor square somewhere
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::new(50.0,50.0)),
+            material : materials.add(Color::rgba(1.0,0.0,0.0,0.5).into()),
+            ..Default::default()
+        })
+        .insert(RigidBody::new(Mass::Infinite)
+                .with_sensor(true)
+                .with_status(Status::Static)
+                .with_position(Vec2::new(-300.0,-150.0))
+        );
 }
 
 fn character_system(

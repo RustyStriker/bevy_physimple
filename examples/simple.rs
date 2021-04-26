@@ -17,7 +17,6 @@ fn main() {
         .insert_resource(GlobalUp(Vec2::new(0.0, 1.0)))
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
-    // let character_system = CharacterControllerSystem::default().system(builder.resources_mut());
     builder.add_system(character_system.system());
     builder.run();
 }
@@ -195,20 +194,6 @@ fn setup(
     //                     .with_rigidness(2.0)
     //     );
 }
-
-#[derive(Default)]
-pub struct CharacterControllerSystem;
-// {
-//     reader: EventReader<Manifold>,
-// }
-
-// impl CharacterControllerSystem {
-//     pub fn system(self, res: &mut Resources) -> Box<dyn System> {
-//         let system = character_system.system();
-//         res.insert_local(system.id(), self);
-//         system
-//     }
-// }
 
 fn character_system(
     input: Res<Input<KeyCode>>,

@@ -66,7 +66,7 @@ impl KinematicBody2D {
 		    inv_mass: 1.0, // inverse of 1.0 O-O
 		    mask: 1,
 		    layer: 1,
-			active : false,
+			active : true,
 		    on_floor: None,
 		    on_wall: None,
 		    on_ceil: None,

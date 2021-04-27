@@ -17,7 +17,7 @@ pub struct Sensor2D {
 	/// Generally to bodies will colide if (a.mask & b.layer) | (b.mask & a.layer) > 0
 	pub layer : u8,
 
-	overlapping_bodies : Box<Vec<Entity>>,
+	pub(crate) overlapping_bodies : Box<Vec<Entity>>,
 }
 
 impl Sensor2D {

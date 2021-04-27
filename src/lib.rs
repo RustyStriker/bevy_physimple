@@ -94,6 +94,7 @@ pub mod common;
 pub mod dim2;
 pub mod dim3;
 pub mod bodies;
+pub mod shapes;
 
 pub mod prelude2d {
     //! This module re-exports all the things you might need for 2d physics
@@ -105,6 +106,9 @@ pub mod prelude2d {
         Physics2dPlugin, RigidBody, RotationMode, Shape, Size2, SpringJoint, SpringJointBehaviour,
         TranslationMode,
     };
+    // TODO Maybe restrict it a bit more?
+    pub use crate::bodies::*;
+    pub use crate::shapes::*;
 }
 
 pub mod prelude3d {

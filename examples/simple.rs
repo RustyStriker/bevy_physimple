@@ -12,7 +12,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(Physics2dPlugin)
         .insert_resource(GlobalGravity(Vec2::new(0.0, -540.0)))
-        .insert_resource(GlobalFriction(0.90))
+        .insert_resource(GlobalFriction(0.95))
         .insert_resource(GlobalStep(0.1))
         .insert_resource(GlobalUp(Vec2::new(0.0, 1.0)))
         .add_startup_system(setup.system())
@@ -47,15 +47,13 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Real(1.0))
-                .with_status(Status::Semikinematic)
+            KinematicBody2D::new()
                 .with_position(Vec2::new(0.0, 0.0))
-                .with_terminal(Vec2::new(500.0, 1000.0))
-                .with_angular_terminal(7.8),
+                .with_terminal(Vec2::new(700.0, 1000.0))
         )
         .insert(CharacterController::default())
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(28.0, 28.0)),));
+            parent.spawn().insert(AABB::size(Vec2::new(28.0,28.0)));
         }).id();
     
     // center floor
@@ -66,12 +64,11 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Infinite)
-                .with_status(Status::Static)
+            StaticBody2D::new()
                 .with_position(Vec2::new(150.0, -200.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(600.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(600.0, 20.0)),));
         });
 
     // wall
@@ -82,12 +79,11 @@ fn setup(
             ..Default::default()
     })
     .insert(
-        RigidBody::new(Mass::Infinite)
-        .with_status(Status::Static)
+        StaticBody2D::new()
         .with_position(Vec2::new(450.0, 0.0))
     )
     .with_children(|parent| {
-        parent.spawn_bundle((Shape::from(Size2::new(20.0, 500.0)),));
+        parent.spawn_bundle((AABB::size(Vec2::new(20.0, 500.0)),));
     });
     // spawn another floor
     commands
@@ -97,12 +93,11 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Infinite)
-                .with_status(Status::Static)
+            StaticBody2D::new()
                 .with_position(Vec2::new(-300.0, -190.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(300.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(300.0, 20.0)),));
         });
 
     // yet another floor
@@ -113,12 +108,11 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Infinite)
-                .with_status(Status::Static)
+            StaticBody2D::new()
                 .with_position(Vec2::new(360.0, -50.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(120.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
         });
 
     // is this the last floor?
@@ -129,12 +123,11 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Infinite)
-                .with_status(Status::Static)
+            StaticBody2D::new()
                 .with_position(Vec2::new(120.0, -10.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(120.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
         });
 
     // dude i think there is enough floors already
@@ -145,12 +138,11 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Infinite)
-                .with_status(Status::Static)
+            StaticBody2D::new()
                 .with_position(Vec2::new(-120.0, 20.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(120.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
         });
 
     // Spawn the cube near us
@@ -161,12 +153,12 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Real(2.0))
-                .with_status(Status::Semikinematic)
+            KinematicBody2D::new()
+                .with_mass(2.0)
                 .with_position(Vec2::new(30.0, 60.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(20.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));
         });
 
     // spawn the cube connected to us
@@ -177,12 +169,12 @@ fn setup(
             ..Default::default()
         })
         .insert(
-            RigidBody::new(Mass::Real(1.0))
-                .with_status(Status::Semikinematic)
+            KinematicBody2D::new()
+                .with_mass(1.0)
                 .with_position(Vec2::new(100.0, 100.0)),
         )
         .with_children(|parent| {
-            parent.spawn_bundle((Shape::from(Size2::new(20.0, 20.0)),));
+            parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));
         }).id();
 
     // spawn the joint between the player and the target cube
@@ -195,23 +187,23 @@ fn setup(
     //     );
 
     // spawn a sensor square somewhere
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(50.0,50.0)),
-            material : materials.add(Color::rgba(1.0,0.0,0.0,0.5).into()),
-            ..Default::default()
-        })
-        .insert(RigidBody::new(Mass::Infinite)
-                .with_sensor(true)
-                .with_status(Status::Static)
-                .with_position(Vec2::new(-300.0,-150.0))
-        );
+    // commands
+    //     .spawn_bundle(SpriteBundle {
+    //         sprite : Sprite::new(Vec2::new(50.0,50.0)),
+    //         material : materials.add(Color::rgba(1.0,0.0,0.0,0.5).into()),
+    //         ..Default::default()
+    //     })
+    //     .insert(RigidBody::new(Mass::Infinite)
+    //             .with_sensor(true)
+    //             .with_status(Status::Static)
+    //             .with_position(Vec2::new(-300.0,-150.0))
+    //     );
 }
 
 fn character_system(
     input: Res<Input<KeyCode>>,
     gravity : Res<GlobalGravity>,
-    mut query: Query<(&mut CharacterController, &mut RigidBody)>,
+    mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
 ) {
     for (mut controller, mut body) in query.iter_mut() {
         if let Some(normal) = body.on_wall() {
@@ -222,7 +214,7 @@ fn character_system(
             }
         }
 
-        let jump = |body : &mut RigidBody| {
+        let jump = |body : &mut KinematicBody2D| {
             body.linvel = body.linvel.slide(gravity.0.normalize()) - gravity.0 * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
             body.linvel += wall;

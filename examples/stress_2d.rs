@@ -23,7 +23,7 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
 		.add_system(enable_system.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
-    // builder.add_system(character_system.system());
+		
     builder.run();
 }
 

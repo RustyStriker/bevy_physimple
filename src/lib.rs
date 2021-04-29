@@ -89,21 +89,18 @@
 //! And there you go! This will perform all the physics updates on every
 //! frame of the game.
 
-pub mod broad;
 pub mod common;
 pub mod dim2;
-pub mod dim3;
 pub mod bodies;
 pub mod shapes;
 
 pub mod prelude2d {
     //! This module re-exports all the things you might need for 2d physics
     //! simulation.
-    pub use crate::common::{GlobalFriction, Mass, Status, Vec2Ext};
+    pub use crate::common::Vec2Ext;
     pub use crate::dim2::{
-        AngularTolerance, BroadPhase, FixedJoint, FixedJointBehaviour, GlobalGravity, GlobalStep,
-        GlobalUp, JointBehaviour, Manifold, MechanicalJoint, MechanicalJointBehaviour,
-        Physics2dPlugin, RigidBody, RotationMode, Shape, Size2, SpringJoint, SpringJointBehaviour,
+        PhysicsSettings,
+        Physics2dPlugin, RotationMode, 
         TranslationMode,
     };
     // TODO Maybe restrict it a bit more?
@@ -111,14 +108,3 @@ pub mod prelude2d {
     pub use crate::shapes::*;
 }
 
-pub mod prelude3d {
-    //! This module re-exports all the things you might need for 3d physics
-    //! simulation.
-    pub use crate::common::{GlobalFriction, Mass, Status, Vec3Ext};
-    pub use crate::dim3::{
-        AngularTolerance, BroadPhase, FixedJoint, FixedJointBehaviour, GlobalGravity, GlobalStep,
-        GlobalUp, Joint, JointBehaviour, Manifold, MechanicalJoint, MechanicalJointBehaviour,
-        Physics3dPlugin, RigidBody, Shape, Size3, SpringJoint, SpringJointBehaviour, Up,
-        UpRotation,
-    };
-}

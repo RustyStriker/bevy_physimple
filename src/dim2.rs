@@ -4,20 +4,49 @@
 
 use bevy::math::*;
 use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-use smallvec::SmallVec;
 
-use crate::broad::{self, BoundingBox, Collider};
 use crate::common::*;
 use crate::bodies::*;
 use crate::shapes::*;
 
-/// This is what you want to add to your `App` if you want to run 2d physics simulation.
-pub struct Physics2dPlugin; // {
-    // friction : Vec2,
-    // gravity : Vec2,
-    // step : f32,
-// }
+/// Physics plugin for 2D physics
+pub struct Physics2dPlugin {
+    /// Global settings for the physics calculations
+    settings : Option<PhysicsSettings>
+}
+impl Default for Physics2dPlugin {
+    fn default() -> Self {
+        Physics2dPlugin {
+            settings : None,
+        }
+    }
+}
+
+#[derive(Clone, Debug,)]
+pub struct PhysicsSettings {
+    /// How strong the friction is
+    ///
+    /// Currently a number between (0.0 - 1.0) where 1.0 is no friction
+    pub friction : f32,
+    /// The direction in which friction wont exist
+    pub friction_normal : Vec2,
+    /// Gravity direction and strength(up direction is opposite to gravity)
+    pub gravity : Vec2,
+    pub translation_mode : TranslationMode,
+    pub rotatoin_mode : RotationMode,
+}
+impl Default for PhysicsSettings {
+    fn default() -> Self {
+        PhysicsSettings {
+            friction : 0.9,
+            friction_normal : Vec2::Y,
+            gravity : Vec2::new(0.0,-540.0),
+            translation_mode : TranslationMode::AxesXY,
+            rotatoin_mode : RotationMode::AxisZ,
+        }
+    }
+}
+
 
 pub mod stage {
     #[doc(hidden)]
@@ -34,14 +63,10 @@ pub mod stage {
 
 impl Plugin for Physics2dPlugin {
     fn build(&self, app: &mut AppBuilder) {
+        let settings = self.settings.clone().unwrap_or(PhysicsSettings::default());
+
         app
-            .insert_resource(GlobalFriction::default())
-            .insert_resource(GlobalGravity::default())
-            .insert_resource(TranslationMode::default())
-            .insert_resource(RotationMode::default())
-            .insert_resource(GlobalStep::default())
-            .insert_resource(GlobalUp::default())
-            .insert_resource(AngularTolerance::default())
+            .insert_resource(settings)
             .add_stage_before(CoreStage::Update, stage::PHYSICS_STEP, SystemStage::single_threaded())
             .add_stage_before(stage::PHYSICS_STEP, stage::COLLIDING_JOINT,SystemStage::single_threaded())
             .add_stage_after(stage::PHYSICS_STEP, stage::BROAD_PHASE,SystemStage::single_threaded())
@@ -53,750 +78,14 @@ impl Plugin for Physics2dPlugin {
         // Add the event type
         app.add_event::<AABBCollisionEvent>();
 
-
-        app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system_2.system())
+        // Add the systems themselves for each step
+        app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
             .add_system_to_stage(stage::NARROW_PHASE, aabb_collision_detection_system.system())
             .add_system_to_stage(stage::PHYSICS_SOLVE, aabb_solve_system.system())
-            .add_system_to_stage(stage::SYNC_TRANSFORM, sync_transform_system_2.system())
-            .add_system_to_stage(
-                FixedJointBehaviour::STAGE,
-                joint_system::<FixedJointBehaviour>.system(),
-            )
-            .add_system_to_stage(
-                MechanicalJointBehaviour::STAGE,
-                joint_system::<MechanicalJointBehaviour>.system(),
-            )
-            .add_system_to_stage(
-                SpringJointBehaviour::STAGE,
-                joint_system::<SpringJointBehaviour>.system(),
-            );
-    }
-}
-
-pub type BroadPhase = broad::BroadPhase<Obb>;
-
-/// The global gravity that affects every `RigidBody` with the `Semikinematic` status.
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct GlobalGravity(pub Vec2);
-
-/// The global step value, affects all semikinematic bodies.
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct GlobalStep(pub f32);
-
-/// The global up vector, affects all semikinematic bodies.
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct GlobalUp(pub Vec2);
-
-/// The global angular tolerance in radians, affects all semikinematic bodies.
-///
-/// This is used for step calculation and for push dynamics.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct AngularTolerance(pub f32);
-
-impl Default for AngularTolerance {
-    fn default() -> Self {
-        Self(30.0_f32.to_radians())
-    }
-}
-
-#[doc(hidden)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Obb {
-    status: Status,
-    body: Entity,
-    position: Vec2,
-    rotation: Mat2,
-    vertices: [Vec2; 4],
-    normals: [Vec2; 4],
-}
-
-impl Obb {
-    fn new(
-        status: Status,
-        body: Entity,
-        rotation: Mat2,
-        position: Vec2,
-        v0: Vec2,
-        v1: Vec2,
-        v2: Vec2,
-        v3: Vec2,
-        n0: Vec2,
-        n1: Vec2,
-    ) -> Self {
-        Self {
-            status,
-            body,
-            rotation,
-            position,
-            vertices: [v0, v1, v2, v3],
-            normals: [-n1, n0, n1, -n0],
-        }
-    }
-
-    pub fn v0(&self) -> Vec2 {
-        self.rotation * self.vertices[0] + self.position
-    }
-
-    pub fn v1(&self) -> Vec2 {
-        self.rotation * self.vertices[1] + self.position
-    }
-
-    pub fn v2(&self) -> Vec2 {
-        self.rotation * self.vertices[2] + self.position
-    }
-
-    pub fn v3(&self) -> Vec2 {
-        self.rotation * self.vertices[3] + self.position
-    }
-
-    pub fn min(&self) -> Vec2 {
-        let min_x = self
-            .v0()
-            .x
-            .min(self.v1().x)
-            .min(self.v2().x)
-            .min(self.v3().x);
-        let min_y = self
-            .v0()
-            .y
-            .min(self.v1().y)
-            .min(self.v2().y)
-            .min(self.v3().y);
-        Vec2::new(min_x, min_y)
-    }
-
-    pub fn max(&self) -> Vec2 {
-        let max_x = self
-            .v0()
-            .x
-            .max(self.v1().x)
-            .max(self.v2().x)
-            .max(self.v3().x);
-        let max_y = self
-            .v0()
-            .y
-            .max(self.v1().y)
-            .max(self.v2().y)
-            .max(self.v3().y);
-        Vec2::new(max_x, max_y)
-    }
-
-    pub fn get_support(&self, dir: Vec2) -> Vec2 {
-        let mut best_projection = f32::MIN;
-        let mut best_vertex = Vec2::ZERO;
-
-        for i in 0..4 {
-            let v = self.vertices[i];
-            let proj = v.dot(dir);
-
-            if proj > best_projection {
-                best_vertex = v;
-                best_projection = proj;
-            }
-        }
-
-        best_vertex
-    }
-}
-
-impl Collider for Obb {
-    type Point = Vec2;
-
-    fn bounding_box(&self) -> BoundingBox<Self::Point> {
-        BoundingBox::new(self.min(), self.max())
-    }
-
-    fn status(&self) -> Status {
-        self.status
-    }
-}
-
-/// The two dimensional size of a `Shape`
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct Size2 {
-    pub width: f32,
-    pub height: f32,
-}
-
-impl Size2 {
-    /// Returns a new 2d size.
-    pub fn new(width: f32, height: f32) -> Self {
-        Self { width, height }
-    }
-}
-
-/// The shape of a rigid body.
-///
-/// Contains a rotation/translation offset and a size.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct Shape {
-    offset: Vec2,
-    size: Size2,
-}
-
-impl Shape {
-    /// Return a new `Shape` with a zero offset and a size.
-    pub fn new(size: Size2) -> Self {
-        let offset = Vec2::ZERO;
-        Self { offset, size }
-    }
-
-    /// Return a new `Shape` with an offset and a size.
-    pub fn with_offset(mut self, offset: Vec2) -> Self {
-        self.offset = offset;
-        self
-    }
-}
-
-impl From<Size2> for Shape {
-    fn from(size: Size2) -> Self {
-        let x = size.width * 0.5;
-        let y = size.height * 0.5;
-        let offset = Vec2::new(-x, -y);
-        Self { offset, size }
-    }
-}
-
-#[doc(hidden)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct InnerJoint {
-    body1: Entity,
-    body2: Entity,
-    offset: Vec2,
-    angle: f32,
-}
-
-impl InnerJoint {
-    pub fn new(body1: Entity, body2: Entity) -> Self {
-        Self {
-            body1,
-            body2,
-            offset: Vec2::ZERO,
-            angle: 0.0,
-        }
-    }
-
-    pub fn with_offset(mut self, offset: Vec2) -> Self {
-        self.offset = offset;
-        self
-    }
-
-    pub fn with_angle(mut self, angle: f32) -> Self {
-        self.angle = angle;
-        self
-    }
-}
-
-/// Defines a set of behaviours on how joints should move the anchored body relative to the anchor.
-pub trait JointBehaviour: Send + Sync + 'static {
-    const STAGE: &'static str = stage::COLLIDING_JOINT;
-
-    /// Returns a new position for target based on `self` and `anchor`.
-    fn position(
-        &mut self,
-        _offset: Vec2,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<Vec2> {
-        None
-    }
-
-    /// Returns a new rotation for target based on `self` and `anchor`.
-    fn rotation(&mut self, _angle: f32, _anchor: &RigidBody, _target: &RigidBody) -> Option<f32> {
-        None
-    }
-
-    /// Returns a new linear velocity for target based on `self` and `anchor`.
-    fn linear_velocity(
-        &mut self,
-        _offset: Vec2,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<Vec2> {
-        None
-    }
-
-    /// Returns a new angular velocity for target based on `self` and `anchor`.
-    fn angular_velocity(
-        &mut self,
-        _angle: f32,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<f32> {
-        None
-    }
-
-    /// Returns a linear impulse to apply to target based on `self` and `anchor`.
-    fn linear_impulse(
-        &mut self,
-        _offset: Vec2,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<Vec2> {
-        None
-    }
-
-    /// Returns an angular impulse to apply to target based on `self` and `anchor`.
-    fn angular_impulse(
-        &mut self,
-        _angle: f32,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<f32> {
-        None
-    }
-}
-
-/// A joint behaviour that causes the anchored body to be rigidly fixed at an offset and an angle.
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct FixedJointBehaviour;
-
-impl JointBehaviour for FixedJointBehaviour {
-    const STAGE: &'static str = stage::RIGID_JOINT;
-
-    fn position(&mut self, offset: Vec2, anchor: &RigidBody, _target: &RigidBody) -> Option<Vec2> {
-        Some(anchor.position + offset)
-    }
-
-    fn rotation(&mut self, angle: f32, anchor: &RigidBody, _target: &RigidBody) -> Option<f32> {
-        Some(anchor.rotation + angle)
-    }
-}
-
-/// A joint behaviour that causes the anchored body to be accurately positioned with an offset and an angle.
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct MechanicalJointBehaviour;
-
-impl JointBehaviour for MechanicalJointBehaviour {
-    const STAGE: &'static str = stage::COLLIDING_JOINT;
-
-    fn position(&mut self, offset: Vec2, anchor: &RigidBody, _target: &RigidBody) -> Option<Vec2> {
-        Some(anchor.position + offset)
-    }
-
-    fn rotation(&mut self, angle: f32, anchor: &RigidBody, _target: &RigidBody) -> Option<f32> {
-        Some(anchor.rotation + angle)
-    }
-
-    fn linear_velocity(
-        &mut self,
-        _offset: Vec2,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<Vec2> {
-        Some(Vec2::ZERO)
-    }
-
-    fn angular_velocity(
-        &mut self,
-        _angle: f32,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<f32> {
-        Some(0.0)
-    }
-}
-
-/// A joint behaviour that will move the anchored body into a position and angle relative to the anchor over time.
-#[derive(Default, Debug, Clone, Copy, PartialEq)]
-pub struct SpringJointBehaviour {
-    rigidness: f32,
-}
-
-impl SpringJointBehaviour {
-    /// Create a new SpringJointBehaviour with an exact rigidness value.
-    ///
-    /// Rigidness describes how "snappy" the spring joint is. When it's at 0.0,
-    /// the anchored body will "jump" into position softly over one second.
-    /// When it's at 1.0, the anchored body will "jump" into position almost instantaenously.
-    pub fn new(rigidness: f32) -> Option<SpringJointBehaviour> {
-        if rigidness < 0.0 || rigidness >= 1.0 {
-            None
-        } else {
-            Some(Self { rigidness })
-        }
-    }
-
-    pub fn new_lossy(rigidness: f32) -> SpringJointBehaviour {
-        Self {
-            rigidness: rigidness.max(0.0).min(1.0),
-        }
-    }
-}
-
-impl JointBehaviour for SpringJointBehaviour {
-    const STAGE: &'static str = stage::COLLIDING_JOINT;
-
-    fn linear_velocity(
-        &mut self,
-        _offset: Vec2,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<Vec2> {
-        Some(Vec2::ZERO)
-    }
-
-    fn angular_velocity(
-        &mut self,
-        _angle: f32,
-        _anchor: &RigidBody,
-        _target: &RigidBody,
-    ) -> Option<f32> {
-        Some(0.0)
-    }
-
-    fn linear_impulse(
-        &mut self,
-        offset: Vec2,
-        anchor: &RigidBody,
-        target: &RigidBody,
-    ) -> Option<Vec2> {
-        // the minimum time to "jump" into position
-        const EPSILON: f32 = 0.1;
-        // the maximum time to "jump" into position
-        const T: f32 = 1.0;
-        let springiness = 1.0 - self.rigidness;
-        let position = anchor.position + offset;
-        let d = position - target.position;
-        let scale = (T - EPSILON) * springiness + EPSILON;
-        let impulse = d * target.mass / scale;
-        Some(impulse)
-    }
-
-    fn angular_impulse(
-        &mut self,
-        angle: f32,
-        anchor: &RigidBody,
-        target: &RigidBody,
-    ) -> Option<f32> {
-        // the minimum time to "jump" into position
-        const EPSILON: f32 = 0.1;
-        // the maximum time to "jump" into position
-        const T: f32 = 1.0;
-        let springiness = 1.0 - self.rigidness;
-        let rotation = anchor.rotation + angle;
-        let d = rotation - target.rotation;
-        let scale = (T - EPSILON) * springiness + EPSILON;
-        let impulse = d * target.mass / scale;
-        Some(impulse)
-    }
-}
-
-/// Allows one `RigidBody` to be anchored at another one
-/// in a fixed way, along with a local offset and angle.
-pub type FixedJoint = Joint<FixedJointBehaviour>;
-
-/// Allows one `RigidBody` to be anchored at another one
-/// in a physically accurate way, along with a local offset and angle.
-pub type MechanicalJoint = Joint<MechanicalJointBehaviour>;
-
-/// Allows one `RigidBody` to be anchored at another one
-/// in a spring-y way, along with a local offset and angle.
-pub type SpringJoint = Joint<SpringJointBehaviour>;
-
-impl SpringJoint {
-    /// Add a rigidness value to an owned `Joint`.
-    pub fn with_rigidness(mut self, rigidness: f32) -> Self {
-        self.behaviour.rigidness = rigidness;
-        self
-    }
-}
- 
-/// Allows one `RigidBody` to be anchored at another one
-/// in a pre-defined way, along with a local offset and angle.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Joint<B: JointBehaviour> {
-    inner: InnerJoint,
-    behaviour: B,
-}
-
-impl<B: JointBehaviour + Default> Joint<B> {
-    /// Create a new joint, where the second body shall be anchored at the first body.
-    pub fn new(body1: Entity, body2: Entity) -> Self {
-        Self::with_behaviour(body1, body2, B::default())
-    }
-}
-
-impl<B: JointBehaviour> Joint<B> {
-    /// Create a new joint, where the second body shall be anchored at the first body.
-    pub fn with_behaviour(body1: Entity, body2: Entity, behaviour: B) -> Self {
-        Self {
-            inner: InnerJoint::new(body1, body2),
-            behaviour,
-        }
-    }
-
-    /// Add an offset to an owned `Joint`.
-    pub fn with_offset(self, offset: Vec2) -> Self {
-        Self {
-            inner: self.inner.with_offset(offset),
-            behaviour: self.behaviour,
-        }
-    }
-
-    /// Add an angle to an owned `Joint`.
-    pub fn with_angle(self, angle: f32) -> Self {
-        Self {
-            inner: self.inner.with_angle(angle),
-            behaviour: self.behaviour,
-        }
-    }
-}
-
-/// The rigid body.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
-pub struct RigidBody {
-    /// Current position of this rigid body.
-    pub position: Vec2,
-    lowest_position: Vec2,
-    /// Current rotation of this rigid body.
-    ///
-    /// NOTE: collisions checks may or may not be broken if this is not a multiple of 90 degrees.
-    pub rotation: f32,
-    /// Current linear velocity of this rigid body.
-    pub linvel: Vec2,
-    prev_linvel: Vec2,
-    /// The terminal linear velocity of a semikinematic body.
-    ///
-    /// Defaults to `f32::INFINITY`.
-    pub terminal: Vec2,
-    accumulator: Vec2,
-    dynamic_acc: Vec2,
-    /// Current angular velocity of this rigid body.
-    pub angvel: f32,
-    prev_angvel: f32,
-    /// The terminal angular velocity of a semikinematic body.
-    ///
-    /// Defaults to `f32::INFINITY`.
-    pub ang_term: f32,
-    /// The status, i.e. static or semikinematic.
-    ///
-    /// Affects how forces and collisions affect this rigid body.
-    pub status: Status,
-    mass: f32,
-    inv_mass: f32,
-    active: bool,
-    sensor: bool,
-
-    // wether the body is touching a surface
-    on_floor : Option<Vec2>,
-    on_wall : Option<Vec2>,
-    on_ceil : Option<Vec2>,
-}
-
-impl RigidBody {
-    /// Returns a new `RigidBody` with just a mass and all other components set to their defaults.
-    pub fn new(mass: Mass) -> Self {
-        Self {
-            position: Vec2::ZERO,
-            lowest_position: Vec2::ZERO,
-            rotation: 0.0,
-            linvel: Vec2::ZERO,
-            prev_linvel: Vec2::ZERO,
-            terminal: Vec2::new(f32::INFINITY, f32::INFINITY),
-            accumulator: Vec2::ZERO,
-            dynamic_acc: Vec2::ZERO,
-            angvel: 0.0,
-            prev_angvel: 0.0,
-            ang_term: f32::INFINITY,
-            status: Status::Semikinematic,
-            mass: mass.scalar(),
-            inv_mass: mass.inverse(),
-            active: true,
-            sensor: false,
-            on_floor : None,
-            on_wall : None,
-            on_ceil : None,
-        }
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the position set to a new one.
-    pub fn with_position(mut self, position: Vec2) -> Self {
-        self.position = position;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the rotation set to a new one.
-    pub fn with_rotation(mut self, rotation: f32) -> Self {
-        self.rotation = rotation;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the linear velocity set to a new one.
-    pub fn with_linear_velocity(mut self, linvel: Vec2) -> Self {
-        self.linvel = linvel;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the linear velocity set to a new one.
-    pub fn with_angular_velocity(mut self, angvel: f32) -> Self {
-        self.angvel = angvel;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the terminal linear velocity set to a new one.
-    pub fn with_terminal(mut self, terminal: Vec2) -> Self {
-        self.terminal = terminal;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the terminal linear velocity set to a new one.
-    pub fn with_angular_terminal(mut self, terminal: f32) -> Self {
-        self.ang_term = terminal;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the acceleration set to a new one.
-    pub fn with_acceleration(mut self, acceleration: Vec2) -> Self {
-        self.accumulator = acceleration;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the status set to a new one.
-    pub fn with_status(mut self, status: Status) -> Self {
-        self.status = status;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the active flag set to a new one.
-    pub fn with_active(mut self, active: bool) -> Self {
-        self.active = active;
-        self
-    }
-
-    /// Returns a `RigidBody` identical to this one, but with the sensor flag set to a new one.
-    pub fn with_sensor(mut self, sensor: bool) -> Self {
-        self.sensor = sensor;
-        self
-    }
-
-    /// Applies an impulse to the `RigidBody`s linear velocity.
-    pub fn apply_linear_impulse(&mut self, impulse: Vec2) {
-        self.linvel += impulse * self.inv_mass;
-    }
-
-    /// Applies an impulse to the `RigidBody`s linear velocity.
-    pub fn apply_angular_impulse(&mut self, impulse: f32) {
-        self.angvel += impulse * self.inv_mass;
-    }
-
-    /// Applies a force to the `RigidBody`s acceleration accumulator.
-    pub fn apply_force(&mut self, force: Vec2) {
-        self.accumulator += force * self.inv_mass;
-    }
-
-    /// Gets the active flag.
-    pub fn is_active(&self) -> bool {
-        self.active
-    }
-
-    /// Gets the sensor flag.
-    pub fn is_sensor(&self) -> bool {
-        self.sensor
-    }
-
-    /// Gets the mass
-    pub fn mass(&self) -> f32 {
-        self.mass
-    }
-
-    /// Gets the mass
-    pub fn inverse_mass(&self) -> f32 {
-        self.inv_mass
-    }
-
-    /// Sets the active flag.
-    pub fn set_active(&mut self, active: bool) {
-        self.active = active;
-    }
-
-    /// Sets the sensor flag.
-    pub fn set_sensor(&mut self, sensor: bool) {
-        self.sensor = sensor;
-    }
-
-    /// Sets the mass.
-    pub fn set_mass(&mut self, mass: Mass) {
-        self.mass = mass.scalar();
-        self.inv_mass = mass.inverse();
-    }
-
-    /// Returns the difference between the last known linear velocity and the current linear velocity.
-    pub fn linear_deceleration(&self) -> Vec2 {
-        self.prev_linvel.abs() - self.linvel.abs()
-    }
-
-    /// Returns the difference between the last known angular velocity and the current angular velocity.
-    pub fn angular_deceleration(&self) -> f32 {
-        self.prev_angvel.abs() - self.angvel.abs()
-    }
-
-    /// Get Floor normal if body is on floor
-    pub fn on_floor(&self) -> Option<Vec2> {
-        self.on_floor
-    }
-    /// Get wall normal if body is touching a wall
-    pub fn on_wall(&self) -> Option<Vec2> {
-        self.on_wall
-    }
-    /// Get ceilling normal if body is touching a ceiling
-    pub fn on_ceil(&self) -> Option<Vec2> {
-        self.on_ceil
-    }
-}
-
-/// The manifold, representing detailed data on a collision between two `RigidBody`s.
-///
-/// Usable as an event.
-#[derive(Debug, Clone)]
-pub struct Manifold {
-    /// The first entity.
-    pub body1: Entity,
-    /// The second entity.
-    pub body2: Entity,
-    /// The penetration, relative to the second entity.
-    pub penetration: f32,
-    /// The normal, relative to the second entity.
-    pub normal: Vec2,
-    /// The contact points of this manifold.
-    pub contacts: SmallVec<[Vec2; 4]>,
-}
+            .add_system_to_stage(stage::SYNC_TRANSFORM, sync_transform_system.system());
+        // TODO Recreate the Joint systems
 
-pub fn broad_phase_system(
-    mut commands: Commands,
-    query: Query<(Entity, &RigidBody, &Children)>,
-    query2: Query<&Shape>,
-) {
-    let mut colliders = Vec::new();
-    for (entity, body, children) in &mut query.iter() {
-        for &e in children.iter() {
-            if let Ok(shape) = query2.get_component::<Shape>(e) {
-                let v0 = shape.offset;
-                let v1 = shape.offset + Vec2::new(shape.size.width, 0.0);
-                let v2 = shape.offset + Vec2::new(shape.size.width, shape.size.height);
-                let v3 = shape.offset + Vec2::new(0.0, shape.size.height);
-                let rotation = Mat2::from_angle(body.rotation);
-                let position = body.position;
-                let n0 = Vec2::new(1.0, 0.0);
-                let n1 = Vec2::new(0.0, 1.0);
-                let collider = Obb::new(
-                    body.status,
-                    entity,
-                    rotation,
-                    position,
-                    v0,
-                    v1,
-                    v2,
-                    v3,
-                    n0,
-                    n1,
-                );
-                colliders.push(collider);
-            }
-        }
     }
-    let broad = BroadPhase::with_colliders(colliders);
-    commands.insert_resource(broad);
 }
 
 fn get_child_shapes<'a>(shapes : &'a Query<&AABB>, children : &Children) -> Option<AABB> {
@@ -1082,22 +371,24 @@ fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2) {
 }
 
 /// apply gravity, movement, rotation, forces, friction and other stuff as well
-fn physics_step_system_2 (
+fn physics_step_system (
     time : Res<Time>,
-    friction : Res<GlobalFriction>,
-    gravity : Res<GlobalGravity>,
+    physics_sets : Res<PhysicsSettings>,
     mut query : Query<&mut KinematicBody2D>,
 ) {
     let delta = time.delta_seconds();
+    let gravity = physics_sets.gravity;
 
     for mut body in query.iter_mut() {
         if !body.active {
             continue;
         }
 
+        let accelerating = body.accumulator.length_squared() > 0.1 && body.dynamic_acc.length_squared() > 0.1;
+
         // Gravity
         if body.mass > f32::EPSILON {
-            body.linvel += gravity.0 * delta;
+            body.linvel += gravity * delta;
         }
         // Apply forces and such
         let linvel = body.linvel + body.accumulator * delta;
@@ -1130,71 +421,19 @@ fn physics_step_system_2 (
         body.rotation = rotation;
 
         // Apply friction
+        let friction_normal = physics_sets.friction_normal;
+        let vel_proj = body.linvel.project(friction_normal);
+        let vel_slided = body.linvel - vel_proj; // This is pretty much how project works
+        body.linvel = vel_proj + vel_slided * physics_sets.friction;
+
+
         // TODO better friciton based on gravity orientation please
-        body.linvel.x *= friction.0;
-        body.angvel *= friction.0;
+        body.angvel *= physics_sets.friction;
 
         // Reset on_* variables
         body.on_floor = None;
         body.on_wall = None;
         body.on_ceil = None;
-    }
-}
-
-pub fn joint_system<B: JointBehaviour>(
-    mut commands: Commands,
-    mut query: Query<(Entity, &mut Joint<B>)>,
-    mut bodies: Query<&mut RigidBody>,
-) {
-    for (e, mut joint) in query.iter_mut() {
-        let anchor = if let Ok(anchor) = bodies.get_component::<RigidBody>(joint.inner.body1) {
-            anchor
-        } else {
-            commands.entity(e).despawn_recursive();
-            continue;
-        };
-        let target = if let Ok(target) = bodies.get_component::<RigidBody>(joint.inner.body2) {
-            target
-        } else {
-            commands.entity(e).despawn_recursive();
-            continue;
-        };
-        let offset = joint.inner.offset;
-        let angle = joint.inner.angle;
-        let position = joint.behaviour.position(offset, &anchor, &target);
-        let rotation = joint.behaviour.rotation(angle, &anchor, &target);
-        let linvel = joint.behaviour.linear_velocity(offset, &anchor, &target);
-        let angvel = joint.behaviour.angular_velocity(angle, &anchor, &target);
-        let linimp = joint.behaviour.linear_impulse(offset, &anchor, &target);
-        let angimp = joint.behaviour.angular_impulse(angle, &anchor, &target);
-
-        let mut target = bodies
-            .get_component_mut::<RigidBody>(joint.inner.body2)
-            .unwrap();
-
-        if let Some(position) = position {
-            target.position = position;
-        }
-
-        if let Some(rotation) = rotation {
-            target.rotation = rotation;
-        }
-
-        if let Some(linvel) = linvel {
-            target.linvel = linvel;
-        }
-
-        if let Some(angvel) = angvel {
-            target.angvel = angvel;
-        }
-
-        if let Some(linimp) = linimp {
-            target.apply_linear_impulse(linimp);
-        }
-
-        if let Some(angimp) = angimp {
-            target.apply_angular_impulse(angimp);
-        }
     }
 }
 
@@ -1226,47 +465,7 @@ impl Default for RotationMode {
     }
 }
 
-pub fn sync_transform_system(
-    translation_mode: Res<TranslationMode>,
-    rotation_mode: Res<RotationMode>,
-    mut query : Query<(&RigidBody, &mut Transform)>,
-) {
-    for (body, mut transform) in query.iter_mut() {
-        match *translation_mode {
-            TranslationMode::AxesXY => {
-                let x = body.position.x;
-                let y = body.position.y;
-                let z = 0.0;
-                transform.translation = Vec3::new(x, y, z);
-            }
-            TranslationMode::AxesXZ => {
-                let x = body.position.x;
-                let y = 0.0;
-                let z = body.position.y;
-                transform.translation = Vec3::new(x, y, z);
-            }
-            TranslationMode::AxesYZ => {
-                let x = 0.0;
-                let y = body.position.x;
-                let z = body.position.y;
-                transform.translation = Vec3::new(x, y, z);
-            }
-        }
-        match *rotation_mode {
-            RotationMode::AxisX => {
-                transform.rotation = Quat::from_rotation_x(body.rotation);
-            }
-            RotationMode::AxisY => {
-                transform.rotation = Quat::from_rotation_y(body.rotation);
-            }
-            RotationMode::AxisZ => {
-                transform.rotation = Quat::from_rotation_z(body.rotation);
-            }
-        }
-    }
-}
-
-pub fn sync_transform_system_2 (
+pub fn sync_transform_system (
     translation_mode: Res<TranslationMode>,
     rotation_mode: Res<RotationMode>,
     mut query : QuerySet<(

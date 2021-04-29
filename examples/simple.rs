@@ -10,11 +10,7 @@ fn main() {
     let mut builder = App::build();
     builder
         .add_plugins(DefaultPlugins)
-        .add_plugin(Physics2dPlugin)
-        .insert_resource(GlobalGravity(Vec2::new(0.0, -540.0)))
-        .insert_resource(GlobalFriction(0.95))
-        .insert_resource(GlobalStep(0.1))
-        .insert_resource(GlobalUp(Vec2::new(0.0, 1.0)))
+        .add_plugin(Physics2dPlugin::default())
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
     builder.add_system(character_system.system());
@@ -202,9 +198,11 @@ fn setup(
 
 fn character_system(
     input: Res<Input<KeyCode>>,
-    gravity : Res<GlobalGravity>,
+    phys_sets : Res<PhysicsSettings>,
     mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
 ) {
+    let gravity = phys_sets.gravity;
+
     for (mut controller, mut body) in query.iter_mut() {
         if let Some(normal) = body.on_wall() {
             body.linvel -= normal * 0.1;
@@ -215,7 +213,7 @@ fn character_system(
         }
 
         let jump = |body : &mut KinematicBody2D| {
-            body.linvel = body.linvel.slide(gravity.0.normalize()) - gravity.0 * 0.6;
+            body.linvel = body.linvel.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
             body.linvel += wall;
         };

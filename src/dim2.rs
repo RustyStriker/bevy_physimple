@@ -963,15 +963,28 @@ fn aabb_collision_detection_system (
 fn aabb_solve_system (
     mut collisions : EventReader<AABBCollisionEvent>,
     mut bodies : Query<&mut KinematicBody2D>,
-    
+    staticbodies : Query<&StaticBody2D>,
 ) {
     for coll in collisions.iter() {
         
         let normal = coll.penetration.normalize();
         
         if coll.with_static {
-            let mut a = bodies.get_component_mut::<KinematicBody2D>(coll.entity_a).unwrap();
-            
+            let mut a = match bodies.get_component_mut::<KinematicBody2D>(coll.entity_a) {
+                Ok(b) => b,
+                Err(_) => {
+                    eprintln!("Couldnt get KinematicBody2D of entity {:?}", coll.entity_a);
+                    continue;
+                }
+            };
+            let with_sb = match staticbodies.get_component::<StaticBody2D>(coll.entity_b) {
+                Ok(b) => b,
+                Err(_) => {
+                    eprintln!("Couldnt get StaticBody2D of entity {:?}", coll.entity_b);
+                    continue;
+                }
+            };
+
             // Check for floor/wall/ceil collision(maybe change it later to only static bodies?)
             // TODO Switch to user defined values
             check_on_stuff(&mut a, normal);
@@ -980,7 +993,12 @@ fn aabb_solve_system (
             // TODO Maybe add a step functionality here?
 
             if a.linvel.signum() != coll.penetration.signum() {
-                a.linvel = a.linvel.slide(normal);
+                let project = a.linvel.project(normal);
+                let slide = a.linvel - project; // This is pretty much how slide works
+
+                let linvel = slide - project * with_sb.bounciness;
+
+                a.linvel = linvel;
                 a.position += coll.penetration;
             }
         }
@@ -989,14 +1007,14 @@ fn aabb_solve_system (
             let b = match bodies.get_component::<KinematicBody2D>(coll.entity_b) {
                 Ok(b) => b,
                 Err(_) => {
-                    eprintln!("Couldn't get kinematic body");
+                    eprintln!("Couldnt get KinematicBody2D of entity {:?}", coll.entity_b);
                     continue;
                 }
             };
             let a = match bodies.get_component::<KinematicBody2D>(coll.entity_a) {
                 Ok(a) => a,
                 Err(_) => {
-                    eprintln!("Couldn't get kinematic body");
+                    eprintln!("Couldnt get KinematicBody2D of entity {:?}", coll.entity_a);
                     continue;
                 }
             };
@@ -1013,23 +1031,31 @@ fn aabb_solve_system (
             drop(b);
             match bodies.get_component_mut::<KinematicBody2D>(coll.entity_b) {
                 Ok(mut b) => {
-                    b.linvel -= impulse;
+                    b.dynamic_acc -= impulse;
                     check_on_stuff(&mut b, -normal);
+
+                    if b.linvel.signum() != -coll.penetration.signum() {
+                        b.position -= coll.penetration;
+                        b.linvel = b.linvel.slide(normal);
+                    }
                 },
                 Err(_) => {
-                    eprintln!("Coudlnt get kinematic body");
+                    eprintln!("Couldnt get KinematicBody2D of entity {:?}", coll.entity_b);
                     continue;
                 }
             };
             match bodies.get_component_mut::<KinematicBody2D>(coll.entity_a) {
                 Ok(mut a) => {
-                    // undo the penetration
-                    a.position += coll.penetration; // TODO maybe change it to a better fix?
-                    a.linvel += impulse;
+                    a.dynamic_acc += impulse;
+                    check_on_stuff(&mut a, -normal);
+                    if a.linvel.signum() != coll.penetration.signum() {
+                        a.position += coll.penetration;
+                        a.linvel = a.linvel.slide(normal);
+                    }
                     check_on_stuff(&mut a, normal);
                 },
                 Err(_) => {
-                    eprintln!("Coudlnt get kinematic body");
+                    eprintln!("Couldnt get KinematicBody2D of entity {:?}", coll.entity_a);
                     continue;
                 }
             };

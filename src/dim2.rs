@@ -384,7 +384,7 @@ fn physics_step_system (
             continue;
         }
 
-        let accelerating = body.accumulator.length_squared() > 0.1 && body.dynamic_acc.length_squared() > 0.1;
+        // let accelerating = body.accumulator.length_squared() > 0.1 && body.dynamic_acc.length_squared() > 0.1;
 
         // Gravity
         if body.mass > f32::EPSILON {
@@ -466,16 +466,18 @@ impl Default for RotationMode {
 }
 
 pub fn sync_transform_system (
-    translation_mode: Res<TranslationMode>,
-    rotation_mode: Res<RotationMode>,
+    phys_set : Res<PhysicsSettings>,
     mut query : QuerySet<(
         Query<(&Sensor2D, &mut Transform)>,
         Query<(&KinematicBody2D, &mut Transform)>,
         Query<(&StaticBody2D, &mut Transform)>
     )>
 ) {
+    let translation_mode = phys_set.translation_mode;
+    let rotation_mode = phys_set.rotatoin_mode;
+
     let sync = move | pos : Vec2, rot : f32, transform : &mut Transform | {
-        match *translation_mode {
+        match translation_mode {
             TranslationMode::AxesXY => {
                 transform.translation.x = pos.x;
                 transform.translation.y = pos.y;
@@ -489,7 +491,7 @@ pub fn sync_transform_system (
                 transform.translation.z = pos.y;
             }
         }
-        match *rotation_mode {
+        match rotation_mode {
             RotationMode::AxisX => {
                 transform.rotation = Quat::from_rotation_x(rot);
             }

@@ -501,7 +501,7 @@ impl SpringJoint {
         self
     }
 }
-
+ 
 /// Allows one `RigidBody` to be anchored at another one
 /// in a pre-defined way, along with a local offset and angle.
 #[derive(Debug, Clone, Copy, PartialEq)]

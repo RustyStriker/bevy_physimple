@@ -113,6 +113,7 @@ fn setup(
 				.insert(KinematicBody2D::new()
 							.with_position(Vec2::new(4.0 - i as f32, 4.0 - k as f32) * SCALE * 2.0)
 							.with_active(false)
+							.with_stiffness(0.9)
 				)
 				.insert(StartInTime { seconds : (8-k) as f64})
 				.with_children(|p| {

@@ -167,17 +167,6 @@ fn get_aabb_collision(a : AABB, b : AABB, a_pos : Vec2, b_pos : Vec2) -> Option<
     }
 }
 
-/// Temp struct for aabb collision event
-#[derive(Clone, Debug)]
-pub struct AABBCollisionEvent {
-    pub entity_a : Entity,
-    pub entity_b : Entity,
-    /// Penetration of a in b, can get normal out of it
-    pub penetration : Vec2,
-    /// If the collision happened with a static body
-    pub with_static : bool
-}
-
 fn aabb_collision_detection_system (
     // mut commands : Commands,
     q_kinematic : Query<(Entity, &KinematicBody2D, &Children)>,
@@ -190,6 +179,8 @@ fn aabb_collision_detection_system (
     q_sensors.iter_mut().for_each(|(_,mut s,_)| s.overlapping_bodies.clear());
     
     let mut passed : Vec<(Entity, &KinematicBody2D, AABB)> = Vec::new();
+
+    // TODO Handle mask/layer system
 
     // Go through all the kinematic bodies
     for (entity, body, children) in q_kinematic.iter() {
@@ -285,7 +276,7 @@ fn aabb_solve_system (
                 let project = a.linvel.project(normal);
                 let slide = a.linvel - project; // This is pretty much how slide works
 
-                let linvel = slide - project * with_sb.bounciness;
+                let linvel = slide - project * with_sb.bounciness * a.stiffness;
 
                 a.linvel = linvel;
                 a.position += coll.penetration;
@@ -320,7 +311,8 @@ fn aabb_solve_system (
             drop(b);
             match bodies.get_component_mut::<KinematicBody2D>(coll.entity_b) {
                 Ok(mut b) => {
-                    b.dynamic_acc -= impulse;
+                    let stiff = b.stiffness;
+                    b.dynamic_acc -= impulse * stiff;
                     check_on_stuff(&mut b, -normal);
 
                     if b.linvel.signum() != -coll.penetration.signum() {
@@ -335,7 +327,8 @@ fn aabb_solve_system (
             };
             match bodies.get_component_mut::<KinematicBody2D>(coll.entity_a) {
                 Ok(mut a) => {
-                    a.dynamic_acc += impulse;
+                    let stiff = a.stiffness;
+                    a.dynamic_acc += impulse * stiff;
                     check_on_stuff(&mut a, -normal);
                     if a.linvel.signum() != coll.penetration.signum() {
                         a.position += coll.penetration;

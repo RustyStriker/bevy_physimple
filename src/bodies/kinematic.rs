@@ -40,6 +40,11 @@ pub struct KinematicBody2D {
 	/// Whether the body will participate in all physics related systems
 	pub active : bool,
 
+	/// How stiff the object is(as of "how much energy will transfer to heat on collision")
+	///
+	/// 1(default) - no "heat", 0 - "all to heat"
+	pub stiffness : f32,
+
 	/// Some(normal) if on_floor
 	pub(crate) on_floor : Option<Vec2>,
 	/// Some(normal) if on_wall
@@ -67,6 +72,7 @@ impl KinematicBody2D {
 		    mask: 1,
 		    layer: 1,
 			active : true,
+			stiffness : 1.0,
 		    on_floor: None,
 		    on_wall: None,
 		    on_ceil: None,
@@ -111,6 +117,10 @@ impl KinematicBody2D {
 	}
 	pub fn with_active(mut self, active : bool) -> Self {
 		self.active = active;
+		self
+	}
+	pub fn with_stiffness(mut self, stiffness : f32) -> Self {
+		self.stiffness = stiffness;
 		self
 	}
     

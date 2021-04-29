@@ -28,3 +28,14 @@ impl ToAABB for AABB {
 		*self
 	}
 }
+
+/// Temp struct for aabb collision event
+#[derive(Clone, Debug)]
+pub struct AABBCollisionEvent {
+    pub entity_a : Entity,
+    pub entity_b : Entity,
+    /// Penetration of a in b, can get normal out of it
+    pub penetration : Vec2,
+    /// If the collision happened with a static body
+    pub with_static : bool
+}

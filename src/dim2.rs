@@ -966,27 +966,16 @@ fn aabb_solve_system (
     
 ) {
     for coll in collisions.iter() {
-        let mut a = bodies.get_component_mut::<KinematicBody2D>(coll.entity_a).unwrap();
         
         let normal = coll.penetration.normalize();
-
-        // Check for floor/wall/ceil collision(maybe change it later to only static bodies?)
-        // TODO Switch to user defined values
-        const FLOOR_ANGLE : f32 = 0.7;
-        let up = Vec2::new(0.0,1.0);
-        let dot = up.dot(normal);
-
-        if dot >= FLOOR_ANGLE {
-            a.on_floor = Some(normal);
-        }
-        if dot.abs() < FLOOR_ANGLE {
-            a.on_wall = Some(normal);
-        }
-        if dot <= -FLOOR_ANGLE {
-            a.on_ceil = Some(normal);
-        }
-
+        
         if coll.with_static {
+            let mut a = bodies.get_component_mut::<KinematicBody2D>(coll.entity_a).unwrap();
+            
+            // Check for floor/wall/ceil collision(maybe change it later to only static bodies?)
+            // TODO Switch to user defined values
+            check_on_stuff(&mut a, normal);
+
             // if colliding with a static object, just undo the penetration and slide across the normal(aka pen direction)
             // TODO Maybe add a step functionality here?
 
@@ -995,6 +984,74 @@ fn aabb_solve_system (
                 a.position += coll.penetration;
             }
         }
+        else {
+            // Collision with another body
+            let b = match bodies.get_component::<KinematicBody2D>(coll.entity_b) {
+                Ok(b) => b,
+                Err(_) => {
+                    eprintln!("Couldn't get kinematic body");
+                    continue;
+                }
+            };
+            let a = match bodies.get_component::<KinematicBody2D>(coll.entity_a) {
+                Ok(a) => a,
+                Err(_) => {
+                    eprintln!("Couldn't get kinematic body");
+                    continue;
+                }
+            };
+
+            let sum_recip = (a.mass + b.mass).recip();
+            let br = b.linvel * b.mass;
+            let ar = a.linvel * a.mass;
+            let rv = br * sum_recip - ar * sum_recip;
+
+            let impulse = rv.project(normal);
+
+            // explicit drop to convey they are not usable anymore because we borrow_mut bodies just below 
+            drop(a);
+            drop(b);
+            match bodies.get_component_mut::<KinematicBody2D>(coll.entity_b) {
+                Ok(mut b) => {
+                    b.linvel -= impulse;
+                    check_on_stuff(&mut b, -normal);
+                },
+                Err(_) => {
+                    eprintln!("Coudlnt get kinematic body");
+                    continue;
+                }
+            };
+            match bodies.get_component_mut::<KinematicBody2D>(coll.entity_a) {
+                Ok(mut a) => {
+                    // undo the penetration
+                    a.position += coll.penetration; // TODO maybe change it to a better fix?
+                    a.linvel += impulse;
+                    check_on_stuff(&mut a, normal);
+                },
+                Err(_) => {
+                    eprintln!("Coudlnt get kinematic body");
+                    continue;
+                }
+            };
+        }
+    }
+}
+
+fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2) {
+    // Check for floor/wall/ceil collision(maybe change it later to only static bodies?)
+    // TODO Switch to user defined values
+    const FLOOR_ANGLE : f32 = 0.7;
+    let up = Vec2::new(0.0,1.0);
+    let dot = up.dot(normal);
+
+    if dot >= FLOOR_ANGLE {
+        body.on_floor = Some(normal);
+    }
+    if dot.abs() < FLOOR_ANGLE {
+        body.on_wall = Some(normal);
+    }
+    if dot <= -FLOOR_ANGLE {
+        body.on_ceil = Some(normal);
     }
 }
 

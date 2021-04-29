@@ -31,9 +31,7 @@ fn setup(
     // asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-	let cyan = materials.add(Color::CYAN.into());
 	let black = materials.add(Color::BLACK.into());
-
 
 	// spawn a camera
 	commands.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -45,11 +43,11 @@ fn setup(
 			material : black.clone(),
 			..Default::default()
 		})
-		.insert(RigidBody::new(Mass::Infinite).with_status(Status::Static)
+		.insert(StaticBody2D::new()
 				.with_position(Vec2::new(0.0,250.0))
 		)
 		.with_children(|p| {
-			p.spawn().insert(Shape::new(Size2::new(500.0,20.0)));
+			p.spawn().insert(AABB::size(Vec2::new(500.0,20.0)));
 		});
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -57,11 +55,11 @@ fn setup(
 			material : black.clone(),
 			..Default::default()
 		})
-		.insert(RigidBody::new(Mass::Infinite).with_status(Status::Static)
+		.insert(StaticBody2D::new()
 				.with_position(Vec2::new(0.0,-250.0))
 		)
 		.with_children(|p| {
-			p.spawn().insert(Shape::new(Size2::new(500.0,20.0)));
+			p.spawn().insert(AABB::size(Vec2::new(500.0,20.0)));
 		});
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -69,11 +67,11 @@ fn setup(
 			material : black.clone(),
 			..Default::default()
 		})
-		.insert(RigidBody::new(Mass::Infinite).with_status(Status::Static)
+		.insert(StaticBody2D::new()
 				.with_position(Vec2::new(250.0,0.0))
 		)
 		.with_children(|p| {
-			p.spawn().insert(Shape::new(Size2::new(20.0,500.0)));
+			p.spawn().insert(AABB::size(Vec2::new(20.0,500.0)));
 		});
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -81,28 +79,39 @@ fn setup(
 			material : black.clone(),
 			..Default::default()
 		})
-		.insert(RigidBody::new(Mass::Infinite).with_status(Status::Static)
+		.insert(StaticBody2D::new()
 				.with_position(Vec2::new(-250.0,0.0))
 		)
 		.with_children(|p| {
-			p.spawn().insert(Shape::new(Size2::new(20.0,500.0)));
+			p.spawn().insert(AABB::size(Vec2::new(20.0,500.0)));
 		});
 
-	const SCALE : f32 = 25.0;
+
+	let cyan = materials.add(Color::CYAN.into());
+	let green = materials.add(Color::LIME_GREEN.into());
+
+	const SCALE : f32 = 20.0;
 	// spawn around 36 cubes
-	(0..6).for_each(|i| {
-		(0..6).for_each(|k| {
+	(0..8).for_each(|i| {
+		(0..8).for_each(|k| {
+			let color = if (i + k) % 2 == 0 {
+				cyan.clone()
+			}
+			else {
+				green.clone()
+			};
+
 			commands
 				.spawn_bundle(SpriteBundle {
 					sprite : Sprite::new(Vec2::new(SCALE,SCALE)),
-					material : cyan.clone(),
+					material : color,
 					..Default::default()
 				})
-				.insert(RigidBody::new(Mass::Real(1.0))
-							.with_position(Vec2::new(3.0 - i as f32, 3.0 - k as f32) * SCALE * 2.0)
+				.insert(KinematicBody2D::new()
+							.with_position(Vec2::new(4.0 - i as f32, 4.0 - k as f32) * SCALE * 2.0)
 				)
 				.with_children(|p| {
-					p.spawn().insert(Shape::new(Size2::new(SCALE,SCALE)));
+					p.spawn().insert(AABB::size(Vec2::new(SCALE,SCALE)));
 				});
 		})
 	})

@@ -1,6 +1,6 @@
 [package]
 name = "bevy_physimple"
-description = "A simple 2d and 3d physics engine for bevy based on physme"
+description = "A simple 2d physics engine for bevy based on physme"
 version = "0.1.0"
 authors = ["Aviv 'RustyStriker' Romem <avivr903@tutanota.com"]
 edition = "2018"

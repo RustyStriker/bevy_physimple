@@ -78,26 +78,34 @@ impl KinematicBody2D {
 		    on_ceil: None,
 		}
 	}
+	/// Current position
 	pub fn with_position(mut self, position : Vec2) -> Self {
 		self.position = position;
 		self
 	}
+	/// Rotation in radians
     pub fn with_rotation(mut self, rotation: f32) -> Self {
         self.rotation = rotation;
         self
     }
+	/// Linear velocity
     pub fn with_linear_velocity(mut self, linvel: Vec2) -> Self {
         self.linvel = linvel;
         self
     }
+	/// Angular velocity
     pub fn with_angular_velocity(mut self, angvel: f32) -> Self {
         self.angvel = angvel;
         self
     }
+	/// Terminal linear velocity
+	///
+	/// Defaults to `f32::INFINITY`
     pub fn with_terminal(mut self, terminal: Vec2) -> Self {
         self.terminal = terminal;
         self
     }
+	/// Terminal angular velocity
     pub fn with_angular_terminal(mut self, terminal: f32) -> Self {
         self.ang_terminal = terminal;
         self
@@ -107,18 +115,28 @@ impl KinematicBody2D {
 		self.inv_mass = mass.recip();
 		self
 	}
+	/// Which collision layers this body search collisions for
+	///
+	/// Generally to bodies will colide if (a.mask & b.layer) | (b.mask & a.layer) > 0
 	pub fn with_mask(mut self, mask : u8) -> Self {
 		self.mask = mask;
 		self
 	}
+	/// Which collision layers this body occupies
+	///
+	/// Generally to bodies will colide if (a.mask & b.layer) | (b.mask & a.layer) > 0
 	pub fn with_layer(mut self, layer : u8) -> Self {
 		self.layer = layer;
 		self
 	}
+		/// Whether the body will participate in all physics related systems
 	pub fn with_active(mut self, active : bool) -> Self {
 		self.active = active;
 		self
 	}
+	/// How stiff the object is(as of "how much energy will transfer to heat on collision")
+	///
+	/// 1(default) - no "heat", 0 - "all to heat"
 	pub fn with_stiffness(mut self, stiffness : f32) -> Self {
 		self.stiffness = stiffness;
 		self

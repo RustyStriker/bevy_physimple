@@ -34,6 +34,14 @@ pub struct PhysicsSettings {
     pub gravity : Vec2,
     pub translation_mode : TranslationMode,
     pub rotatoin_mode : RotationMode,
+    /// What angles are considered floor/wall/ceilling
+    ///
+    /// a number between 0-1 representing 'normal.dot(-gravity)'
+    ///
+    /// floor >= floor_angle // wall.abs() < floor_angle // ceil <= -floor_angle
+    ///
+    /// Defaults to 0.7
+    pub floor_angle : f32,
 }
 impl Default for PhysicsSettings {
     fn default() -> Self {
@@ -43,6 +51,7 @@ impl Default for PhysicsSettings {
             gravity : Vec2::new(0.0,-540.0),
             translation_mode : TranslationMode::AxesXY,
             rotatoin_mode : RotationMode::AxisZ,
+            floor_angle : 0.7,
         }
     }
 }
@@ -244,7 +253,10 @@ fn aabb_solve_system (
     mut collisions : EventReader<AABBCollisionEvent>,
     mut bodies : Query<&mut KinematicBody2D>,
     staticbodies : Query<&StaticBody2D>,
+    phys_set : Res<PhysicsSettings>,
 ) {
+
+
     for coll in collisions.iter() {
         
         let normal = coll.penetration.normalize();
@@ -266,8 +278,7 @@ fn aabb_solve_system (
             };
 
             // Check for floor/wall/ceil collision(maybe change it later to only static bodies?)
-            // TODO Switch to user defined values
-            check_on_stuff(&mut a, normal);
+            check_on_stuff(&mut a, normal, &phys_set);
 
             // if colliding with a static object, just undo the penetration and slide across the normal(aka pen direction)
             // TODO Maybe add a step functionality here?
@@ -313,7 +324,7 @@ fn aabb_solve_system (
                 Ok(mut b) => {
                     let stiff = b.stiffness;
                     b.dynamic_acc -= impulse * stiff;
-                    check_on_stuff(&mut b, -normal);
+                    check_on_stuff(&mut b, -normal, &phys_set);
 
                     if b.linvel.signum() != -coll.penetration.signum() {
                         b.position -= coll.penetration;
@@ -329,12 +340,12 @@ fn aabb_solve_system (
                 Ok(mut a) => {
                     let stiff = a.stiffness;
                     a.dynamic_acc += impulse * stiff;
-                    check_on_stuff(&mut a, -normal);
+                    check_on_stuff(&mut a, -normal, &phys_set);
                     if a.linvel.signum() != coll.penetration.signum() {
                         a.position += coll.penetration;
                         a.linvel = a.linvel.slide(normal);
                     }
-                    check_on_stuff(&mut a, normal);
+                    check_on_stuff(&mut a, normal, &phys_set);
                 },
                 Err(_) => {
                     eprintln!("Couldnt get KinematicBody2D of entity {:?}", coll.entity_a);
@@ -345,20 +356,18 @@ fn aabb_solve_system (
     }
 }
 
-fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2) {
-    // Check for floor/wall/ceil collision(maybe change it later to only static bodies?)
-    // TODO Switch to user defined values
-    const FLOOR_ANGLE : f32 = 0.7;
-    let up = Vec2::new(0.0,1.0);
+fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2, phy_set : &PhysicsSettings) {
+    let angle = phy_set.floor_angle;
+    let up = -phy_set.gravity.normalize();
     let dot = up.dot(normal);
 
-    if dot >= FLOOR_ANGLE {
+    if dot >= angle {
         body.on_floor = Some(normal);
     }
-    if dot.abs() < FLOOR_ANGLE {
+    if dot.abs() < angle {
         body.on_wall = Some(normal);
     }
-    if dot <= -FLOOR_ANGLE {
+    if dot <= -angle {
         body.on_ceil = Some(normal);
     }
 }

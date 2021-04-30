@@ -90,17 +90,18 @@
 //! frame of the game.
 
 pub mod common;
-pub mod dim2;
+pub mod plugin;
 pub mod bodies;
 pub mod shapes;
 
-pub mod prelude2d {
+pub mod prelude {
     //! This module re-exports all the things you might need for 2d physics
     //! simulation.
-    pub use crate::common::Vec2Ext;
-    pub use crate::dim2::{
+    pub use crate::common::*;
+    pub use crate::plugin::{
         PhysicsSettings,
-        Physics2dPlugin, RotationMode, 
+        Physics2dPlugin, 
+        RotationMode, 
         TranslationMode,
     };
     // TODO Maybe restrict it a bit more?

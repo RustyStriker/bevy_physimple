@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_physimple::prelude2d::*;
+use bevy_physimple::prelude::*;
 
 #[derive(Default)]
 struct CharacterController {

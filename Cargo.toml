@@ -1,8 +1,8 @@
 [package]
 name = "bevy_physimple"
 description = "A simple 2d and 3d physics engine for bevy based on physme"
-version = "0.2.5"
-authors = ["Szymon Walter <waltersz@protonmail.com>","Aviv 'RustyStriker' Romem <avivr903@tutanota.com"]
+version = "0.1.0"
+authors = ["Aviv 'RustyStriker' Romem <avivr903@tutanota.com"]
 edition = "2018"
 readme = "README.md"
 homepage = "https://github.com/RustyStriker/bevy_physimple"
@@ -12,8 +12,5 @@ keywords = ["gamedev", "physics", "rigid", "real-time", "aabb"]
 categories = ["game-development"]
 
 [dependencies]
-smallvec = "1.4"
-rstar = "0.8"
-hashbrown = "0.11.2"
 serde = "1.0"
 bevy = "0.5.0"

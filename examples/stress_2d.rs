@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-use bevy_physimple::prelude2d::*;
+use bevy_physimple::prelude::*;
 
 struct StartInTime {
 	seconds : f64

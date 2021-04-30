@@ -1,8 +1,3 @@
-//! This module provides the primitives and systems for 2d physics simulation.
-//!
-//! For examples, see the root of the crate.
-
-use bevy::math::*;
 use bevy::prelude::*;
 
 use crate::common::*;
@@ -12,16 +7,17 @@ use crate::shapes::*;
 /// Physics plugin for 2D physics
 pub struct Physics2dPlugin {
     /// Global settings for the physics calculations
-    settings : Option<PhysicsSettings>
+    settings : PhysicsSettings
 }
 impl Default for Physics2dPlugin {
     fn default() -> Self {
         Physics2dPlugin {
-            settings : None,
+            settings : PhysicsSettings::default(),
         }
     }
 }
 
+/// Settings for the physics systems to use
 #[derive(Clone, Debug,)]
 pub struct PhysicsSettings {
     /// How strong the friction is
@@ -49,47 +45,63 @@ impl Default for PhysicsSettings {
             friction : 0.9,
             friction_normal : Vec2::Y,
             gravity : Vec2::new(0.0,-540.0),
-            translation_mode : TranslationMode::AxesXY,
-            rotatoin_mode : RotationMode::AxisZ,
+            translation_mode : TranslationMode::XY,
+            rotatoin_mode : RotationMode::Z,
             floor_angle : 0.7,
         }
     }
 }
 
+/// The plane on which to translate the 2d position into 3d coordinates.
+#[derive(Debug, Clone, Copy)]
+pub enum TranslationMode {
+    XY,
+    XZ,
+    YZ,
+}
 
+/// The axis on which to rotate the 2d rotation into a 3d quaternion.
+#[derive(Debug, Clone, Copy)]
+pub enum RotationMode {
+    X,
+    Y,
+    Z,
+}
+
+/// labels for the physics stages
 pub mod stage {
-    #[doc(hidden)]
     pub use bevy::prelude::CoreStage;
 
-    pub const COLLIDING_JOINT: &str = "colliding_joint";
-    pub const PHYSICS_STEP: &str = "physics_step";
-    pub const BROAD_PHASE: &str = "broad_phase";
-    pub const NARROW_PHASE: &str = "narrow_phase";
-    pub const PHYSICS_SOLVE: &str = "physics_solve";
-    pub const RIGID_JOINT: &str = "rigid_joint";
+    pub const JOINT_STEP: &str = "phy_joint_step";
+    pub const PHYSICS_STEP: &str = "phy_physics_step";
+    pub const COLLISION_DETECTION: &str = "phy_collision_detection";
+    pub const PHYSICS_SOLVE: &str = "phyy_solve";
     pub const SYNC_TRANSFORM: &str = "sync_transform";
 }
 
 impl Plugin for Physics2dPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        let settings = self.settings.clone().unwrap_or(PhysicsSettings::default());
+        let settings = self.settings.clone();
+
+        // Stage order goes as follows
+        // Joints step -> Physics step -> collision detection -> solve -> more joints (1) -> sync
+        
+        // (1) joints that doesnt rely on collisions
 
         app
             .insert_resource(settings)
             .add_stage_before(CoreStage::Update, stage::PHYSICS_STEP, SystemStage::single_threaded())
-            .add_stage_before(stage::PHYSICS_STEP, stage::COLLIDING_JOINT,SystemStage::single_threaded())
-            .add_stage_after(stage::PHYSICS_STEP, stage::BROAD_PHASE,SystemStage::single_threaded())
-            .add_stage_after(stage::BROAD_PHASE, stage::NARROW_PHASE,SystemStage::single_threaded())
-            .add_stage_after(stage::NARROW_PHASE, stage::PHYSICS_SOLVE,SystemStage::single_threaded())
-            .add_stage_after(stage::PHYSICS_SOLVE, stage::RIGID_JOINT,SystemStage::single_threaded())
-            .add_stage_after(stage::RIGID_JOINT, stage::SYNC_TRANSFORM,SystemStage::single_threaded());
+            .add_stage_before(stage::PHYSICS_STEP, stage::JOINT_STEP,SystemStage::single_threaded())
+            .add_stage_after(stage::PHYSICS_STEP, stage::COLLISION_DETECTION,SystemStage::single_threaded())
+            .add_stage_after(stage::COLLISION_DETECTION, stage::PHYSICS_SOLVE,SystemStage::single_threaded())
+            .add_stage_after(stage::PHYSICS_SOLVE, stage::SYNC_TRANSFORM,SystemStage::single_threaded());
 
         // Add the event type
         app.add_event::<AABBCollisionEvent>();
 
         // Add the systems themselves for each step
         app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
-            .add_system_to_stage(stage::NARROW_PHASE, aabb_collision_detection_system.system())
+            .add_system_to_stage(stage::COLLISION_DETECTION, aabb_collision_detection_system.system())
             .add_system_to_stage(stage::PHYSICS_SOLVE, aabb_solve_system.system())
             .add_system_to_stage(stage::SYNC_TRANSFORM, sync_transform_system.system());
         // TODO Recreate the Joint systems
@@ -456,34 +468,6 @@ fn physics_step_system (
     }
 }
 
-/// The plane on which to translate the 2d position into 3d coordinates.
-#[derive(Debug, Clone, Copy)]
-pub enum TranslationMode {
-    AxesXY,
-    AxesXZ,
-    AxesYZ,
-}
-
-impl Default for TranslationMode {
-    fn default() -> Self {
-        Self::AxesXY
-    }
-}
-
-/// The axis on which to rotate the 2d rotation into a 3d quaternion.
-#[derive(Debug, Clone, Copy)]
-pub enum RotationMode {
-    AxisX,
-    AxisY,
-    AxisZ,
-}
-
-impl Default for RotationMode {
-    fn default() -> Self {
-        Self::AxisZ
-    }
-}
-
 pub fn sync_transform_system (
     phys_set : Res<PhysicsSettings>,
     mut query : QuerySet<(
@@ -497,27 +481,27 @@ pub fn sync_transform_system (
 
     let sync = move | pos : Vec2, rot : f32, transform : &mut Transform | {
         match translation_mode {
-            TranslationMode::AxesXY => {
+            TranslationMode::XY => {
                 transform.translation.x = pos.x;
                 transform.translation.y = pos.y;
             }
-            TranslationMode::AxesXZ => {
+            TranslationMode::XZ => {
                 transform.translation.x = pos.x;
                 transform.translation.z = pos.y;
             }
-            TranslationMode::AxesYZ => {
+            TranslationMode::YZ => {
                 transform.translation.y = pos.x;
                 transform.translation.z = pos.y;
             }
         }
         match rotation_mode {
-            RotationMode::AxisX => {
+            RotationMode::X => {
                 transform.rotation = Quat::from_rotation_x(rot);
             }
-            RotationMode::AxisY => {
+            RotationMode::Y => {
                 transform.rotation = Quat::from_rotation_y(rot);
             }
-            RotationMode::AxisZ => {
+            RotationMode::Z => {
                 transform.rotation = Quat::from_rotation_z(rot);
             }
         }

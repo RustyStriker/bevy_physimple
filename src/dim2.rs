@@ -414,6 +414,7 @@ fn physics_step_system (
         body.rotation = rotation;
 
         // Apply friction
+        // TODO Use delta_time in friction somehow(and maybe do actual friction with coeffiency between different objects?)
         if !accelerating {
             let friction_normal = physics_sets.friction_normal;
             let vel_proj = body.linvel.project(friction_normal);

@@ -180,12 +180,12 @@ fn aabb_collision_detection_system (
     // mut commands : Commands,
     q_kinematic : Query<(Entity, &KinematicBody2D, &Children)>,
     q_static : Query<(Entity, &StaticBody2D, &Children)>,
-    mut q_sensors : Query<(Entity, &mut Sensor2D, &Children)>,
+    mut q_sensors : Query<(&mut Sensor2D, &Children)>,
     shapes : Query<&AABB>,
     mut writer : EventWriter<AABBCollisionEvent>,
 ) {
     // Clear all the sensors overlapping parts
-    q_sensors.iter_mut().for_each(|(_,mut s,_)| s.overlapping_bodies.clear());
+    q_sensors.iter_mut().for_each(|(mut s,_)| s.overlapping_bodies.clear());
     
     let mut passed : Vec<(Entity, &KinematicBody2D, AABB)> = Vec::new();
 
@@ -201,6 +201,11 @@ fn aabb_collision_detection_system (
         
         // Go through the static bodies and check for collisions
         for (se, sb, children) in q_static.iter() {
+            // Check for masks/layers
+            if (body.mask & sb.layer | body.layer & sb.mask) == 0 {
+                continue;
+            }
+
             let sc = match get_child_shapes(&shapes, &children) {
                 Some(c) => c,
                 None => continue,
@@ -220,7 +225,12 @@ fn aabb_collision_detection_system (
         // Go through sensors to know who is inside the sensor
         // we iter_mut because we want to do sensor.overlapping_bodies.push(entity) for each entity
         // that is overlapping with the sensor
-        for (_, mut sensor, children) in q_sensors.iter_mut() {
+        for (mut sensor, children) in q_sensors.iter_mut() {
+            // Check for masks/layers
+            if (body.mask & sensor.layer | body.layer & sensor.mask) == 0 {
+                continue;
+            }
+
             let sc = match get_child_shapes(&shapes, &children) {
                 Some(c) => c,
                 None => continue,
@@ -232,6 +242,11 @@ fn aabb_collision_detection_system (
         }
         // Go through all the kinematic bodies we passed already
         for (ke, ob, oc) in passed.iter() {
+            // Check for masks/layers
+            if (body.mask & ob.layer | body.layer & ob.mask) == 0 {
+                continue;
+            }
+
             // check for collisions here...
             if let Some(pen) = get_aabb_collision( collider,  *oc,  body.position,  ob.position) {
                 writer.send(

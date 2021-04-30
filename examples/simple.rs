@@ -46,6 +46,7 @@ fn setup(
             KinematicBody2D::new()
                 .with_position(Vec2::new(0.0, 0.0))
                 .with_terminal(Vec2::new(700.0, 1000.0))
+                .with_mask(3)
         )
         .insert(CharacterController::default())
         .with_children(|parent| {
@@ -61,7 +62,8 @@ fn setup(
         })
         .insert(
             StaticBody2D::new()
-                .with_position(Vec2::new(150.0, -200.0)),
+                .with_position(Vec2::new(150.0, -200.0))
+                .with_layer(3)
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(600.0, 20.0)),));
@@ -172,6 +174,22 @@ fn setup(
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));
         }).id();
+
+    // spawn a cube with different layers
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::splat(20.0)),
+            material : materials.add(Color::MAROON.into()),
+            ..Default::default()
+        })
+        .insert(
+            KinematicBody2D::new()
+            .with_layer(2)
+            .with_mask(2)
+        )
+        .with_children(|p| {
+            p.spawn().insert(AABB::size(Vec2::splat(20.0)));
+        });
 
     // spawn the joint between the player and the target cube
     // commands

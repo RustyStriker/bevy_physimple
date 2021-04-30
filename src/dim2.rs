@@ -377,7 +377,7 @@ fn physics_step_system (
             continue;
         }
 
-        // let accelerating = body.accumulator.length_squared() > 0.1 && body.dynamic_acc.length_squared() > 0.1;
+        let accelerating = body.accumulator.length_squared() > 0.1 || body.dynamic_acc.length_squared() > 0.1;
 
         // Gravity
         if body.mass > f32::EPSILON {
@@ -414,11 +414,12 @@ fn physics_step_system (
         body.rotation = rotation;
 
         // Apply friction
-        let friction_normal = physics_sets.friction_normal;
-        let vel_proj = body.linvel.project(friction_normal);
-        let vel_slided = body.linvel - vel_proj; // This is pretty much how project works
-        body.linvel = vel_proj + vel_slided * physics_sets.friction;
-
+        if !accelerating {
+            let friction_normal = physics_sets.friction_normal;
+            let vel_proj = body.linvel.project(friction_normal);
+            let vel_slided = body.linvel - vel_proj; // This is pretty much how project works
+            body.linvel = vel_proj + vel_slided * physics_sets.friction;
+        }
 
         // TODO better friciton based on gravity orientation please
         body.angvel *= physics_sets.friction;

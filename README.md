@@ -16,7 +16,9 @@ and eventually i want people to be able to use this crate as a simple collisions
 ## Quickstart
 
 TODO, for now you can check the examples
-just run `cargo run --bevy/dynamic --example (showcase/simple/stress_2d)` to see it in action
+just run
+`cargo run --bevy/dynamic --example (showcase/simple/stress_2d)`
+to see it in action
 (dont use --release with showcase, since friction is still needs some work for now)
 
 ## bevy - physimple versions

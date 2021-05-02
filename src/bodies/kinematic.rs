@@ -51,6 +51,11 @@ pub struct KinematicBody2D {
 	/// Used as `staticbody.bounciness.max(self.bounciness)` to act as bounciness override
 	pub bounciness : f32,
 
+	/// Friction is a constant force slowing the body down(default - 1.0)
+	///
+	/// The constant global friction will be multiplied by this variable when calculated
+	pub friction_mult : f32,
+
 	/// Some(normal) if on_floor
 	pub(crate) on_floor : Option<Vec2>,
 	/// Some(normal) if on_wall
@@ -79,6 +84,7 @@ impl KinematicBody2D {
 			active : true,
 			stiffness : 1.0,
 			bounciness : 0.0,
+			friction_mult : 1.0,
 		    on_floor: None,
 		    on_wall: None,
 		    on_ceil: None,
@@ -154,6 +160,13 @@ impl KinematicBody2D {
 	/// Used as `staticbody.bounciness.max(self.bounciness)` to act as bounciness override
     pub fn with_bounciness(mut self, bounciness : f32) -> Self {
 		self.bounciness = bounciness;
+		self
+	}
+	/// Friction is a constant force slowing the body down(default - 1.0)
+	///
+	/// The constant global friction will be multiplied by this variable when calculated
+	pub fn with_friction(mut self, friction : f32) -> Self {
+		self.friction_mult = friction;
 		self
 	}
 

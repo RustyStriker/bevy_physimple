@@ -47,6 +47,7 @@ fn setup(
                 .with_position(Vec2::new(0.0, 0.0))
                 .with_terminal(Vec2::new(700.0, 1000.0))
                 .with_mask(3)
+                .with_friction(1.5)
         )
         .insert(CharacterController::default())
         .with_children(|parent| {
@@ -153,13 +154,15 @@ fn setup(
         .insert(
             KinematicBody2D::new()
                 .with_mass(2.0)
-                .with_position(Vec2::new(30.0, 60.0)),
+                .with_position(Vec2::new(30.0, 60.0))
+                .with_friction(0.1) // Basically almost no friction, should be fun :D
+                .with_bounciness(0.9) // Make it bouncy(also on walls)
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));
         });
 
-    // spawn the cube connected to us
+    // spawn the cube connected to us - no longer connected as there are no joints yet
     let _target_id = commands
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(20.0)),

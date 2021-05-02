@@ -17,9 +17,9 @@ and eventually i want people to be able to use this crate as a simple collisions
 
 TODO, for now you can check the examples
 just run
-`cargo run --bevy/dynamic --example (showcase/simple/stress_2d)`
+`cargo run --bevy/dynamic --example (showcase/simple/stress_2d) --release`
 to see it in action
-(dont use --release with showcase, since friction is still needs some work for now)
+
 
 ## bevy - physimple versions
 
@@ -31,6 +31,6 @@ to see it in action
 
 - [ ] Rotation
 - [ ] More collision shapes
-- [ ] Better friction - with per object values
+- [x] Better friction - with per object values
 - [ ] Raycasts
 - [ ] Joints(with support for custom types of joints)

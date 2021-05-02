@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 
 use crate::common::*;
@@ -18,14 +20,19 @@ impl Default for Physics2dPlugin {
 }
 
 /// Settings for the physics systems to use
+///
+/// usually the defaults should be enough, besides a couple of parameters(friction, gravity, ang_friction)
 #[derive(Clone, Debug,)]
 pub struct PhysicsSettings {
-    /// How strong the friction is
-    ///
-    /// Currently a number between (0.0 - 1.0) where 1.0 is no friction
+    /// How strong the force of friction is(default - 400.0)
     pub friction : f32,
     /// The direction in which friction wont exist
+    ///
+    /// or the normal vector for the plane in which friction does exists(should be `gravity.normalize()`)
     pub friction_normal : Vec2,
+    /// Friction on the angular velocity in radians
+    pub ang_friction : f32,
+
     /// Gravity direction and strength(up direction is opposite to gravity)
     pub gravity : Vec2,
     pub translation_mode : TranslationMode,
@@ -42,8 +49,9 @@ pub struct PhysicsSettings {
 impl Default for PhysicsSettings {
     fn default() -> Self {
         PhysicsSettings {
-            friction : 0.9,
+            friction : 400.0,
             friction_normal : Vec2::Y,
+            ang_friction : PI,
             gravity : Vec2::new(0.0,-540.0),
             translation_mode : TranslationMode::XY,
             rotatoin_mode : RotationMode::Z,
@@ -448,16 +456,31 @@ fn physics_step_system (
         body.rotation = rotation;
 
         // Apply friction
-        // TODO Use delta_time in friction somehow(and maybe do actual friction with coeffiency between different objects?)
         if !accelerating {
             let friction_normal = physics_sets.friction_normal;
             let vel_proj = body.linvel.project(friction_normal);
-            let vel_slided = body.linvel - vel_proj; // This is pretty much how project works
-            body.linvel = vel_proj + vel_slided * physics_sets.friction;
-        }
+            let mut vel_slided = body.linvel - vel_proj; // This is pretty much how project works
+            
+            let vel_slided_len = vel_slided.length(); // We keep it to normalize the vector later
+            let friction_strength = physics_sets.friction * body.friction_mult * delta; // Current frame's friction
+            if vel_slided_len <= friction_strength {
+                vel_slided = Vec2::ZERO;
+            } 
+            else {
+                vel_slided -= (vel_slided / vel_slided_len) * friction_strength;
+                //             /\~~~~~~~~~~~~~~~~~~~~~~~~/\ normalized vel_slided
+            }
 
-        // TODO better friciton based on gravity orientation please
-        body.angvel *= physics_sets.friction;
+            body.linvel = vel_proj + vel_slided; // Apply the new friction values to linvel
+        }
+        let angular_friction = physics_sets.ang_friction * delta;
+        if body.angvel.abs() < angular_friction {
+            body.angvel = 0.0;
+        }
+        else {
+            let sign = body.angvel.signum();
+            body.angvel -= sign * angular_friction;
+        }
 
         // Reset on_* variables
         body.on_floor = None;

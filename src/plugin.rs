@@ -201,8 +201,6 @@ fn aabb_collision_detection_system (
     
     let mut passed : Vec<(Entity, &KinematicBody2D, AABB)> = Vec::new();
 
-    // TODO Handle mask/layer system
-
     // Go through all the kinematic bodies
     for (entity, body, children) in q_kinematic.iter() {
         // Gather all the shape children(colliders...)
@@ -314,7 +312,7 @@ fn aabb_solve_system (
                 let project = a.linvel.project(normal);
                 let slide = a.linvel - project; // This is pretty much how slide works
 
-                let linvel = slide - project * with_sb.bounciness * a.stiffness;
+                let linvel = slide - project * with_sb.bounciness.max(a.bounciness) * a.stiffness;
 
                 a.linvel = linvel;
                 a.position += coll.penetration;

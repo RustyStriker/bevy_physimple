@@ -44,6 +44,12 @@ pub struct KinematicBody2D {
 	///
 	/// 1(default) - no "heat", 0 - "all to heat"
 	pub stiffness : f32,
+	/// How bouncy a body is on collisions with static bodies
+	///
+	/// 0(default) - no bounce, 1 - full bounce, >1 - super bouncy
+	///
+	/// Used as `staticbody.bounciness.max(self.bounciness)` to act as bounciness override
+	pub bounciness : f32,
 
 	/// Some(normal) if on_floor
 	pub(crate) on_floor : Option<Vec2>,
@@ -52,7 +58,6 @@ pub struct KinematicBody2D {
 	/// Some(normal) if on_ceil
 	pub(crate) on_ceil : Option<Vec2>,
 
-	// TODO Add bounciness factor
 }
 
 impl KinematicBody2D {
@@ -73,6 +78,7 @@ impl KinematicBody2D {
 		    layer: 1,
 			active : true,
 			stiffness : 1.0,
+			bounciness : 0.0,
 		    on_floor: None,
 		    on_wall: None,
 		    on_ceil: None,
@@ -134,14 +140,23 @@ impl KinematicBody2D {
 		self.active = active;
 		self
 	}
-	/// How stiff the object is(as of "how much energy will transfer to heat on collision")
+	/// How stiff the body is(as of "how much energy will transfer to heat on collision")
 	///
 	/// 1(default) - no "heat", 0 - "all to heat"
 	pub fn with_stiffness(mut self, stiffness : f32) -> Self {
 		self.stiffness = stiffness;
 		self
 	}
-    
+	/// How bouncy a body is on collisions with static bodies
+	///
+	/// 0(default) - no bounce, 1 - full bounce, >1 - super bouncy
+	///
+	/// Used as `staticbody.bounciness.max(self.bounciness)` to act as bounciness override
+    pub fn with_bounciness(mut self, bounciness : f32) -> Self {
+		self.bounciness = bounciness;
+		self
+	}
+
 	/// Apply an impulse to the body
 	///
 	/// does not handle with delta_time

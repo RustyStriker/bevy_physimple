@@ -20,7 +20,6 @@ just run
 `cargo run --bevy/dynamic --example (showcase/simple/stress_2d) --release`
 to see it in action
 
-
 ## bevy - physimple versions
 
 | bevy | physimple       |

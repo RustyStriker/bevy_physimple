@@ -642,7 +642,11 @@ pub fn collide_ray_aabb(
     let aabb_max = aabb_pos + aabb.extents;
 
 
-    // if one of the cast parts is 0.0, make sure we are in the bounds of that axle
+    // if one of the cast components is 0.0, make sure we are in the bounds of that axle
+    // Why?
+    //      We do this explicit check because the raycast formula i used doesnt handle cases where one of the components is 0
+    //       as it would lead to division by 0(thus errors) and the `else NAN` part will make it completly ignore the collision
+    //       on that axle
     if ray_cast.x == 0.0 {
         let ray_min = ray_from.x.min(ray_from.x + ray_cast.x);
         let ray_max = ray_from.x.max(ray_from.x + ray_cast.x);

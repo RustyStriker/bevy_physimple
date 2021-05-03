@@ -1,0 +1,52 @@
+use bevy::prelude::*;
+
+/// Raycasts work in 
+pub struct RayCast2D {
+	/// The Direction the ray shoots and the length
+	pub cast : Vec2,
+
+	/// Mask of the ray, will check only for objects by `self.mask & object.layer > 0`
+	pub mask : u8,
+
+	/// Whether to try and collide with static objects as well(defaults to true)
+	pub collide_with_static : bool,
+
+	pub(crate) collision : Option<RayCastCollision>,
+}
+
+#[derive(Clone, Copy)]
+pub struct RayCastCollision {
+	pub collision_point : Vec2,
+	pub entity : Entity,
+	pub is_static : bool,
+}
+
+impl RayCast2D {
+	/// Creates a new raycast object
+	///
+	/// offset from the transform of the raycast entity
+	///
+	/// cast - the direction(and length) the ray shoots
+	pub fn new(cast : Vec2) -> Self {
+		RayCast2D {
+			cast,
+			mask : 1, 
+			collide_with_static : true,
+			collision : None
+		}
+	}
+	/// Mask of the ray, will check only for objects by `self.mask & object.layer > 0`
+	pub fn with_mask(mut self, mask : u8) -> Self {
+		self.mask = mask;
+		self
+	}
+	/// Whether to try and collide with static objects as well(defaults to true)
+	pub fn with_static(mut self, collide_with_static : bool) -> Self {
+		self.collide_with_static = collide_with_static;
+		self
+	}
+
+	pub fn get_collision(&self) -> Option<RayCastCollision> {
+		self.collision
+	}
+}

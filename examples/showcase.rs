@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
+/// Just holds character controller ralted stuff, like if we can double jump or not
 #[derive(Default)]
 struct CharacterController {
 	double_jump : bool,
 }
+
+/// Simple holds an entity for the raycast to toy with :)
+struct HeadEntity(Entity);
 
 fn main() {
 	let mut builder = App::build();
@@ -22,6 +26,7 @@ fn main() {
 		.add_system(bevy::input::system::exit_on_esc_system.system())
 		.add_startup_system(setup.system())
 		.add_system(sensor_system.system())
+		.add_system(raycast_system.system())
 		.add_system(character_system.system());
 	
 	builder.run();
@@ -163,6 +168,24 @@ fn setup(
 				p.spawn().insert(AABB::size(Vec2::new(20.0,20.0)));
 			});
 	});
+
+	// Spawn a raycast with a cube to move around lul - this will be the end one
+	let ray_head = commands
+		.spawn_bundle(SpriteBundle {
+			sprite : Sprite::new(Vec2::new(10.0,10.0)),
+			material : materials.add(Color::ORANGE.into()),
+			..Default::default()
+		}).id();
+	// spawn the ray with a tail cube because why not
+	commands
+		.spawn_bundle(SpriteBundle {
+			sprite : Sprite::new(Vec2::new(5.0,5.0)),
+			material : materials.add(Color::CRIMSON.into()),
+			transform : Transform::from_xyz(-100.0,-225.0,0.0),
+			..Default::default()
+		})
+		.insert(RayCast2D::new(Vec2::new(200.0,0.0)))
+		.insert(HeadEntity(ray_head));
 }
 
 fn character_system(
@@ -228,6 +251,28 @@ fn sensor_system(
 		}
 		else {
 			let _ = materials.set(color.id, Color::rgba(0.0,1.0,0.0,0.5).into());
+		}
+	}
+}
+
+fn raycast_system (
+	query : Query<(Entity, &RayCast2D, &HeadEntity)>,
+	mut sprites : Query<&mut Transform>
+) {
+	for (entity, ray, head) in query.iter() {
+		let head_pos = match ray.get_collision() {
+			Some(c) => c.collision_point,
+			None => {
+				let ray_pos = sprites.get_component::<Transform>(entity).unwrap().translation;
+
+				ray.cast + Vec2::new(ray_pos.x,ray_pos.y)
+			},
+		};
+		let sprite_transform = sprites.get_component_mut::<Transform>(head.0);
+
+		if let Ok(mut t) = sprite_transform {
+			t.translation.x = head_pos.x;
+			t.translation.y = head_pos.y;
 		}
 	}
 }

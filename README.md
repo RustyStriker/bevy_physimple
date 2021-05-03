@@ -31,5 +31,5 @@ to see it in action
 - [ ] Rotation
 - [ ] More collision shapes
 - [x] Better friction - with per object values
-- [ ] Raycasts
+- [x] Raycasts
 - [ ] Joints(with support for custom types of joints)

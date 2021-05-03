@@ -80,11 +80,18 @@ pub enum RotationMode {
 pub mod stage {
     pub use bevy::prelude::CoreStage;
 
+    /// update joint constraints based on current data
     pub const JOINT_STEP: &str = "phy_joint_step";
+    /// Physics step, gravity, friction, apply velocity and forces, move the bodies and such
     pub const PHYSICS_STEP: &str = "phy_physics_step";
+    /// Check for collisions between objects, emitting events with AABBCollisionEvent(should be replaced later tho)
     pub const COLLISION_DETECTION: &str = "phy_collision_detection";
-    pub const PHYSICS_SOLVE: &str = "phyy_solve";
-    pub const SYNC_TRANSFORM: &str = "sync_transform";
+    /// Solve each collision and apply forces based on collision
+    pub const PHYSICS_SOLVE: &str = "phy_solve";
+    /// Sync the position variable on each body with its corresponding Transform(if it has one)
+    pub const SYNC_TRANSFORM: &str = "phy_sync_transform";
+    /// Check for raycasts and if they detect any object in their path.
+    pub const RAYCAST_DETECTION : &str = "phy_raycast_detection";
 }
 
 impl Plugin for Physics2dPlugin {
@@ -92,9 +99,7 @@ impl Plugin for Physics2dPlugin {
         let settings = self.settings.clone();
 
         // Stage order goes as follows
-        // Joints step -> Physics step -> collision detection -> solve -> more joints (1) -> sync
-        
-        // (1) joints that doesnt rely on collisions
+        // Joints step -> Physics step -> collision detection -> solve -> sync -> Raycast detection  
 
         app
             .insert_resource(settings)
@@ -102,7 +107,8 @@ impl Plugin for Physics2dPlugin {
             .add_stage_before(stage::PHYSICS_STEP, stage::JOINT_STEP,SystemStage::single_threaded())
             .add_stage_after(stage::PHYSICS_STEP, stage::COLLISION_DETECTION,SystemStage::single_threaded())
             .add_stage_after(stage::COLLISION_DETECTION, stage::PHYSICS_SOLVE,SystemStage::single_threaded())
-            .add_stage_after(stage::PHYSICS_SOLVE, stage::SYNC_TRANSFORM,SystemStage::single_threaded());
+            .add_stage_after(stage::PHYSICS_SOLVE, stage::SYNC_TRANSFORM,SystemStage::single_threaded())
+            .add_stage_after(stage::SYNC_TRANSFORM, stage::RAYCAST_DETECTION, SystemStage::single_threaded());
 
         // Add the event type
         app.add_event::<AABBCollisionEvent>();
@@ -111,13 +117,14 @@ impl Plugin for Physics2dPlugin {
         app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
             .add_system_to_stage(stage::COLLISION_DETECTION, aabb_collision_detection_system.system())
             .add_system_to_stage(stage::PHYSICS_SOLVE, aabb_solve_system.system())
-            .add_system_to_stage(stage::SYNC_TRANSFORM, sync_transform_system.system());
+            .add_system_to_stage(stage::SYNC_TRANSFORM, sync_transform_system.system())
+            .add_system_to_stage(stage::RAYCAST_DETECTION, raycast_system.system());
         // TODO Recreate the Joint systems
 
     }
 }
 
-fn get_child_shapes<'a>(shapes : &'a Query<&AABB>, children : &Children) -> Option<AABB> {
+fn get_child_shapes(shapes : &Query<&AABB>, children : &Children) -> Option<AABB> {
     for &e in children.iter() {
         if let Ok(shape) = shapes.get_component::<AABB>(e) {
             return Some(*shape);
@@ -535,5 +542,151 @@ pub fn sync_transform_system (
     }
     for (body, mut t) in query.q2_mut().iter_mut() {
         sync(body.position,body.rotation, &mut t);
+    }
+}
+
+fn raycast_system(
+    phy_set : Res<PhysicsSettings>,
+    mut query : Query<(&mut RayCast2D, &GlobalTransform)>,
+    kinematics : Query<(Entity, &KinematicBody2D, &Children)>,
+    statics : Query<(Entity, &StaticBody2D, &Children)>,
+    shapes : Query<&AABB>
+) {
+    let transform_mode = phy_set.translation_mode;
+
+    for (mut ray, global_transform) in query.iter_mut() {
+        let pos = get_pos_from_transform(global_transform, transform_mode);
+
+        let mut closest = 1.1f32;
+        let mut closest_entity = None;
+        let mut is_static = false;
+
+        for (entity, kin, children) in kinematics.iter() {
+            // Handle collision layers please thank you
+            if (kin.layer & ray.mask) == 0 {
+                continue;
+            } 
+
+            // get the collider
+            let collider = match get_child_shapes(&shapes, &children) {
+                Some(c) => c,
+                None => continue,
+            };
+
+            let coll = collide_ray_aabb(pos, ray.cast, collider, kin.position);
+
+            if let Some(f) = coll {
+                if f < closest && f > 0.0 {
+                    closest = f;
+                    closest_entity = Some(entity);
+                }
+            }
+        }
+        if ray.collide_with_static {
+            for (entity, stc, children) in statics.iter() {
+                if (stc.layer & ray.mask) == 0 {
+                    continue;
+                }
+                // Get the collider
+                let collider = match get_child_shapes(&shapes, &children) {
+                    Some(c) => c,
+                    None => continue,
+                };
+
+                let coll = collide_ray_aabb(pos, ray.cast, collider, stc.position);
+
+                if let Some(f) = coll {
+                    if f < closest && f > 0.0 {
+                        closest = f;
+                        closest_entity = Some(entity);
+                        is_static = true;
+                    }
+                }
+            }
+        }
+
+        // Combine all the calculations into 1 big pile of stuff
+        if closest > 0.0 && closest <= 1.0 && closest_entity.is_some() {
+            let collision_pos = pos + closest * ray.cast;
+
+            let coll = RayCastCollision {
+                collision_point : collision_pos,
+                entity : closest_entity.unwrap(), // closest_entity is surely some if we reach this piece of code
+                is_static : is_static,
+            };
+            ray.collision = Some(coll);
+        }
+        else {
+            ray.collision = None;
+        }
+    }
+}
+
+/// This method returns a value betweem [0.0, inf] which can be used as
+///
+/// `collision_point = ray_from + result * ray_to`
+///
+/// Do note that a collision happened across the ray only if `0 < result <= 1`
+pub fn collide_ray_aabb(
+    ray_from : Vec2, 
+    ray_cast : Vec2, 
+    aabb : AABB, 
+    aabb_pos : Vec2
+) -> Option<f32> {
+    // How this works?
+    //      https://gdbooks.gitbooks.io/3dcollisions/content/Chapter3/raycast_aabb.html
+    // tl;dr:
+    //      We treat the ray as a line, and solve for when the line intersects with the sides of the box basically
+
+    let aabb_min = aabb_pos - aabb.extents;
+    let aabb_max = aabb_pos + aabb.extents;
+
+
+    // if one of the cast parts is 0.0, make sure we are in the bounds of that axle
+    if ray_cast.x == 0.0 {
+        let ray_min = ray_from.x.min(ray_from.x + ray_cast.x);
+        let ray_max = ray_from.x.max(ray_from.x + ray_cast.x);
+
+        if !(aabb_min.x <= ray_max && aabb_max.x >= ray_min) {
+            return None; // if it doesnt collide on the X axle terminate it early
+        }
+    }
+    if ray_cast.y == 0.0 {
+        let ray_min = ray_from.y.min(ray_from.y + ray_cast.y);
+        let ray_max = ray_from.y.max(ray_from.y + ray_cast.y);
+
+        if !(aabb_min.y <= ray_max && aabb_max.y >= ray_min) {
+            return None; // if it doesnt collide on the X axle terminate it early
+        }
+    }
+
+    // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
+    // it will never collide(thus division by 0.0)
+    let xmin = if ray_cast.x != 0.0 { (aabb_min.x - ray_from.x) / ray_cast.x } else { f32::NAN };
+    let xmax = if ray_cast.x != 0.0 { (aabb_max.x - ray_from.x) / ray_cast.x } else { f32::NAN };
+    let ymin = if ray_cast.y != 0.0 { (aabb_min.y - ray_from.y) / ray_cast.y } else { f32::NAN };
+    let ymax = if ray_cast.y != 0.0 { (aabb_max.y - ray_from.y) / ray_cast.y } else { f32::NAN };
+    
+    let min = (xmin.min(xmax)).max(ymin.min(ymax));
+    let max = (xmin.max(xmax)).min(ymin.max(ymax));
+
+    if max < 0.0 || min > max {
+        None
+    }
+    else if min < 0.0 {
+        Some(max)
+    }
+    else {
+        Some(min)
+    }
+}
+
+fn get_pos_from_transform(transform : &GlobalTransform, mode : TranslationMode) -> Vec2 {
+    let t = transform.translation;
+    
+    match mode {
+        TranslationMode::XY => Vec2::new(t.x,t.y),
+        TranslationMode::XZ => Vec2::new(t.x,t.z),
+        TranslationMode::YZ => Vec2::new(t.y,t.z),
     }
 }

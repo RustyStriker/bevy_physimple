@@ -43,3 +43,8 @@ impl StaticBody2D {
 		self
 	}
 }
+impl Default for StaticBody2D {
+	fn default() -> Self {
+		Self::new()
+	}
+}

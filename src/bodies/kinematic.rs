@@ -64,8 +64,6 @@ impl KinematicBody2D {
 	/// Returns a new 'default' KinematicBody2D
 	pub fn new() -> Self {
 		KinematicBody2D {
-		    // position: Vec2::ZERO,
-		    // rotation: 0.0,
 		    linvel: Vec2::ZERO,
 		    terminal: Vec2::new(f32::INFINITY,f32::INFINITY),
 		    accumulator: Vec2::ZERO,
@@ -197,5 +195,11 @@ impl KinematicBody2D {
     /// Get ceilling normal if body is touching a ceiling
     pub fn on_ceil(&self) -> Option<Vec2> {
         self.on_ceil
+    }
+}
+
+impl Default for KinematicBody2D {
+    fn default() -> Self {
+        Self::new()
     }
 }

@@ -14,17 +14,15 @@ pub struct Sensor2D {
 	/// Generally to bodies will colide if (a.mask & b.layer) | (b.mask & a.layer) > 0
 	pub layer : u8,
 
-	pub(crate) overlapping_bodies : Box<Vec<Entity>>,
+	pub(crate) overlapping_bodies : Vec<Entity>,
 }
 
 impl Sensor2D {
 	pub fn new() -> Self {
 		Sensor2D {
-			// position : Vec2::ZERO,
-			// rotation : 0.0,
 			mask : 1,
 			layer : 1,
-			overlapping_bodies : Box::new(Vec::with_capacity(5)),
+			overlapping_bodies : Vec::with_capacity(5),
 		}
 	}
 	pub fn with_mask(mut self, mask : u8) -> Self {
@@ -42,4 +40,9 @@ impl Sensor2D {
 	pub fn iter_overlapping_bodies_mut(&mut self) -> IterMut<'_,Entity> {
 		self.overlapping_bodies.iter_mut()
 	}
+}
+impl Default for Sensor2D {
+    fn default() -> Self {
+        Self::new()
+    }
 }

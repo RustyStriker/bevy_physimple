@@ -49,7 +49,7 @@ fn setup(
 		.insert(StaticBody2D::new()
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(500.0,20.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(500.0,20.0)));
 		});
 	commands // FLOOR
 		.spawn_bundle(SpriteBundle {
@@ -62,7 +62,7 @@ fn setup(
 				.with_bounciness(0.1)
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(500.0,20.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(500.0,20.0)));
 		});
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -74,7 +74,7 @@ fn setup(
 		.insert(StaticBody2D::new()
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(20.0,500.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(20.0,500.0)));
 		});
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -86,7 +86,7 @@ fn setup(
 		.insert(StaticBody2D::new()
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(20.0,500.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(20.0,500.0)));
 		});
 
 
@@ -119,7 +119,7 @@ fn setup(
 				)
 				.insert(StartInTime { seconds : (8-k) as f64})
 				.with_children(|p| {
-					p.spawn().insert(AABB::size(Vec2::new(SCALE,SCALE)));
+					p.spawn().insert(Aabb::size(Vec2::new(SCALE,SCALE)));
 				});
 		})
 	})

@@ -54,7 +54,7 @@ fn setup(
 		.insert(StaticBody2D::new()
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(500.0,20.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(500.0,20.0)));
 		});
 	commands
 		.spawn_bundle(SpriteBundle {
@@ -65,7 +65,7 @@ fn setup(
 		})
 		.insert(StaticBody2D::new())
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(300.0,20.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(300.0,20.0)));
 		});
 	// Spawn a player for the floor(s)
 	commands
@@ -79,7 +79,7 @@ fn setup(
 			.with_terminal(Vec2::new(250.0,1000.0))
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(20.0,24.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(20.0,24.0)));
 		});
 	
 	// Spawn a wall for the player to jump on :D
@@ -92,7 +92,7 @@ fn setup(
 		})
 		.insert(StaticBody2D::new())
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(20.0,300.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(20.0,300.0)));
 		});
 
 	// Spawn a bouncy floor at the other side
@@ -108,7 +108,7 @@ fn setup(
 				.with_bounciness(1.0)
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(60.0,20.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(60.0,20.0)));
 		});
 	// Spawn a cube to bounce on
 	commands
@@ -123,7 +123,7 @@ fn setup(
 				.with_stiffness(1.0)
 		)
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(20.0,20.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(20.0,20.0)));
 		});
 	// Spawn a sensor to change color based on the sprite bundle
 
@@ -136,7 +136,7 @@ fn setup(
 		})
 		.insert(Sensor2D::new())
 		.with_children(|p| {
-			p.spawn().insert(AABB::size(Vec2::new(50.0,50.0)));
+			p.spawn().insert(Aabb::size(Vec2::new(50.0,50.0)));
 		});
 
 
@@ -159,7 +159,7 @@ fn setup(
 					.with_stiffness(0.9)
 			)
 			.with_children(|p| {
-				p.spawn().insert(AABB::size(Vec2::new(20.0,20.0)));
+				p.spawn().insert(Aabb::size(Vec2::new(20.0,20.0)));
 			});
 	});
 

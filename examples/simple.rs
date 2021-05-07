@@ -50,7 +50,7 @@ fn setup(
         )
         .insert(CharacterController::default())
         .with_children(|parent| {
-            parent.spawn().insert(AABB::size(Vec2::new(28.0,28.0)));
+            parent.spawn().insert(Aabb::size(Vec2::new(28.0,28.0)));
         }).id();
     
     // center floor
@@ -66,7 +66,7 @@ fn setup(
                 .with_layer(3)
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(600.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(600.0, 20.0)),));
         });
 
     // wall
@@ -81,7 +81,7 @@ fn setup(
         StaticBody2D::new()
     )
     .with_children(|parent| {
-        parent.spawn_bundle((AABB::size(Vec2::new(20.0, 500.0)),));
+        parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 500.0)),));
     });
     // spawn another floor
     commands
@@ -95,7 +95,7 @@ fn setup(
             StaticBody2D::new()
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(300.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(300.0, 20.0)),));
         });
 
     // yet another floor
@@ -110,7 +110,7 @@ fn setup(
             StaticBody2D::new()
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(120.0, 20.0)),));
         });
 
     // is this the last floor?
@@ -125,7 +125,7 @@ fn setup(
             StaticBody2D::new()
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(120.0, 20.0)),));
         });
 
     // dude i think there is enough floors already
@@ -140,7 +140,7 @@ fn setup(
             StaticBody2D::new()
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(120.0, 20.0)),));
         });
 
     // Spawn the cube near us
@@ -158,7 +158,7 @@ fn setup(
                 .with_bounciness(0.9) // Make it bouncy(also on walls)
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 20.0)),));
         });
 
     // spawn the cube connected to us - no longer connected as there are no joints yet
@@ -174,7 +174,7 @@ fn setup(
                 .with_mass(1.0)
         )
         .with_children(|parent| {
-            parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));
+            parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 20.0)),));
         }).id();
 
     // spawn a cube with different layers
@@ -190,7 +190,7 @@ fn setup(
             .with_mask(2)
         )
         .with_children(|p| {
-            p.spawn().insert(AABB::size(Vec2::splat(20.0)));
+            p.spawn().insert(Aabb::size(Vec2::splat(20.0)));
         });
 
     // spawn the joint between the player and the target cube

@@ -162,9 +162,9 @@ impl Plugin for Physics2dPlugin {
     }
 }
 
-fn get_child_shapes(shapes : &Query<&AABB>, children : &Children) -> Option<AABB> {
+fn get_child_shapes(shapes : &Query<&Aabb>, children : &Children) -> Option<Aabb> {
     for &e in children.iter() {
-        if let Ok(shape) = shapes.get_component::<AABB>(e) {
+        if let Ok(shape) = shapes.get_component::<Aabb>(e) {
             return Some(*shape);
         }
     }
@@ -176,7 +176,7 @@ mod aabb_collision_tests {
     use super::*;
     #[test]
     fn xpen_left() {
-        let aabb = AABB::new(Vec2::new(10.0,10.0));
+        let aabb = Aabb::new(Vec2::new(10.0,10.0));
 
         let res = get_aabb_collision(
             aabb,
@@ -188,7 +188,7 @@ mod aabb_collision_tests {
     }
     #[test]
     fn ypen_up() {
-        let aabb = AABB::new(Vec2::new(10.0,10.0));
+        let aabb = Aabb::new(Vec2::new(10.0,10.0));
 
         let res = get_aabb_collision(
             aabb, 
@@ -201,7 +201,7 @@ mod aabb_collision_tests {
     }
 }
 /// Checks for collision between 2 AABB objects and returns the penetration(of a in b) if existing
-fn get_aabb_collision(a : AABB, b : AABB, a_pos : Vec2, b_pos : Vec2) -> Option<Vec2> {
+fn get_aabb_collision(a : Aabb, b : Aabb, a_pos : Vec2, b_pos : Vec2) -> Option<Vec2> {
     let amin = a_pos - a.extents;
     let amax = a_pos + a.extents;
     let bmin = b_pos - b.extents;
@@ -220,16 +220,22 @@ fn get_aabb_collision(a : AABB, b : AABB, a_pos : Vec2, b_pos : Vec2) -> Option<
 
         let min = xpen_left.min(xpen_right).min(ypen_up).min(ypen_down);
 
-        if min == xpen_left {
+        let eq = move |a : f32| {
+            const EPSILON : f32 = 0.00001;
+            (a - min).abs() <= EPSILON
+        };
+
+
+        if eq(xpen_left) {
             Some(Vec2::new(-xpen_left,0.0))
         }
-        else if min == xpen_right {
+        else if eq(xpen_right) {
             Some(Vec2::new(xpen_right,0.0))
         }
-        else if min == ypen_up {
+        else if eq(ypen_up) {
             Some(Vec2::new(0.0,ypen_up))
         }
-        else if min == ypen_down {
+        else if eq(ypen_down) {
             Some(Vec2::new(0.0,-ypen_down))
         }
         else {
@@ -246,7 +252,7 @@ fn aabb_collision_detection_system (
     q_kinematic : Query<(Entity, &KinematicBody2D, &GlobalTransform, &Children)>,
     q_static : Query<(Entity, &StaticBody2D, &GlobalTransform, &Children)>,
     mut q_sensors : Query<(&mut Sensor2D, &GlobalTransform, &Children)>,
-    shapes : Query<&AABB>,
+    shapes : Query<&Aabb>,
     mut writer : EventWriter<AABBCollisionEvent>,
 ) {
     let trans_mode = phy_sets.transform_mode;
@@ -254,7 +260,7 @@ fn aabb_collision_detection_system (
     // Clear all the sensors overlapping parts
     q_sensors.iter_mut().for_each(|(mut s,_,_)| s.overlapping_bodies.clear());
     
-    let mut passed : Vec<(Entity, &KinematicBody2D, Vec2, AABB)> = Vec::new();
+    let mut passed : Vec<(Entity, &KinematicBody2D, Vec2, Aabb)> = Vec::new();
 
     // Go through all the kinematic bodies
     for (entity, body, trans, children) in q_kinematic.iter() {
@@ -311,7 +317,7 @@ fn aabb_collision_detection_system (
             let sen_pos = trans_mode.get_position(&sen_trans);
 
             // Check for collision here
-            if let Some(_) = get_aabb_collision(collider, sc, position, sen_pos) {
+            if get_aabb_collision(collider, sc, position, sen_pos).is_some() {
                 sensor.overlapping_bodies.push(entity);
             }
         }
@@ -348,12 +354,9 @@ fn aabb_solve_system (
 ) {
     let trans_mode = phys_set.transform_mode;
     let mut add_position = move |entity : Entity, amount : Vec2 | {
-        match transforms.get_component_mut::<GlobalTransform>(entity) {
-            Ok(mut t) => {
-                let new_pos = trans_mode.get_position(&t) + amount;
-                trans_mode.set_position(&mut t, new_pos);
-            },
-            Err(_) => { /* Maybe print an error? */},
+        if let Ok(mut t) = transforms.get_component_mut::<GlobalTransform>(entity) {
+            let new_pos = trans_mode.get_position(&t) + amount;
+            trans_mode.set_position(&mut t, new_pos);
         }
     };
 
@@ -419,9 +422,7 @@ fn aabb_solve_system (
 
             let impulse = rv.project(normal);
 
-            // explicit drop to convey they are not usable anymore because we borrow_mut bodies just below 
-            drop(a);
-            drop(b);
+            // a & b refrences are no longer valid!
             match bodies.get_component_mut::<KinematicBody2D>(coll.entity_b) {
                 Ok(mut b) => {
                     let stiff = b.stiffness;
@@ -566,7 +567,7 @@ fn raycast_system(
     mut query : Query<(&mut RayCast2D, &GlobalTransform)>,
     kinematics : Query<(Entity, &KinematicBody2D, &GlobalTransform, &Children)>,
     statics : Query<(Entity, &StaticBody2D, &GlobalTransform, &Children)>,
-    shapes : Query<&AABB>
+    shapes : Query<&Aabb>
 ) {
     let trans_mode = phy_set.transform_mode;
 
@@ -626,15 +627,20 @@ fn raycast_system(
         }
 
         // Combine all the calculations into 1 big pile of stuff
-        if closest > 0.0 && closest <= 1.0 && closest_entity.is_some() {
-            let collision_pos = pos + closest * ray.cast;
+        if closest > 0.0 && closest <= 1.0 {
+            if let Some(ce) = closest_entity {
+                let collision_pos = pos + closest * ray.cast;
 
-            let coll = RayCastCollision {
-                collision_point : collision_pos,
-                entity : closest_entity.unwrap(), // closest_entity is surely some if we reach this piece of code
-                is_static : is_static,
-            };
-            ray.collision = Some(coll);
+                let coll = RayCastCollision {
+                    collision_point : collision_pos,
+                    entity : ce, // closest_entity is surely some if we reach this piece of code
+                    is_static,
+                };
+                ray.collision = Some(coll);
+            } 
+            else {
+                ray.collision = None;
+            }
         }
         else {
             ray.collision = None;
@@ -650,7 +656,7 @@ fn raycast_system(
 pub fn collide_ray_aabb(
     ray_from : Vec2, 
     ray_cast : Vec2, 
-    aabb : AABB, 
+    aabb : Aabb, 
     aabb_pos : Vec2
 ) -> Option<f32> {
     // How this works?

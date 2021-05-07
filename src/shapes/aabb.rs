@@ -2,31 +2,38 @@ use bevy::prelude::*;
 use serde::{Serialize, Deserialize};
 
 pub trait ToAABB {
-	fn aabb(&self) -> AABB;
+	fn aabb(&self) -> Aabb;
 }
 
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
-pub struct AABB {
+pub struct Aabb {
 	pub(crate) extents : Vec2
 }
-impl AABB {
+impl Aabb {
 	/// Creates a new AABB from extents(0.5 * absolute size)
-	pub fn new(extents : Vec2) -> AABB {
-		AABB {
+	pub fn new(extents : Vec2) -> Aabb {
+		Aabb {
 			extents : extents.abs()
 		}
 	}
 	/// Creates a new AABB object from absolute size
-	pub fn size(size : Vec2) -> AABB {
-		AABB {
+	pub fn size(size : Vec2) -> Aabb {
+		Aabb {
 			extents : size.abs() * 0.5
 		}
 	}
 }
-impl ToAABB for AABB {
-	fn aabb(&self) -> AABB {
+impl ToAABB for Aabb {
+	fn aabb(&self) -> Aabb {
 		*self
 	}
+}
+impl Default for Aabb {
+    fn default() -> Self {
+        Aabb {
+			extents : Vec2::ZERO,
+		}
+    }
 }
 
 /// Temp struct for aabb collision event

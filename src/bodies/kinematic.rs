@@ -4,11 +4,6 @@ use serde::{Deserialize, Serialize};
 /// KinematicBody for 2D physics, for moving objects
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct KinematicBody2D {
-	/// Current position
-	pub position : Vec2,
-	/// Rotation in radians
-	pub rotation : f32,
-
 	/// Linear velocity
 	pub linvel : Vec2,
 
@@ -69,8 +64,8 @@ impl KinematicBody2D {
 	/// Returns a new 'default' KinematicBody2D
 	pub fn new() -> Self {
 		KinematicBody2D {
-		    position: Vec2::ZERO,
-		    rotation: 0.0,
+		    // position: Vec2::ZERO,
+		    // rotation: 0.0,
 		    linvel: Vec2::ZERO,
 		    terminal: Vec2::new(f32::INFINITY,f32::INFINITY),
 		    accumulator: Vec2::ZERO,
@@ -90,16 +85,6 @@ impl KinematicBody2D {
 		    on_ceil: None,
 		}
 	}
-	/// Current position
-	pub fn with_position(mut self, position : Vec2) -> Self {
-		self.position = position;
-		self
-	}
-	/// Rotation in radians
-    pub fn with_rotation(mut self, rotation: f32) -> Self {
-        self.rotation = rotation;
-        self
-    }
 	/// Linear velocity
     pub fn with_linear_velocity(mut self, linvel: Vec2) -> Self {
         self.linvel = linvel;

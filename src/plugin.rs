@@ -35,8 +35,7 @@ pub struct PhysicsSettings {
 
     /// Gravity direction and strength(up direction is opposite to gravity)
     pub gravity : Vec2,
-    pub translation_mode : TranslationMode,
-    pub rotatoin_mode : RotationMode,
+    pub transform_mode : TransformMode,
     /// What angles are considered floor/wall/ceilling
     ///
     /// a number between 0-1 representing 'normal.dot(-gravity)'
@@ -53,27 +52,70 @@ impl Default for PhysicsSettings {
             friction_normal : Vec2::Y,
             ang_friction : PI,
             gravity : Vec2::new(0.0,-540.0),
-            translation_mode : TranslationMode::XY,
-            rotatoin_mode : RotationMode::Z,
+            transform_mode : TransformMode::XY,
             floor_angle : 0.7,
         }
     }
 }
 
-/// The plane on which to translate the 2d position into 3d coordinates.
+/// Which plane acts as the XY plane, rotation axis is the perpendicular axis
 #[derive(Debug, Clone, Copy)]
-pub enum TranslationMode {
+pub enum TransformMode {
     XY,
     XZ,
     YZ,
 }
+impl TransformMode {
+    /// Returns the position from a given `&GlobalTransform` and `TransformMode`
+    pub fn get_position(&self, transform : &GlobalTransform) -> Vec2 {
+        let t = transform.translation;
+        
+        match self {
+            TransformMode::XY => Vec2::new(t.x,t.y),
+            TransformMode::XZ => Vec2::new(t.x,t.z),
+            TransformMode::YZ => Vec2::new(t.y,t.z),
+        }
+    }
+    /// Returns the rotation from a given `&GlobalTransform` and `TransformMode`
+    pub fn get_rotation(&self, transform : &GlobalTransform) -> f32 {
+        let t = transform.rotation;
+        
+        match self {
+            TransformMode::XY => t.z,
+            TransformMode::XZ => t.y,
+            TransformMode::YZ => t.x,
+        }
+    }
+    /// Returns the scale from a given `&GlobalTransform` and `TransformMode`
+    pub fn get_scale(&self, transform : &GlobalTransform) -> Vec2 {
+        let t = transform.scale;
 
-/// The axis on which to rotate the 2d rotation into a 3d quaternion.
-#[derive(Debug, Clone, Copy)]
-pub enum RotationMode {
-    X,
-    Y,
-    Z,
+        match self {
+            TransformMode::XY => Vec2::new(t.x,t.y),
+            TransformMode::XZ => Vec2::new(t.x,t.z),
+            TransformMode::YZ => Vec2::new(t.y,t.z),
+        }
+    }
+    /// Sets position based on `TransformMode`
+    pub fn set_position(&self, transform : &mut GlobalTransform, pos : Vec2) {
+        let t = transform.translation;
+
+        transform.translation = match self {
+            TransformMode::XY => Vec3::new(pos.x,pos.y,t.z),
+            TransformMode::XZ => Vec3::new(pos.x,t.y, pos.y),
+            TransformMode::YZ => Vec3::new(t.x, pos.x, pos.y),
+        };
+    }
+
+    /// Sets rotation based on `TransformMode` (erase previus rotation)
+    pub fn set_rotation(&self, transform : &mut GlobalTransform, rot : f32) {
+        // TODO make it persist the other axis rotations, i dont understand quaternions
+        transform.rotation = match self {
+            TransformMode::XY => Quat::from_rotation_z(rot),
+            TransformMode::XZ => Quat::from_rotation_y(rot),
+            TransformMode::YZ => Quat::from_rotation_x(rot),
+        }
+    }
 }
 
 /// labels for the physics stages
@@ -88,8 +130,6 @@ pub mod stage {
     pub const COLLISION_DETECTION: &str = "phy_collision_detection";
     /// Solve each collision and apply forces based on collision
     pub const PHYSICS_SOLVE: &str = "phy_solve";
-    /// Sync the position variable on each body with its corresponding Transform(if it has one)
-    pub const SYNC_TRANSFORM: &str = "phy_sync_transform";
     /// Check for raycasts and if they detect any object in their path.
     pub const RAYCAST_DETECTION : &str = "phy_raycast_detection";
 }
@@ -107,8 +147,7 @@ impl Plugin for Physics2dPlugin {
             .add_stage_before(stage::PHYSICS_STEP, stage::JOINT_STEP,SystemStage::single_threaded())
             .add_stage_after(stage::PHYSICS_STEP, stage::COLLISION_DETECTION,SystemStage::single_threaded())
             .add_stage_after(stage::COLLISION_DETECTION, stage::PHYSICS_SOLVE,SystemStage::single_threaded())
-            .add_stage_after(stage::PHYSICS_SOLVE, stage::SYNC_TRANSFORM,SystemStage::single_threaded())
-            .add_stage_after(stage::SYNC_TRANSFORM, stage::RAYCAST_DETECTION, SystemStage::single_threaded());
+            .add_stage_after(stage::PHYSICS_SOLVE, stage::RAYCAST_DETECTION, SystemStage::single_threaded());
 
         // Add the event type
         app.add_event::<AABBCollisionEvent>();
@@ -117,7 +156,6 @@ impl Plugin for Physics2dPlugin {
         app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
             .add_system_to_stage(stage::COLLISION_DETECTION, aabb_collision_detection_system.system())
             .add_system_to_stage(stage::PHYSICS_SOLVE, aabb_solve_system.system())
-            .add_system_to_stage(stage::SYNC_TRANSFORM, sync_transform_system.system())
             .add_system_to_stage(stage::RAYCAST_DETECTION, raycast_system.system());
         // TODO Recreate the Joint systems
 
@@ -204,28 +242,34 @@ fn get_aabb_collision(a : AABB, b : AABB, a_pos : Vec2, b_pos : Vec2) -> Option<
 }
 
 fn aabb_collision_detection_system (
-    // mut commands : Commands,
-    q_kinematic : Query<(Entity, &KinematicBody2D, &Children)>,
-    q_static : Query<(Entity, &StaticBody2D, &Children)>,
-    mut q_sensors : Query<(&mut Sensor2D, &Children)>,
+    phy_sets : Res<PhysicsSettings>,
+    q_kinematic : Query<(Entity, &KinematicBody2D, &GlobalTransform, &Children)>,
+    q_static : Query<(Entity, &StaticBody2D, &GlobalTransform, &Children)>,
+    mut q_sensors : Query<(&mut Sensor2D, &GlobalTransform, &Children)>,
     shapes : Query<&AABB>,
     mut writer : EventWriter<AABBCollisionEvent>,
 ) {
+    let trans_mode = phy_sets.transform_mode;
+
     // Clear all the sensors overlapping parts
-    q_sensors.iter_mut().for_each(|(mut s,_)| s.overlapping_bodies.clear());
+    q_sensors.iter_mut().for_each(|(mut s,_,_)| s.overlapping_bodies.clear());
     
-    let mut passed : Vec<(Entity, &KinematicBody2D, AABB)> = Vec::new();
+    let mut passed : Vec<(Entity, &KinematicBody2D, Vec2, AABB)> = Vec::new();
 
     // Go through all the kinematic bodies
-    for (entity, body, children) in q_kinematic.iter() {
+    for (entity, body, trans, children) in q_kinematic.iter() {
+        // let body_position = trans_mode.get_position()
+
         // Gather all the shape children(colliders...)
         let collider = match get_child_shapes(&shapes, &children) {
             Some(c) => c,
             None => continue,
         };
         
+        let position = trans_mode.get_position(&trans);
+
         // Go through the static bodies and check for collisions
-        for (se, sb, children) in q_static.iter() {
+        for (se, sb, sb_trans, children) in q_static.iter() {
             // Check for masks/layers
             if (body.mask & sb.layer | body.layer & sb.mask) == 0 {
                 continue;
@@ -235,8 +279,11 @@ fn aabb_collision_detection_system (
                 Some(c) => c,
                 None => continue,
             };
+
+            let sb_pos = trans_mode.get_position(&sb_trans);
+
             // Check for collision here
-            if let Some(pen) = get_aabb_collision( collider,  sc,  body.position,  sb.position) {
+            if let Some(pen) = get_aabb_collision( collider,  sc,  position,  sb_pos) {
                 writer.send(
                     AABBCollisionEvent {
                         entity_a : entity,
@@ -250,7 +297,7 @@ fn aabb_collision_detection_system (
         // Go through sensors to know who is inside the sensor
         // we iter_mut because we want to do sensor.overlapping_bodies.push(entity) for each entity
         // that is overlapping with the sensor
-        for (mut sensor, children) in q_sensors.iter_mut() {
+        for (mut sensor, sen_trans, children) in q_sensors.iter_mut() {
             // Check for masks/layers
             if (body.mask & sensor.layer | body.layer & sensor.mask) == 0 {
                 continue;
@@ -260,20 +307,23 @@ fn aabb_collision_detection_system (
                 Some(c) => c,
                 None => continue,
             };
+
+            let sen_pos = trans_mode.get_position(&sen_trans);
+
             // Check for collision here
-            if let Some(_) = get_aabb_collision(collider, sc, body.position, sensor.position) {
+            if let Some(_) = get_aabb_collision(collider, sc, position, sen_pos) {
                 sensor.overlapping_bodies.push(entity);
             }
         }
         // Go through all the kinematic bodies we passed already
-        for (ke, ob, oc) in passed.iter() {
+        for (ke, ob, ob_pos, oc) in passed.iter() {
             // Check for masks/layers
             if (body.mask & ob.layer | body.layer & ob.mask) == 0 {
                 continue;
             }
 
             // check for collisions here...
-            if let Some(pen) = get_aabb_collision( collider,  *oc,  body.position,  ob.position) {
+            if let Some(pen) = get_aabb_collision( collider,  *oc,  position,  *ob_pos) {
                 writer.send(
                     AABBCollisionEvent {
                         entity_a : entity,
@@ -285,16 +335,27 @@ fn aabb_collision_detection_system (
             }
         }
         
-        passed.push((entity, body, collider));
+        passed.push((entity, body, position, collider));
     }
 }
 
 fn aabb_solve_system (
     mut collisions : EventReader<AABBCollisionEvent>,
     mut bodies : Query<&mut KinematicBody2D>,
+    mut transforms : Query<&mut GlobalTransform>,
     staticbodies : Query<&StaticBody2D>,
     phys_set : Res<PhysicsSettings>,
 ) {
+    let trans_mode = phys_set.transform_mode;
+    let mut add_position = move |entity : Entity, amount : Vec2 | {
+        match transforms.get_component_mut::<GlobalTransform>(entity) {
+            Ok(mut t) => {
+                let new_pos = trans_mode.get_position(&t) + amount;
+                trans_mode.set_position(&mut t, new_pos);
+            },
+            Err(_) => { /* Maybe print an error? */},
+        }
+    };
 
 
     for coll in collisions.iter() {
@@ -330,7 +391,8 @@ fn aabb_solve_system (
                 let linvel = slide - project * with_sb.bounciness.max(a.bounciness) * a.stiffness;
 
                 a.linvel = linvel;
-                a.position += coll.penetration;
+                // Update position
+                add_position(coll.entity_a, coll.penetration);
             }
         }
         else {
@@ -367,8 +429,9 @@ fn aabb_solve_system (
                     check_on_stuff(&mut b, -normal, &phys_set);
 
                     if b.linvel.signum() != -coll.penetration.signum() {
-                        b.position -= coll.penetration;
                         b.linvel = b.linvel.slide(normal);
+                        // Update the position
+                        add_position(coll.entity_b, -coll.penetration);
                     }
                 },
                 Err(_) => {
@@ -382,8 +445,9 @@ fn aabb_solve_system (
                     a.dynamic_acc += impulse * stiff;
                     check_on_stuff(&mut a, -normal, &phys_set);
                     if a.linvel.signum() != coll.penetration.signum() {
-                        a.position += coll.penetration;
                         a.linvel = a.linvel.slide(normal);
+                        // Update position
+                        add_position(coll.entity_a, coll.penetration);
                     }
                     check_on_stuff(&mut a, normal, &phys_set);
                 },
@@ -416,12 +480,13 @@ fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2, phy_set : &Physics
 fn physics_step_system (
     time : Res<Time>,
     physics_sets : Res<PhysicsSettings>,
-    mut query : Query<&mut KinematicBody2D>,
+    mut query : Query<(&mut KinematicBody2D, &mut GlobalTransform)>,
 ) {
     let delta = time.delta_seconds();
     let gravity = physics_sets.gravity;
+    let trans_mode = physics_sets.transform_mode;
 
-    for mut body in query.iter_mut() {
+    for (mut body, mut transform) in query.iter_mut() {
         if !body.active {
             continue;
         }
@@ -456,11 +521,11 @@ fn physics_step_system (
             }
         }
         // Apply movement and rotation
-        let position = body.position + body.linvel * delta;
-        body.position = position;
+        let position = trans_mode.get_position(&transform) + body.linvel * delta;
+        trans_mode.set_position(&mut transform, position);
 
-        let rotation = body.rotation + body.angvel * delta;
-        body.rotation = rotation;
+        let rotation = trans_mode.get_rotation(&transform) + body.angvel * delta;
+        trans_mode.set_rotation(&mut transform, rotation);
 
         // Apply friction
         if !accelerating {
@@ -496,72 +561,23 @@ fn physics_step_system (
     }
 }
 
-pub fn sync_transform_system (
-    phys_set : Res<PhysicsSettings>,
-    mut query : QuerySet<(
-        Query<(&Sensor2D, &mut Transform)>,
-        Query<(&KinematicBody2D, &mut Transform)>,
-        Query<(&StaticBody2D, &mut Transform)>
-    )>
-) {
-    let translation_mode = phys_set.translation_mode;
-    let rotation_mode = phys_set.rotatoin_mode;
-
-    let sync = move | pos : Vec2, rot : f32, transform : &mut Transform | {
-        match translation_mode {
-            TranslationMode::XY => {
-                transform.translation.x = pos.x;
-                transform.translation.y = pos.y;
-            }
-            TranslationMode::XZ => {
-                transform.translation.x = pos.x;
-                transform.translation.z = pos.y;
-            }
-            TranslationMode::YZ => {
-                transform.translation.y = pos.x;
-                transform.translation.z = pos.y;
-            }
-        }
-        match rotation_mode {
-            RotationMode::X => {
-                transform.rotation = Quat::from_rotation_x(rot);
-            }
-            RotationMode::Y => {
-                transform.rotation = Quat::from_rotation_y(rot);
-            }
-            RotationMode::Z => {
-                transform.rotation = Quat::from_rotation_z(rot);
-            }
-        }
-    };
-    for (body, mut t) in query.q0_mut().iter_mut() {
-        sync(body.position,body.rotation, &mut t);
-    }
-    for (body, mut t) in query.q1_mut().iter_mut() {
-        sync(body.position,body.rotation, &mut t);
-    }
-    for (body, mut t) in query.q2_mut().iter_mut() {
-        sync(body.position,body.rotation, &mut t);
-    }
-}
-
 fn raycast_system(
     phy_set : Res<PhysicsSettings>,
     mut query : Query<(&mut RayCast2D, &GlobalTransform)>,
-    kinematics : Query<(Entity, &KinematicBody2D, &Children)>,
-    statics : Query<(Entity, &StaticBody2D, &Children)>,
+    kinematics : Query<(Entity, &KinematicBody2D, &GlobalTransform, &Children)>,
+    statics : Query<(Entity, &StaticBody2D, &GlobalTransform, &Children)>,
     shapes : Query<&AABB>
 ) {
-    let transform_mode = phy_set.translation_mode;
+    let trans_mode = phy_set.transform_mode;
 
     for (mut ray, global_transform) in query.iter_mut() {
-        let pos = get_pos_from_transform(global_transform, transform_mode);
+        let pos = trans_mode.get_position(&global_transform) + ray.offset;
 
         let mut closest = 1.1f32;
         let mut closest_entity = None;
         let mut is_static = false;
 
-        for (entity, kin, children) in kinematics.iter() {
+        for (entity, kin, kin_trans, children) in kinematics.iter() {
             // Handle collision layers please thank you
             if (kin.layer & ray.mask) == 0 {
                 continue;
@@ -572,8 +588,10 @@ fn raycast_system(
                 Some(c) => c,
                 None => continue,
             };
+            
+            let kin_pos = trans_mode.get_position(&kin_trans);
 
-            let coll = collide_ray_aabb(pos, ray.cast, collider, kin.position);
+            let coll = collide_ray_aabb(pos, ray.cast, collider, kin_pos);
 
             if let Some(f) = coll {
                 if f < closest && f > 0.0 {
@@ -583,7 +601,7 @@ fn raycast_system(
             }
         }
         if ray.collide_with_static {
-            for (entity, stc, children) in statics.iter() {
+            for (entity, stc, stc_trans, children) in statics.iter() {
                 if (stc.layer & ray.mask) == 0 {
                     continue;
                 }
@@ -593,7 +611,9 @@ fn raycast_system(
                     None => continue,
                 };
 
-                let coll = collide_ray_aabb(pos, ray.cast, collider, stc.position);
+                let stc_pos = trans_mode.get_position(&stc_trans);
+
+                let coll = collide_ray_aabb(pos, ray.cast, collider, stc_pos);
 
                 if let Some(f) = coll {
                     if f < closest && f > 0.0 {
@@ -682,15 +702,5 @@ pub fn collide_ray_aabb(
     }
     else {
         Some(min)
-    }
-}
-
-fn get_pos_from_transform(transform : &GlobalTransform, mode : TranslationMode) -> Vec2 {
-    let t = transform.translation;
-    
-    match mode {
-        TranslationMode::XY => Vec2::new(t.x,t.y),
-        TranslationMode::XZ => Vec2::new(t.x,t.z),
-        TranslationMode::YZ => Vec2::new(t.y,t.z),
     }
 }

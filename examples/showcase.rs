@@ -48,10 +48,10 @@ fn setup(
 		.spawn_bundle(SpriteBundle {
 			sprite : Sprite::new(Vec2::new(500.0,20.0)),
 			material : black.clone(),
+			transform : Transform::from_xyz(0.0,-250.0,0.0),
 			..Default::default()
 		})
 		.insert(StaticBody2D::new()
-			.with_position(Vec2::new(0.0, -250.0))
 		)
 		.with_children(|p| {
 			p.spawn().insert(AABB::size(Vec2::new(500.0,20.0)));
@@ -60,11 +60,10 @@ fn setup(
 		.spawn_bundle(SpriteBundle {
 			sprite : Sprite::new(Vec2::new(300.0,20.0)),
 			material : black.clone(),
+			transform : Transform::from_xyz(300.0,-150.0,0.0),
 			..Default::default()
 		})
-		.insert(StaticBody2D::new()
-			.with_position(Vec2::new(300.0,-150.0))
-		)
+		.insert(StaticBody2D::new())
 		.with_children(|p| {
 			p.spawn().insert(AABB::size(Vec2::new(300.0,20.0)));
 		});
@@ -77,7 +76,6 @@ fn setup(
 		})
 		.insert(CharacterController::default())
 		.insert(KinematicBody2D::new()
-			.with_position(Vec2::new(0.0, 0.0))
 			.with_terminal(Vec2::new(250.0,1000.0))
 		)
 		.with_children(|p| {
@@ -89,12 +87,10 @@ fn setup(
 		.spawn_bundle(SpriteBundle {
 			sprite : Sprite::new(Vec2::new(20.0, 300.0)),
 			material : black.clone(),
+			transform : Transform::from_xyz(440.0,0.0,0.0),
 			..Default::default()
 		})
-		.insert(
-			StaticBody2D::new()
-				.with_position(Vec2::new(440.0,0.0))
-		)
+		.insert(StaticBody2D::new())
 		.with_children(|p| {
 			p.spawn().insert(AABB::size(Vec2::new(20.0,300.0)));
 		});
@@ -104,11 +100,11 @@ fn setup(
 		.spawn_bundle(SpriteBundle {
 			sprite : Sprite::new(Vec2::new(60.0,20.0)),
 			material : materials.add(Color::PURPLE.into()),
+			transform : Transform::from_xyz(-400.0,-100.0,0.0),
 			..Default::default()
 		})
 		.insert(
 			StaticBody2D::new()
-				.with_position(Vec2::new(-400.0,-100.0))
 				.with_bounciness(1.0)
 		)
 		.with_children(|p| {
@@ -119,12 +115,12 @@ fn setup(
 		.spawn_bundle(SpriteBundle {
 			sprite : Sprite::new(Vec2::new(20.0,20.0)),
 			material : materials.add(Color::MIDNIGHT_BLUE.into()),
+			transform : Transform::from_xyz(-400.0,100.0,0.0),
 			..Default::default()
 		})
 		.insert(
 			KinematicBody2D::new()
 				.with_stiffness(1.0)
-				.with_position(Vec2::new(-400.0, 100.0))
 		)
 		.with_children(|p| {
 			p.spawn().insert(AABB::size(Vec2::new(20.0,20.0)));
@@ -135,12 +131,10 @@ fn setup(
 		.spawn_bundle(SpriteBundle {
 			sprite : Sprite::new(Vec2::new(50.0,50.0)),
 			material : materials.add(Color::rgba(1.0,0.0,0.0,0.5).into()),
+			transform : Transform::from_xyz(-400.0,80.0,0.0 ),
 			..Default::default()
 		})
-		.insert(
-			Sensor2D::new()
-				.with_position(Vec2::new(-400.0,80.0))
-		)
+		.insert(Sensor2D::new())
 		.with_children(|p| {
 			p.spawn().insert(AABB::size(Vec2::new(50.0,50.0)));
 		});
@@ -157,11 +151,11 @@ fn setup(
 			.spawn_bundle(SpriteBundle {
 				sprite : Sprite::new(Vec2::new(20.0,20.0)),
 				material : color,
+				transform : Transform::from_xyz(350.0 + i as f32, i as f32 * 60.0, 0.0),
 				..Default::default()
 			})
 			.insert(
 				KinematicBody2D::new()
-					.with_position(Vec2::new(350.0 + i as f32, i as f32 * 60.0))
 					.with_stiffness(0.9)
 			)
 			.with_children(|p| {

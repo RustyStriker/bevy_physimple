@@ -2,6 +2,9 @@ use bevy::prelude::*;
 
 /// Raycasts work in 
 pub struct RayCast2D {
+	/// Offset from the Transform object
+	pub offset : Vec2,
+
 	/// The Direction the ray shoots and the length
 	pub cast : Vec2,
 
@@ -29,11 +32,16 @@ impl RayCast2D {
 	/// cast - the direction(and length) the ray shoots
 	pub fn new(cast : Vec2) -> Self {
 		RayCast2D {
+			offset : Vec2::ZERO,
 			cast,
 			mask : 1, 
 			collide_with_static : true,
 			collision : None
 		}
+	}
+	pub fn with_offset(mut self, offset : Vec2) -> Self {
+		self.offset = offset;
+		self
 	}
 	/// Mask of the ray, will check only for objects by `self.mask & object.layer > 0`
 	pub fn with_mask(mut self, mask : u8) -> Self {

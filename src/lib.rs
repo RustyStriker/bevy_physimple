@@ -101,8 +101,7 @@ pub mod prelude {
     pub use crate::plugin::{
         PhysicsSettings,
         Physics2dPlugin, 
-        RotationMode, 
-        TranslationMode,
+        TransformMode,
     };
     // TODO Maybe restrict it a bit more?
     pub use crate::bodies::*;

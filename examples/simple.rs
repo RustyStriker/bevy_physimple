@@ -44,8 +44,7 @@ fn setup(
         })
         .insert(
             KinematicBody2D::new()
-                .with_position(Vec2::new(0.0, 0.0))
-                .with_terminal(Vec2::new(700.0, 1000.0))
+                .with_terminal(Vec2::new(400.0, 1000.0))
                 .with_mask(3)
                 .with_friction(1.5)
         )
@@ -59,11 +58,11 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(600.0,20.0)),
             material: black.clone(),
+            transform : Transform::from_xyz(150.0,-200.0,0.0),
             ..Default::default()
         })
         .insert(
             StaticBody2D::new()
-                .with_position(Vec2::new(150.0, -200.0))
                 .with_layer(3)
         )
         .with_children(|parent| {
@@ -75,11 +74,11 @@ fn setup(
     .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(20.0,500.0)),
             material: black.clone(),
+            transform : Transform::from_xyz(450.0,0.0,0.0),
             ..Default::default()
     })
     .insert(
         StaticBody2D::new()
-        .with_position(Vec2::new(450.0, 0.0))
     )
     .with_children(|parent| {
         parent.spawn_bundle((AABB::size(Vec2::new(20.0, 500.0)),));
@@ -89,11 +88,11 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(300.0,20.0)),
             material: black.clone(),
+            transform : Transform::from_xyz(-300.0,-190.0,0.0),
             ..Default::default()
         })
         .insert(
             StaticBody2D::new()
-                .with_position(Vec2::new(-300.0, -190.0)),
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(300.0, 20.0)),));
@@ -104,11 +103,11 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(120.0,20.0)),
             material: black.clone(),
+            transform : Transform::from_xyz(360.0,-50.0,0.0),
             ..Default::default()
         })
         .insert(
             StaticBody2D::new()
-                .with_position(Vec2::new(360.0, -50.0)),
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
@@ -119,11 +118,11 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(120.0,20.0)),
             material: black.clone(),
+            transform : Transform::from_xyz(120.0,-10.0,0.0),
             ..Default::default()
         })
         .insert(
             StaticBody2D::new()
-                .with_position(Vec2::new(120.0, -10.0)),
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
@@ -134,11 +133,11 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(120.0,20.0)),
             material: black.clone(),
+            transform : Transform::from_xyz(-120.0,20.0,0.0),
             ..Default::default()
         })
         .insert(
             StaticBody2D::new()
-                .with_position(Vec2::new(-120.0, 20.0)),
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(120.0, 20.0)),));
@@ -149,12 +148,12 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(20.0)),
             material: another_color.clone(),
+            transform : Transform::from_xyz(30.0,60.0,0.0),
             ..Default::default()
         })
         .insert(
             KinematicBody2D::new()
                 .with_mass(2.0)
-                .with_position(Vec2::new(30.0, 60.0))
                 .with_friction(0.1) // Basically almost no friction, should be fun :D
                 .with_bounciness(0.9) // Make it bouncy(also on walls)
         )
@@ -167,12 +166,12 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(20.0)),
             material: another_color.clone(),
+            transform : Transform::from_xyz(100.0,100.0,0.0),
             ..Default::default()
         })
         .insert(
             KinematicBody2D::new()
                 .with_mass(1.0)
-                .with_position(Vec2::new(100.0, 100.0)),
         )
         .with_children(|parent| {
             parent.spawn_bundle((AABB::size(Vec2::new(20.0, 20.0)),));

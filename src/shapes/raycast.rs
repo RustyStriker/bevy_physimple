@@ -1,6 +1,8 @@
 use bevy::prelude::*;
+use serde::{Serialize, Deserialize};
 
 /// Raycasts work in 
+#[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct RayCast2D {
 	/// Offset from the Transform object
 	pub offset : Vec2,
@@ -14,10 +16,11 @@ pub struct RayCast2D {
 	/// Whether to try and collide with static objects as well(defaults to true)
 	pub collide_with_static : bool,
 
+	#[serde(skip_serializing, skip_deserializing)]
 	pub(crate) collision : Option<RayCastCollision>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct RayCastCollision {
 	pub collision_point : Vec2,
 	pub entity : Entity,

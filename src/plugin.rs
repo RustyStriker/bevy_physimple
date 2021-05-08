@@ -637,7 +637,7 @@ fn raycast_system(
                     is_static,
                 };
                 ray.collision = Some(coll);
-            } 
+            }
             else {
                 ray.collision = None;
             }

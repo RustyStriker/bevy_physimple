@@ -32,7 +32,6 @@ impl Default for Circle {
 }
 impl Shape for Circle {
     fn to_aabb(&self, transform : Transform2D) -> Aabb {
-		// TODO Should we rotate the scale values as well?
         Aabb {
 			extents : transform.scale * self.radius,
 			position : transform.translation + self.offset,
@@ -55,7 +54,7 @@ impl Shape for Circle {
 		let min = prem.min(postm) - scaled_radius; // Just subtract the radius from each element
 		let max = prem.max(postm) + scaled_radius; // Just add the radius for each element
 
-		let position = (min + max) / 2.0;
+		let position = (min + max) * 0.5;
 		let extents = (max - position).abs();
 
 		Aabb {
@@ -75,7 +74,7 @@ impl Shape for Circle {
 		let min = pre.min(post) - scaled_radius;
 		let max = pre.max(post) + scaled_radius;
 
-		let position = (min + max) / 2.0;
+		let position = (min + max) * 0.5;
 		let extents = (max - position).abs();
 
 		Aabb {
@@ -84,7 +83,7 @@ impl Shape for Circle {
 		}
     }
 
-    fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> Option<Vec2> {
+    fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> (Vec2, bool) {
         let vertex = vertex - (transform.translation + self.offset);
 
 		// Shrink down the vertex based on scale
@@ -92,13 +91,10 @@ impl Shape for Circle {
 
 		let distance = vertex.length();
 
-		if distance <= self.radius {
-			let normal = vertex / distance; // Basically normalizing the vector
 
-			Some(normal * (self.radius - distance))
-		}
-		else {
-			None
-		}
+		let normal = vertex / distance; // Basically normalizing the vector
+
+		(normal * (self.radius - distance), distance < self.radius) // Return the penetration value
+
     }
 }

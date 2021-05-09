@@ -23,8 +23,8 @@ pub trait Shape {
 	fn to_basis_aabb_move(&self, basis_inv : Mat2, movement : Vec2, transform : Transform2D) -> Aabb;
 	/// Returns the distance(as `Vec2`) from the shape to the vertex
 	///
-	/// None if the vertex is outside the shape
-	fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> Option<Vec2>;
+	/// Returns : (distance from edge, is_penetrating)
+	fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> (Vec2, bool);
 }
 
 /// This is a temporary struct until bevy gets it own `Transform2D` struct

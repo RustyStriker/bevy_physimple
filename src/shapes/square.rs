@@ -153,6 +153,8 @@ impl Shape for Square {
 
 		let min = xmin.min(ymin);
 
+		// I will be honest, i dont really know why i need to do the `* vertex.[x/y].signum()` part
+		//  it just makes it work as expected(maybe it has something to do with the collision part of things?)
 		let res = if (min - xmin).abs() <= f32::EPSILON {
 			Vec2::new(xmin * vertex.x.signum(),0.0)
 		}
@@ -160,8 +162,7 @@ impl Shape for Square {
 			Vec2::new(0.0,ymin * vertex.y.signum())
 		};
 		
-		let res_sign = res.signum();
-		let is_pen = (res_sign.x * res_sign.y).signum() <= 0.0;
+		let is_pen = res.signum() == vertex.signum();
 		
 		(basis * res, is_pen)
 	}
@@ -209,11 +210,11 @@ mod test {
 		    scale: Vec2::splat(1.0),
 		};
 
-		let vertex = Vec2::new(3.0,7.0);
+		let vertex = Vec2::new(-3.0,7.0);
 		
 		let (pen, coll) = rect.get_vertex_penetration(vertex, transform);
 
-		let res = (pen - Vec2::new(2.0,0.0)).abs();
+		let res = (pen - Vec2::new(-2.0,0.0)).abs();
 
 		const EPSILON : f32 = 0.001;
 		eprintln!("res {:?} pen {:?}",res,pen);

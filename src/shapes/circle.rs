@@ -98,3 +98,33 @@ impl Shape for Circle {
 
     }
 }
+
+#[cfg(test)]
+mod circle_tests {
+	use super::*;
+
+	#[test]
+	fn vertex_testing() {
+		let circle = Circle::new(5.0)
+			.with_offset(Vec2::new(5.0,0.0));
+		
+		let transform = Transform2D {
+		    translation: Vec2::ZERO,
+		    rotation: 0.0,
+		    scale: Vec2::splat(1.0),	
+		};
+
+		let vertex_a = Vec2::new(0.0,5.0); // Shouldnt be inside
+
+		let (_, a_coll) = circle.get_vertex_penetration(vertex_a, transform);
+		// vertex shouldnt be inside the thing
+		assert!(!a_coll);
+
+		let vertex_b = Vec2::new(2.0,0.0); // should be inside
+
+		let (b_pen, b_coll) = circle.get_vertex_penetration(vertex_b, transform);
+
+		assert!(b_coll);
+		assert_eq!(b_pen, Vec2::new(-2.0,0.0));
+	}
+}

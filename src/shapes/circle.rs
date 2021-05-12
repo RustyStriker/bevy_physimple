@@ -32,15 +32,23 @@ impl Default for Circle {
 }
 impl Shape for Circle {
     fn to_aabb(&self, transform : Transform2D) -> Aabb {
+		// rotate the scale 
+		let basis = Mat2::from_angle(transform.rotation);
+		let scale = basis * transform.scale;
+
         Aabb {
-			extents : transform.scale * self.radius,
+			extents : scale * self.radius,
 			position : transform.translation + self.offset,
 		}
     }
 
     fn to_basis_aabb(&self, basis_inv : Mat2, transform : Transform2D) -> Aabb {
+		// rotate the scale
+		let rot_basis = Mat2::from_angle(transform.rotation);
+		let scale = rot_basis * transform.scale;
+
         Aabb {
-			extents : basis_inv * transform.scale * self.radius,
+			extents : basis_inv * scale * self.radius,
 			position : basis_inv * transform.translation + self.offset,
 		}
     }
@@ -49,7 +57,10 @@ impl Shape for Circle {
 		let prem = transform.translation + self.offset;
 		let postm = prem + movement;
 
-		let scaled_radius = Vec2::splat(self.radius) * transform.scale;
+		let rot_basis = Mat2::from_angle(transform.rotation);
+		let scale = rot_basis * transform.scale;
+
+		let scaled_radius = Vec2::splat(self.radius) * scale;
 
 		let min = prem.min(postm) - scaled_radius; // Just subtract the radius from each element
 		let max = prem.max(postm) + scaled_radius; // Just add the radius for each element
@@ -69,7 +80,10 @@ impl Shape for Circle {
         let pre = basis_inv * (transform.translation + self.offset);
 		let post = pre + movement;
 
-		let scaled_radius = Vec2::splat(self.radius) * (basis_inv * transform.scale);
+		let rot_basis = Mat2::from_angle(transform.rotation);
+		let scale = rot_basis * transform.scale;
+
+		let scaled_radius = Vec2::splat(self.radius) * (basis_inv * scale);
 
 		let min = pre.min(post) - scaled_radius;
 		let max = pre.max(post) + scaled_radius;

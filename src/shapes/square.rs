@@ -51,15 +51,15 @@ impl Default for Square {
 }
 impl Shape for Square {
     fn to_aabb(&self, transform : Transform2D) -> Aabb {
-        let rot = Vec2::new(transform.rotation.cos(), transform.rotation.sin());
-	
-		let ex = self.extents;
+        let rot = Mat2::from_angle(transform.rotation);
 
-		// Let a + ib, c + id be 2 complex numbers, we multiply them here
-		let ex_rotated_x = ex.x * rot.x - ex.y * rot.y; // ac - bd
-		let ex_rotated_y = ex.x * rot.y + ex.y * rot.x; // adi + bci
+		// We do the conjugate because if we have extents of (1,1) and we rotate 45deg we get (sqrt_2,0)
+		let ex = (rot * (self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
+		let ex_con = (rot * (self.extents * Vec2::new(1.0,-1.0) * transform.scale)).abs();
+		let extents = ex.max(ex_con);
 
-		let extents = Vec2::new(ex_rotated_x, ex_rotated_y).abs() * transform.scale; // we abs in case of a rotation more than 45 degrees
+		
+
 
 		Aabb {
 			extents,
@@ -68,18 +68,12 @@ impl Shape for Square {
     }
 
     fn to_basis_aabb(&self, basis_inv : Mat2, transform : Transform2D) -> Aabb {
-		let scale = basis_inv * transform.scale;
-
-		
 		let position = basis_inv * (transform.translation + self.offset);
 		
-		// Please refer to `to_aabb` in `imple Shape for Square`
-		let rot = Vec2::new(transform.rotation.cos(), transform.rotation.sin());
-        let ex = (basis_inv * self.extents).abs();
-		let ex_rotated_x = ex.x * rot.x - ex.y * rot.y;
-		let ex_rotated_y = ex.x * rot.y + ex.y * rot.x;
-
-		let extents = Vec2::new(ex_rotated_x, ex_rotated_y).abs() * scale;
+		let rot = Mat2::from_angle(transform.rotation);
+		let ex = (rot * (basis_inv * self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
+		let ex_con = (rot * (basis_inv * self.extents * Vec2::new(1.0,-1.0) * transform.scale)).abs();
+		let extents = ex.max(ex_con);
 
 		Aabb {
 			extents,
@@ -91,13 +85,10 @@ impl Shape for Square {
         let pre = transform.translation + self.offset;
 		let post = pre + movement;
 
-		// Please refer to `to_aabb` in `imple Shape for Square`
-		let rot = Vec2::new(transform.rotation.cos(), transform.rotation.sin());
-        let ex = self.extents.abs();
-		let ex_rotated_x = ex.x * rot.x - ex.y * rot.y;
-		let ex_rotated_y = ex.x * rot.y + ex.y * rot.x;
-
-		let extents = Vec2::new(ex_rotated_x, ex_rotated_y).abs() * transform.scale;
+		let rot = Mat2::from_angle(transform.rotation);
+		let ex = (rot * (self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
+		let ex_con = (rot * (self.extents * Vec2::new(1.0,-1.0) * transform.scale)).abs();
+		let extents = ex.max(ex_con);
 
 		let min = pre.min(post) - extents;
 		let max = pre.max(post) + extents;
@@ -112,18 +103,13 @@ impl Shape for Square {
     }
 
     fn to_basis_aabb_move(&self, basis_inv : Mat2, movement : Vec2, transform : Transform2D) -> Aabb {
-        let scale = basis_inv * transform.scale;
-		
 		let pre = basis_inv * (transform.translation + self.offset);
 		let post = pre + basis_inv * movement;
 
-		// Please refer to `to_aabb` in `imple Shape for Square`
-		let rot = Vec2::new(transform.rotation.cos(), transform.rotation.sin());
-        let ex = (basis_inv * self.extents).abs();
-		let ex_rotated_x = ex.x * rot.x - ex.y * rot.y;
-		let ex_rotated_y = ex.x * rot.y + ex.y * rot.x;
-
-		let extents = Vec2::new(ex_rotated_x, ex_rotated_y).abs() + scale;
+		let rot = Mat2::from_angle(transform.rotation);
+		let ex = (rot * (basis_inv * self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
+		let ex_con = (rot * (basis_inv * self.extents * Vec2::new(1.0,-1.0) * transform.scale)).abs();
+		let extents = ex.max(ex_con);
 
 		let min = pre.min(post) - extents;
 		let max = pre.max(post) + extents;
@@ -146,25 +132,38 @@ impl Shape for Square {
 
 		let extents = self.extents;
 
-		// This is counter intuitive but you want the distance between `vertex.x` and `-extents.x`
-		// 	 which in turns out as `vertex.x - (-extents.x) = vertex.x + extents.x`
-		let xmin = (vertex.x + extents.x).min(extents.x - vertex.x);
-		let ymin = (vertex.y + extents.y).min(extents.y - vertex.y);
 
-		let min = xmin.min(ymin);
+		// Check that indeed it is between at least 2 parallel edges
+		if vertex.abs() > extents {
+			// It is not inside any pair of parallel edges
+			// the closest edge will be the one where both signs of the edges will resemle the vertex's signs
+			// so it will end up being `extents * vertex.signum()` therefore
 
-		// I will be honest, i dont really know why i need to do the `* vertex.[x/y].signum()` part
-		//  it just makes it work as expected(maybe it has something to do with the collision part of things?)
-		let res = if (min - xmin).abs() <= f32::EPSILON {
-			Vec2::new(xmin * vertex.x.signum(),0.0)
+			let distance = vertex - (vertex.signum() * extents);
+
+			(distance, false)
 		}
 		else {
-			Vec2::new(0.0,ymin * vertex.y.signum())
-		};
-		
-		let is_pen = res.signum() == vertex.signum();
-		
-		(basis * res, is_pen)
+			// This is counter intuitive but you want the distance between `vertex.x` and `-extents.x`
+			// 	 which in turns out as `vertex.x - (-extents.x) = vertex.x + extents.x`
+			let xmin = (vertex.x + extents.x).min(extents.x - vertex.x);
+			let ymin = (vertex.y + extents.y).min(extents.y - vertex.y);
+
+			let min = xmin.min(ymin);
+
+			// I will be honest, i dont really know why i need to do the `* vertex.[x/y].signum()` part
+			//  it just makes it work as expected(maybe it has something to do with the collision part of things?)
+			let res = if (min - xmin).abs() <= f32::EPSILON {
+				Vec2::new(xmin * vertex.x.signum(),0.0)
+			}
+			else {
+				Vec2::new(0.0,ymin * vertex.y.signum())
+			};
+			
+			let is_pen = res.signum() == vertex.signum();
+			
+			(basis * res, is_pen)
+		}
 	}
 }
 

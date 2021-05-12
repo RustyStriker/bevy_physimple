@@ -26,6 +26,8 @@ pub trait Shape {
 	///
 	/// Returns : (distance from edge, is_penetrating)
 	fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> (Vec2, bool);
+
+	fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool);
 }
 
 /// This is a temporary struct until bevy gets it own `Transform2D` struct

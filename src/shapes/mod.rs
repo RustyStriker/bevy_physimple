@@ -5,12 +5,13 @@ mod aabb;
 mod raycast;
 mod square;
 mod circle;
+mod line;
 
 pub use aabb::*;
 pub use raycast::*;
 pub use square::*;
 pub use circle::*;
-
+pub use line::*;
 
 pub trait Shape {
 	/// Returns an Aabb instance containing the shape

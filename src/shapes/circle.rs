@@ -111,6 +111,10 @@ impl Shape for Circle {
 		(normal * (self.radius - distance), distance < self.radius) // Return the penetration value
 
     }
+
+    fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
+        todo!()
+    }
 }
 
 #[cfg(test)]

@@ -165,6 +165,10 @@ impl Shape for Square {
 			(basis * res, is_pen)
 		}
 	}
+
+    fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
+        todo!()
+    }
 }
 
 #[cfg(test)]

@@ -13,6 +13,13 @@ pub use square::*;
 pub use circle::*;
 pub use line::*;
 
+pub struct CollisionEvent {
+	pub entity_a : Entity,
+	pub entity_b : Entity,
+	pub with_static : bool,
+	pub normal : Vec2,
+}
+
 pub trait Shape {
 	/// Returns an Aabb instance containing the shape
 	fn to_aabb(&self, transform : Transform2D) -> Aabb;

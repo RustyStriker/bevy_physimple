@@ -91,11 +91,15 @@ impl Shape for Line2D {
 
     }
 
-    fn to_basis_aabb_move(&self, basis_inv : Mat2, movement : Vec2, transform : Transform2D) -> Aabb {
+    fn to_basis_aabb_move(&self, _basis_inv : Mat2, _movement : Vec2, _transform : Transform2D) -> Aabb {
         todo!()
     }
 
-    fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> (Vec2, bool) {
+    fn get_vertex_penetration(&self, _vertex : Vec2, _transform : Transform2D) -> (Vec2, bool) {
+        todo!()
+    }
+
+    fn collide_with_shape<S : Shape>(&self, _transform : Transform2D, _shape : &S, _shape_trans : Transform2D) -> (Vec2, bool) {
         todo!()
     }
 }

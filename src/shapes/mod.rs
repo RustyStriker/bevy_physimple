@@ -27,6 +27,9 @@ pub trait Shape {
 	/// Returns : (distance from edge, is_penetrating)
 	fn get_vertex_penetration(&self, vertex : Vec2, transform : Transform2D) -> (Vec2, bool);
 
+	/// Check for a collision between 2 `Shape` objects at given `Transform2D`
+	///
+	/// Should be used after `Aabb` checks with movement and everything
 	fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool);
 }
 

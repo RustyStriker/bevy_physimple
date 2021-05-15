@@ -71,7 +71,7 @@ impl Shape for Square {
 		let position = basis_inv * (transform.translation + self.offset);
 		
 		let rot = Mat2::from_angle(transform.rotation);
-		let ex = (rot * (basis_inv * self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
+		let ex = (rot * (basis_inv * (self.extents * transform.scale))).abs(); // we abs in case of a rotation more than 45 degrees
 		let ex_con = (rot * (basis_inv * self.extents * Vec2::new(1.0,-1.0) * transform.scale)).abs();
 		let extents = ex.max(ex_con);
 
@@ -107,7 +107,7 @@ impl Shape for Square {
 		let post = pre + basis_inv * movement;
 
 		let rot = Mat2::from_angle(transform.rotation);
-		let ex = (rot * (basis_inv * self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
+		let ex = (rot * (basis_inv * (self.extents * transform.scale))).abs(); // we abs in case of a rotation more than 45 degrees
 		let ex_con = (rot * (basis_inv * self.extents * Vec2::new(1.0,-1.0) * transform.scale)).abs();
 		let extents = ex.max(ex_con);
 
@@ -167,7 +167,36 @@ impl Shape for Square {
 	}
 
     fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
-        todo!()
+		let rot_basis = Mat2::from_angle(transform.rotation);
+		let extents = rot_basis * (self.extents * transform.scale);
+		let extents_con = rot_basis * (self.extents * transform.scale * Vec2::new(1.0,-1.0));
+
+        let center = transform.translation + self.offset;
+
+		let vertices = [
+			center + extents,
+			center - extents,
+			center + extents_con,
+			center - extents_con,
+		];
+
+		let mut collide = false;
+		let mut penetration = Vec2::splat(f32::INFINITY);
+
+		for v in vertices.iter() {
+			let (dis, is_pen) = shape.get_vertex_penetration(*v, shape_trans);
+			if is_pen {
+				collide = true;
+				if dis.length_squared() > penetration.length_squared() {
+					penetration = dis;
+				}
+			}
+			else if dis.length_squared() < penetration.length_squared() {
+					penetration = dis;
+			}
+		}
+
+		(penetration, collide)
     }
 }
 

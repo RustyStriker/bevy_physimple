@@ -198,7 +198,7 @@ impl Shape for Square {
 				penetration = Vec2::ZERO;
 			}
 			
-			collide = collide | is_pen;
+			collide |= is_pen;
 			if is_pen {
 				if dis.length_squared() > penetration.length_squared() {
 					penetration = dis;

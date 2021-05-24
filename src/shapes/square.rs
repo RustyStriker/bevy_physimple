@@ -146,21 +146,29 @@ impl Shape for Square {
 		else {
 			// This is counter intuitive but you want the distance between `vertex.x` and `-extents.x`
 			// 	 which in turns out as `vertex.x - (-extents.x) = vertex.x + extents.x`
-			let xmin = (vertex.x + extents.x).min(extents.x - vertex.x);
-			let ymin = (vertex.y + extents.y).min(extents.y - vertex.y);
+			// let xmin = (vertex.x + extents.x).min(extents.x - vertex.x);
+			// let ymin = (vertex.y + extents.y).min(extents.y - vertex.y);
 
-			let min = xmin.min(ymin);
+			// let min = xmin.min(ymin);
 
-			// I will be honest, i dont really know why i need to do the `* vertex.[x/y].signum()` part
-			//  it just makes it work as expected(maybe it has something to do with the collision part of things?)
-			let res = if (min - xmin).abs() <= f32::EPSILON {
-				Vec2::new(xmin * vertex.x.signum(),0.0)
+			// // I will be honest, i dont really know why i need to do the `* vertex.[x/y].signum()` part
+			// //  it just makes it work as expected(maybe it has something to do with the collision part of things?)
+			// let res = if (min - xmin).abs() <= f32::EPSILON {
+			// 	Vec2::new(xmin * vertex.x.signum(),0.0)
+			// }
+			// else {
+			// 	Vec2::new(0.0,ymin * vertex.y.signum())
+			// };
+
+			let to_edge = extents.abs() - vertex.abs();
+			let res = if to_edge.x < to_edge.y {
+				Vec2::new(to_edge.x * vertex.x.signum(),0.0)
 			}
 			else {
-				Vec2::new(0.0,ymin * vertex.y.signum())
+				Vec2::new(0.0, to_edge.y * vertex.y.signum())
 			};
 			
-			let is_pen = res.signum() == vertex.signum();
+			let is_pen = vertex.x.abs() < extents.x && vertex.y.abs() < extents.y;
 			
 			(basis * res, is_pen)
 		}
@@ -185,8 +193,13 @@ impl Shape for Square {
 
 		for v in vertices.iter() {
 			let (dis, is_pen) = shape.get_vertex_penetration(*v, shape_trans);
+			
+			if is_pen && !collide {
+				penetration = Vec2::ZERO;
+			}
+			
+			collide = collide | is_pen;
 			if is_pen {
-				collide = true;
 				if dis.length_squared() > penetration.length_squared() {
 					penetration = dis;
 				}
@@ -195,7 +208,6 @@ impl Shape for Square {
 					penetration = dis;
 			}
 		}
-
 		(penetration, collide)
     }
 }

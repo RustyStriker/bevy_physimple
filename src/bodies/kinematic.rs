@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct KinematicBody2D {
 	/// Linear velocity
 	pub linvel : Vec2,
+	pub(crate) prev_position : Vec2,
 
 	/// Terminal linear velocity
 	///
@@ -65,6 +66,7 @@ impl KinematicBody2D {
 	pub fn new() -> Self {
 		KinematicBody2D {
 		    linvel: Vec2::ZERO,
+			prev_position : Vec2::ZERO,
 		    terminal: Vec2::new(f32::INFINITY,f32::INFINITY),
 		    accumulator: Vec2::ZERO,
 		    dynamic_acc: Vec2::ZERO,

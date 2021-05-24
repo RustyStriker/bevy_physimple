@@ -18,6 +18,7 @@ pub struct CollisionEvent {
 	pub entity_b : Entity,
 	pub with_static : bool,
 	pub normal : Vec2,
+	pub remainder : Vec2,
 }
 
 pub trait Shape {
@@ -47,8 +48,8 @@ pub struct Transform2D {
 	pub rotation : f32,
 	pub scale : Vec2,
 }
-impl From<(GlobalTransform, TransformMode)> for Transform2D {
-    fn from((trans, mode): (GlobalTransform, TransformMode)) -> Self {
+impl From<(&GlobalTransform, TransformMode)> for Transform2D {
+    fn from((trans, mode): (&GlobalTransform, TransformMode)) -> Self {
 		let t = trans.translation;
 		let r = trans.rotation;
 		let s = trans.scale;

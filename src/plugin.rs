@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{ecs::component::Component, prelude::*};
 
 use crate::common::*;
 use crate::bodies::*;
@@ -124,6 +124,8 @@ pub mod stage {
 
     /// update joint constraints based on current data
     pub const JOINT_STEP: &str = "phy_joint_step";
+    /// Resets sensor collision data for the next step
+    pub const SENSOR_RESET_STEP : &str = "phy_sensor_reset_step";
     /// Physics step, gravity, friction, apply velocity and forces, move the bodies and such
     pub const PHYSICS_STEP: &str = "phy_physics_step";
     /// Check for collisions between objects, emitting events with AABBCollisionEvent(should be replaced later tho)
@@ -145,16 +147,19 @@ impl Plugin for Physics2dPlugin {
             .insert_resource(settings)
             .add_stage_before(CoreStage::Update, stage::PHYSICS_STEP, SystemStage::single_threaded())
             .add_stage_before(stage::PHYSICS_STEP, stage::JOINT_STEP,SystemStage::single_threaded())
-            .add_stage_after(stage::PHYSICS_STEP, stage::COLLISION_DETECTION,SystemStage::single_threaded())
+            .add_stage_after(stage::PHYSICS_STEP, stage::SENSOR_RESET_STEP,SystemStage::single_threaded())
+            .add_stage_after(stage::SENSOR_RESET_STEP, stage::COLLISION_DETECTION, SystemStage::parallel())
             .add_stage_after(stage::COLLISION_DETECTION, stage::PHYSICS_SOLVE,SystemStage::single_threaded())
             .add_stage_after(stage::PHYSICS_SOLVE, stage::RAYCAST_DETECTION, SystemStage::single_threaded());
 
         // Add the event type
         app.add_event::<AABBCollisionEvent>();
+        app.add_event::<CollisionEvent>();
 
         // Add the systems themselves for each step
         app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
-            .add_system_to_stage(stage::COLLISION_DETECTION, aabb_collision_detection_system.system())
+            .add_system_to_stage(stage::COLLISION_DETECTION, shape_coll_take_2::<Square,Square>.system())
+            // .add_system_to_stage(stage::COLLISION_DETECTION, shape_coll_take_2::<Circle,Circle>.system())
             .add_system_to_stage(stage::PHYSICS_SOLVE, aabb_solve_system.system())
             .add_system_to_stage(stage::RAYCAST_DETECTION, raycast_system.system());
         // TODO Recreate the Joint systems
@@ -171,180 +176,191 @@ fn get_child_shapes(shapes : &Query<&Aabb>, children : &Children) -> Option<Aabb
     None
 }
 
-#[cfg(test)]
-mod aabb_collision_tests {
-    use super::*;
-    #[test]
-    fn xpen_left() {
-        let aabb = Aabb::new(Vec2::new(10.0,10.0));
-
-        let res = get_aabb_collision(
-            aabb,
-            aabb,
-            Vec2::ZERO, 
-            Vec2::new(18.0,5.0)
-        );
-        assert_eq!(Some(Vec2::new(-2.0,0.0)), res);
-    }
-    #[test]
-    fn ypen_up() {
-        let aabb = Aabb::new(Vec2::new(10.0,10.0));
-
-        let res = get_aabb_collision(
-            aabb, 
-            aabb, 
-            Vec2::ZERO, 
-            Vec2::new(5.0,-18.0)
-        );
-
-        assert_eq!(Some(Vec2::new(0.0,2.0)),res);
-    }
-}
 /// Checks for collision between 2 AABB objects and returns the penetration(of a in b) if existing
-fn get_aabb_collision(a : Aabb, b : Aabb, a_pos : Vec2, b_pos : Vec2) -> Option<Vec2> {
-    let amin = a_pos - a.extents;
-    let amax = a_pos + a.extents;
-    let bmin = b_pos - b.extents;
-    let bmax = b_pos + b.extents;
+fn get_aabb_collision(a : Aabb, b : Aabb) -> bool {
+    let amin = a.position - a.extents;
+    let amax = a.position + a.extents;
+    let bmin = b.position - b.extents;
+    let bmax = b.position + b.extents;
 
     // Check for a general collision
     let coll_x = amax.x >= bmin.x && bmax.x >= amin.x;
     let coll_y = amax.y >= bmin.y && bmax.y >= amin.y;
 
-    if coll_x && coll_y {
-        // Search for the least penetrated axis
-        let xpen_left = (amax.x - bmin.x).abs();
-        let xpen_right = (amin.x - bmax.x).abs();
-        let ypen_up = (amin.y - bmax.y).abs();
-        let ypen_down = (amax.y - bmin.y).abs();
-
-        let min = xpen_left.min(xpen_right).min(ypen_up).min(ypen_down);
-
-        let eq = move |a : f32| {
-            const EPSILON : f32 = 0.00001;
-            (a - min).abs() <= EPSILON
-        };
-
-
-        if eq(xpen_left) {
-            Some(Vec2::new(-xpen_left,0.0))
-        }
-        else if eq(xpen_right) {
-            Some(Vec2::new(xpen_right,0.0))
-        }
-        else if eq(ypen_up) {
-            Some(Vec2::new(0.0,ypen_up))
-        }
-        else if eq(ypen_down) {
-            Some(Vec2::new(0.0,-ypen_down))
-        }
-        else {
-            panic!("Something went really wrong, max isnt equal any of them")
-        }
-    }
-    else {
-        None
-    }
+    coll_x && coll_y
 }
 
-fn aabb_collision_detection_system (
-    phy_sets : Res<PhysicsSettings>,
-    q_kinematic : Query<(Entity, &KinematicBody2D, &GlobalTransform, &Children)>,
-    q_static : Query<(Entity, &StaticBody2D, &GlobalTransform, &Children)>,
-    mut q_sensors : Query<(&mut Sensor2D, &GlobalTransform, &Children)>,
-    shapes : Query<&Aabb>,
-    mut writer : EventWriter<AABBCollisionEvent>,
-) {
+type WithOr<S,T> = Or<(With<S>,With<T>)>;
+
+#[allow(clippy::clippy::too_many_arguments, clippy::type_complexity)]
+fn shape_coll_take_2<S,T> (
+    phy_sets : Res<PhysicsSettings>, // Physics Settings - general thing we(usually) need
+    // General Queries
+    mut transforms : Query<&mut GlobalTransform, WithOr<S,T>>,
+    mut kinematic_bodies : Query<&mut KinematicBody2D, WithOr<S,T>>,
+    mut _sensors : Query<&mut Sensor2D, With<T>>,
+    // Entity based Queries
+    kinematic_entities_s : Query<(Entity, &S), (With<KinematicBody2D>, With<GlobalTransform>)>,
+    _kinematic_entities_t : Query<(Entity, &T), With<(KinematicBody2D, GlobalTransform)>>,
+    static_entities : Query<(Entity, &T, &StaticBody2D), With<GlobalTransform>>,
+    _sensor_entities : Query<(Entity, &T), With<(Sensor2D, GlobalTransform)>>,
+    // Event writer
+    mut writer : EventWriter<CollisionEvent>,
+) where
+    S : Shape + Component,
+    T : Shape + Component,
+{
     let trans_mode = phy_sets.transform_mode;
 
-    // Clear all the sensors overlapping parts
-    q_sensors.iter_mut().for_each(|(mut s,_,_)| s.overlapping_bodies.clear());
-    
-    let mut passed : Vec<(Entity, &KinematicBody2D, Vec2, Aabb)> = Vec::new();
+    // Loop over entities, borrow them immutually, get the data we need and calculate everything later
 
-    // Go through all the kinematic bodies
-    for (entity, body, trans, children) in q_kinematic.iter() {
-        // let body_position = trans_mode.get_position()
-
-        // Gather all the shape children(colliders...)
-        let collider = match get_child_shapes(&shapes, &children) {
-            Some(c) => c,
-            None => continue,
+    for (a_entity, a_shape) in kinematic_entities_s.iter() {        
+        // Get basic data(like aabb and position)
+        let a_kin = match kinematic_bodies.get_component::<KinematicBody2D>(a_entity) {
+            Ok(b) => b,
+            Err(_) => continue,
         };
-        
-        let position = trans_mode.get_position(&trans);
+        // they are out of the loop because we will emit only 1 collision event(because there is not reason to emit all of them)
+        let mut remainder = Vec2::ZERO;
+        let mut normal = Vec2::ZERO;
+        let (a_trans, movement) = {
+            let gt = transforms.get_component::<GlobalTransform>(a_entity);
+            let mut t : Transform2D = match gt {
+                Ok(gt) => (gt,trans_mode).into(),
+                Err(_) => continue,
+            };
+            let movement = t.translation - a_kin.prev_position;
+            t.translation = a_kin.prev_position;
 
-        // Go through the static bodies and check for collisions
-        for (se, sb, sb_trans, children) in q_static.iter() {
-            // Check for masks/layers
-            if (body.mask & sb.layer | body.layer & sb.mask) == 0 {
+            (t,movement)
+        };
+        let movement_len = movement.length();
+        let move_normalized = movement.normalize();
+        let a_aabb = a_shape.to_aabb(a_trans);
+        let move_extents = (a_aabb.extents * movement.signum()).project(move_normalized);
+        let a_aabb_move = a_shape.to_aabb_move(movement + move_extents, a_trans);
+
+
+        // Compare to static bodies
+        for (static_entity, static_shape, static_body) in static_entities.iter() {
+            // check for layer-mask collision
+            if ((a_kin.mask & static_body.layer) | (a_kin.layer & static_body.mask)) == 0 {
                 continue;
             }
 
-            let sc = match get_child_shapes(&shapes, &children) {
-                Some(c) => c,
-                None => continue,
+            let static_trans = match transforms.get_component::<GlobalTransform>(static_entity) {
+                Ok(t) => Transform2D::from((t, trans_mode)),
+                Err(_) => continue,
             };
 
-            let sb_pos = trans_mode.get_position(&sb_trans);
+            // Check for the general aabb collision
+            let static_aabb = static_shape.to_aabb(static_trans);
+            if get_aabb_collision(a_aabb_move, static_aabb) {
+                // get the normal static aabb for a simple ray v aabb test
 
-            // Check for collision here
-            if let Some(pen) = get_aabb_collision( collider,  sc,  position,  sb_pos) {
-                writer.send(
-                    AABBCollisionEvent {
-                        entity_a : entity,
-                        entity_b : se,
-                        penetration : pen,
-                        with_static : true
-                    }
+                let ray_cast = static_aabb.position - a_trans.translation;
+                let ray_res = collide_ray_aabb(
+                    a_trans.translation,
+                    ray_cast,
+                    static_aabb,
+                    static_aabb.position
                 );
-            }
-        }
-        // Go through sensors to know who is inside the sensor
-        // we iter_mut because we want to do sensor.overlapping_bodies.push(entity) for each entity
-        // that is overlapping with the sensor
-        for (mut sensor, sen_trans, children) in q_sensors.iter_mut() {
-            // Check for masks/layers
-            if (body.mask & sensor.layer | body.layer & sensor.mask) == 0 {
-                continue;
-            }
+                if let Some(res) = ray_res {
+                    let ray_coll_rel = ray_cast * res;
+                    let coll_move_part = move_normalized.dot(ray_coll_rel);
+                    let coll_move_part = if coll_move_part > movement_len { movement_len } else { coll_move_part };
+                    if coll_move_part >= 0.0 {
+                        let coll_pos = move_normalized * coll_move_part + a_trans.translation - move_extents;
+                        
+                        let a_trans_coll = Transform2D {
+                            translation : coll_pos,
+                            ..a_trans
+                        };
+                        let (dis, is_pen) = a_shape.collide_with_shape(
+                            a_trans_coll,
+                            static_shape,
+                            static_trans
+                        );
+                        if is_pen { // on collision basically
+                            normal = dis.normalize(); // this is flipped
+                            let angle_cos = move_normalized.dot(normal);
+                            remainder = if angle_cos.abs() > 0.99 { // FIXME this is an incorrect way of getting C out of A and theta
+                                dis
+                            }
+                            else {
+                                // c = a / cos(alpha) - cosin definition...
+                                dis * angle_cos.recip()
+                            };
 
-            let sc = match get_child_shapes(&shapes, &children) {
-                Some(c) => c,
-                None => continue,
-            };
+                            let new_position = a_trans.translation + movement + remainder;
+                            // move the kinematic body to a "safe" place
+                            match transforms.get_component_mut::<GlobalTransform>(a_entity) {
+                                Ok(mut t) => {
+                                    trans_mode.set_position(&mut t, new_position);
+                                },
+                                Err(_) => continue,
+                            }
+                            // normal and remainder are flipped so...
+                            normal = -normal;
+                            remainder = -remainder;
+                        }
+                        else if dis == Vec2::ZERO {
+                            let vertex = move_normalized * (coll_move_part + 0.1) + a_trans.translation;
+                            let (norm, _) = static_shape.get_vertex_penetration(vertex, static_trans);
+                            normal = norm.normalize(); 
+                        }
+                        else {
+                            normal = -(dis.normalize());
 
-            let sen_pos = trans_mode.get_position(&sen_trans);
+                            // Get the remainder amount
+                            let angle_cos = move_normalized.dot(normal);
 
-            // Check for collision here
-            if get_aabb_collision(collider, sc, position, sen_pos).is_some() {
-                sensor.overlapping_bodies.push(entity);
-            }
-        }
-        // Go through all the kinematic bodies we passed already
-        for (ke, ob, ob_pos, oc) in passed.iter() {
-            // Check for masks/layers
-            if (body.mask & ob.layer | body.layer & ob.mask) == 0 {
-                continue;
-            }
+                            remainder = if angle_cos.abs() > 0.99 { // FIXME this is an incorrect way of getting C out of A and theta
+                                dis
+                            }
+                            else {
+                                // c = a / cos(alpha) - cosin definition...
+                                dis * angle_cos.recip()
+                            };
 
-            // check for collisions here...
-            if let Some(pen) = get_aabb_collision( collider,  *oc,  position,  *ob_pos) {
-                writer.send(
-                    AABBCollisionEvent {
-                        entity_a : entity,
-                        entity_b : *ke,
-                        penetration : pen,
-                        with_static : false
+                            let new_pos = a_trans_coll.translation - remainder;
+
+                            match transforms.get_component_mut::<GlobalTransform>(a_entity) {
+                                Ok(mut t) => {
+                                    trans_mode.set_position(&mut t, new_pos);
+                                },
+                                Err(_) => continue,
+                            }
+                            remainder = -remainder;
+
+                        }
                     }
-                );
+                }
             }
         }
-        
-        passed.push((entity, body, position, collider));
+        if normal != Vec2::ZERO {
+            // println!("normal {} reminader {}", normal, remainder);
+            writer.send(CollisionEvent {
+                entity_a: a_entity,
+                entity_b: a_entity,
+                with_static: false,
+                normal,
+                remainder,
+            });
+
+            match kinematic_bodies.get_component_mut::<KinematicBody2D>(a_entity) {
+                Ok(mut k) => {
+                    let vel = k.linvel.slide(normal);
+                    k.linvel = vel;
+                },
+                Err(_) => continue,
+            }
+        }
+
     }
 }
 
+// TODO Remove this(or technically replace?)
 fn aabb_solve_system (
     mut collisions : EventReader<AABBCollisionEvent>,
     mut bodies : Query<&mut KinematicBody2D>,
@@ -460,7 +476,7 @@ fn aabb_solve_system (
         }
     }
 }
-
+/// Checks for `on_floor`,`on_wall`,`on_ceil`
 fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2, phy_set : &PhysicsSettings) {
     let angle = phy_set.floor_angle;
     let up = -phy_set.gravity.normalize();
@@ -491,6 +507,7 @@ fn physics_step_system (
         if !body.active {
             continue;
         }
+        body.prev_position = trans_mode.get_position(&transform);
 
         let accelerating = body.accumulator.length_squared() > 0.1 || body.dynamic_acc.length_squared() > 0.1;
 

@@ -29,7 +29,7 @@ impl Square {
 		Square { 
 			offset : Vec2::ZERO,
 			rotation_offset : 0.0,
-			extents : size,
+			extents : size * 0.5,
 		}
 	}
 	/// Offset from the `Transform` transltion component

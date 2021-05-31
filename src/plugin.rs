@@ -240,7 +240,6 @@ fn shape_coll_take_2<S,T> (
         let move_extents = (a_aabb.extents * movement.signum()).project(move_normalized);
         let a_aabb_move = a_shape.to_aabb_move(movement + move_extents, a_trans);
 
-
         // Compare to static bodies
         for (static_entity, static_shape, static_body) in static_entities.iter() {
             // check for layer-mask collision
@@ -258,86 +257,96 @@ fn shape_coll_take_2<S,T> (
             if get_aabb_collision(a_aabb_move, static_aabb) {
                 // get the normal static aabb for a simple ray v aabb test
 
-                let ray_cast = static_aabb.position - a_trans.translation;
-                let ray_res = collide_ray_aabb(
+                let res = solve_raycast_aabb(
                     a_trans.translation,
-                    ray_cast,
+                    move_normalized,
                     static_aabb,
-                    static_aabb.position
                 );
-                if let Some(res) = ray_res {
-                    let ray_coll_rel = ray_cast * res;
-                    let coll_move_part = move_normalized.dot(ray_coll_rel);
-                    let coll_move_part = if coll_move_part > movement_len { movement_len } else { coll_move_part };
-                    if coll_move_part >= 0.0 {
-                        let coll_pos = move_normalized * coll_move_part + a_trans.translation - move_extents;
-                        
-                        let a_trans_coll = Transform2D {
-                            translation : coll_pos,
-                            ..a_trans
-                        };
-                        let (dis, is_pen) = a_shape.collide_with_shape(
-                            a_trans_coll,
-                            static_shape,
-                            static_trans
-                        );
-                        if is_pen { // on collision basically
-                            normal = dis.normalize(); // this is flipped
-                            let angle_cos = move_normalized.dot(normal);
-                            remainder = if angle_cos.abs() > 0.99 { // FIXME this is an incorrect way of getting C out of A and theta
-                                dis
-                            }
-                            else {
-                                // c = a / cos(alpha) - cosin definition...
-                                dis * angle_cos.recip()
-                            };
+                if res >= 0.0 {
+                    let coll_move_part = if res > movement_len { movement_len } else { res };
 
-                            let new_position = a_trans.translation + movement + remainder;
-                            // move the kinematic body to a "safe" place
-                            match transforms.get_component_mut::<GlobalTransform>(a_entity) {
-                                Ok(mut t) => {
-                                    trans_mode.set_position(&mut t, new_position);
-                                },
-                                Err(_) => continue,
-                            }
-                            // normal and remainder are flipped so...
-                            normal = -normal;
-                            remainder = -remainder;
-                        }
-                        else if dis == Vec2::ZERO {
-                            let vertex = move_normalized * (coll_move_part + 0.1) + a_trans.translation;
-                            let (norm, _) = static_shape.get_vertex_penetration(vertex, static_trans);
-                            normal = norm.normalize(); 
+                    let coll_pos = move_normalized * coll_move_part + a_trans.translation - move_extents;
+                    
+                    let a_trans_coll = Transform2D {
+                        translation : coll_pos,
+                        ..a_trans
+                    };
+                    let (dis, is_pen) = a_shape.collide_with_shape(
+                        a_trans_coll,
+                        static_shape,
+                        static_trans
+                    );
+                    if is_pen { // on collision basically
+                        normal = dis.normalize(); // this is flipped
+                        let angle_cos = move_normalized.dot(normal);
+                        remainder = if angle_cos.abs() < 0.5 {
+                            dis // They are perpendicular, there is no triangle...
                         }
                         else {
-                            normal = -(dis.normalize());
-
-                            // Get the remainder amount
-                            let angle_cos = move_normalized.dot(normal);
-
-                            remainder = if angle_cos.abs() > 0.99 { // FIXME this is an incorrect way of getting C out of A and theta
+                            // c = a / cos(alpha) - cosin definition...
+                            dis.length() * angle_cos.recip() * move_normalized
+                        };
+                        
+                        let new_position = a_trans.translation + movement + remainder;
+                        // move the kinematic body to a "safe" place
+                        match transforms.get_component_mut::<GlobalTransform>(a_entity) {
+                            Ok(mut t) => {
+                                println!("pen moving kin to {}, rem {} movement {} origin {} dis {}",
+                                new_position,
+                                remainder,
+                                movement,
+                                a_trans.translation,
                                 dis
-                            }
-                            else {
-                                // c = a / cos(alpha) - cosin definition...
-                                dis * angle_cos.recip()
-                            };
-
-                            let new_pos = a_trans_coll.translation - remainder;
-
-                            match transforms.get_component_mut::<GlobalTransform>(a_entity) {
-                                Ok(mut t) => {
-                                    trans_mode.set_position(&mut t, new_pos);
-                                },
-                                Err(_) => continue,
-                            }
-                            remainder = -remainder;
-
+                            );
+                                trans_mode.set_position(&mut t, new_position);
+                            },
+                            Err(_) => continue,
                         }
+                        // normal and remainder are flipped so...
+                        normal = -normal;
+                        remainder = -remainder;
                     }
+                    else if dis == Vec2::ZERO {
+                        let vertex = move_normalized * (coll_move_part + 0.1) + a_trans.translation;
+                        let (norm, _) = static_shape.get_vertex_penetration(vertex, static_trans);
+                        normal = norm.normalize(); 
+                    }
+                    else {
+                        normal = -(dis.normalize());
+
+                        // Get the remainder amount
+                        let angle_cos = move_normalized.dot(normal);
+
+                        remainder = if angle_cos.abs() < 0.5 {
+                            dis // They are perpendicular, there is no triangle...
+                        }
+                        else {
+                            // c = a / cos(alpha) - cosin definition...
+                            -dis.length() * angle_cos.recip() * move_normalized
+                        };
+                        if remainder.project(move_normalized).length_squared() > movement_len.powi(2) {
+                            remainder = Vec2::ZERO;
+                        }
+
+                        let new_pos = a_trans.translation + movement - remainder;
+
+                        match transforms.get_component_mut::<GlobalTransform>(a_entity) {
+                            Ok(mut t) => {
+                                println!("else moving kin to {}", new_pos);
+                                trans_mode.set_position(&mut t, new_pos);
+                            },
+                            Err(_) => continue,
+                        }
+                        if remainder == Vec2::ZERO {
+                            normal = Vec2::ZERO;
+                        }
+
+                    }
+                    
                 }
             }
         }
+        // println!("position {} vel {}", a_trans.translation, a_kin.linvel);
         if normal != Vec2::ZERO {
             // println!("normal {} reminader {}", normal, remainder);
             writer.send(CollisionEvent {
@@ -356,7 +365,6 @@ fn shape_coll_take_2<S,T> (
                 Err(_) => continue,
             }
         }
-
     }
 }
 
@@ -725,5 +733,60 @@ pub fn collide_ray_aabb(
     }
     else {
         Some(min)
+    }
+}
+
+/// Dont use this, use collide_ray_aabb instead... how did you even got this?
+fn solve_raycast_aabb(
+    ray_from : Vec2,
+    ray_cast : Vec2,
+    aabb : Aabb,
+) -> f32 {
+    let aabb_min = aabb.position - aabb.extents;
+    let aabb_max = aabb.position + aabb.extents;
+
+    // if one of the cast components is 0.0, make sure we are in the bounds of that axle
+    // Why?
+    //      We do this explicit check because the raycast formula i used doesnt handle cases where one of the components is 0
+    //       as it would lead to division by 0(thus errors) and the `else NAN` part will make it completly ignore the collision
+    //       on that axle
+    if ray_cast.x == 0.0 {
+        let ray_min = ray_from.x.min(ray_from.x + ray_cast.x);
+        let ray_max = ray_from.x.max(ray_from.x + ray_cast.x);
+
+        if !(aabb_min.x <= ray_max && aabb_max.x >= ray_min) {
+            return -1.0; // if it doesnt collide on the X axle terminate it early
+        }
+    }
+    if ray_cast.y == 0.0 {
+        let ray_min = ray_from.y.min(ray_from.y + ray_cast.y);
+        let ray_max = ray_from.y.max(ray_from.y + ray_cast.y);
+
+        if !(aabb_min.y <= ray_max && aabb_max.y >= ray_min) {
+            return -1.0; // if it doesnt collide on the X axle terminate it early
+        }
+    }
+
+    // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
+    // it will never collide(thus division by 0.0)
+    let xmin = if ray_cast.x != 0.0 { (aabb_min.x - ray_from.x) / ray_cast.x } else { f32::NAN };
+    let xmax = if ray_cast.x != 0.0 { (aabb_max.x - ray_from.x) / ray_cast.x } else { f32::NAN };
+    let ymin = if ray_cast.y != 0.0 { (aabb_min.y - ray_from.y) / ray_cast.y } else { f32::NAN };
+    let ymax = if ray_cast.y != 0.0 { (aabb_max.y - ray_from.y) / ray_cast.y } else { f32::NAN };
+    
+    let min = (xmin.min(xmax)).max(ymin.min(ymax));
+    let max = (xmin.max(xmax)).min(ymin.max(ymax));
+
+    if max < 0.0 {
+        -1.0
+    }
+    else if min > max {
+        max
+    }
+    else if min < 0.0 {
+        max
+    }
+    else {
+        min
     }
 }

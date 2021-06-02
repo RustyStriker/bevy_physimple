@@ -112,7 +112,7 @@ impl Shape for Circle {
 
     }
 
-    fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
+    fn collide_with_shape(&self, transform : Transform2D, shape : &dyn Shape, shape_trans : Transform2D) -> (Vec2, bool) {
         let center = transform.translation + self.offset;
 
 		let (dis, is_pen) = shape.get_vertex_penetration(center, shape_trans);

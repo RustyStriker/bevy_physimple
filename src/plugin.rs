@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use bevy::{ecs::component::Component, prelude::*};
 
-use crate::common::*;
+use crate::{broad::{self, ObbData, ObbDataKinematic}, common::*, narrow};
 use crate::bodies::*;
 use crate::shapes::*;
 
@@ -128,6 +128,8 @@ pub mod stage {
     pub const SENSOR_RESET_STEP : &str = "phy_sensor_reset_step";
     /// Physics step, gravity, friction, apply velocity and forces, move the bodies and such
     pub const PHYSICS_STEP: &str = "phy_physics_step";
+
+    pub const BROAD_PHASE : &str = "phy_broad_phase";
     /// Check for collisions between objects, emitting events with AABBCollisionEvent(should be replaced later tho)
     pub const COLLISION_DETECTION: &str = "phy_collision_detection";
     /// Solve each collision and apply forces based on collision
@@ -148,19 +150,22 @@ impl Plugin for Physics2dPlugin {
             .add_stage_before(CoreStage::Update, stage::PHYSICS_STEP, SystemStage::single_threaded())
             .add_stage_before(stage::PHYSICS_STEP, stage::JOINT_STEP,SystemStage::single_threaded())
             .add_stage_after(stage::PHYSICS_STEP, stage::SENSOR_RESET_STEP,SystemStage::single_threaded())
-            .add_stage_after(stage::SENSOR_RESET_STEP, stage::COLLISION_DETECTION, SystemStage::parallel())
+            .add_stage_after(stage::SENSOR_RESET_STEP, stage::BROAD_PHASE, SystemStage::parallel())
+            .add_stage_after(stage::BROAD_PHASE, stage::COLLISION_DETECTION, SystemStage::single_threaded())
             .add_stage_after(stage::COLLISION_DETECTION, stage::PHYSICS_SOLVE,SystemStage::single_threaded())
             .add_stage_after(stage::PHYSICS_SOLVE, stage::RAYCAST_DETECTION, SystemStage::single_threaded());
 
         // Add the event type
-        app.add_event::<AABBCollisionEvent>();
+        app.add_event::<ObbData>();
+        app.add_event::<ObbDataKinematic>();
         app.add_event::<CollisionEvent>();
 
         // Add the systems themselves for each step
         app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
-            .add_system_to_stage(stage::COLLISION_DETECTION, shape_coll_take_2::<Square,Square>.system())
+            .add_system_to_stage(stage::BROAD_PHASE, broad::broad_phase_system::<Square>.system())
+            // .add_system_to_stage(stage::COLLISION_DETECTION, shape_coll_take_2::<Square,Square>.system())
             // .add_system_to_stage(stage::COLLISION_DETECTION, shape_coll_take_2::<Circle,Circle>.system())
-            .add_system_to_stage(stage::PHYSICS_SOLVE, aabb_solve_system.system())
+            .add_system_to_stage(stage::COLLISION_DETECTION, narrow::narrow_phase_system.system())
             .add_system_to_stage(stage::RAYCAST_DETECTION, raycast_system.system());
         // TODO Recreate the Joint systems
 

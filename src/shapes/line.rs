@@ -99,7 +99,7 @@ impl Shape for Line2D {
         todo!()
     }
 
-    fn collide_with_shape<S : Shape>(&self, _transform : Transform2D, _shape : &S, _shape_trans : Transform2D) -> (Vec2, bool) {
+    fn collide_with_shape(&self, _transform : Transform2D, _shape : &dyn Shape, _shape_trans : Transform2D) -> (Vec2, bool) {
         todo!()
     }
 }

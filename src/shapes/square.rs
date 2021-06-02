@@ -174,7 +174,7 @@ impl Shape for Square {
 		}
 	}
 
-    fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
+    fn collide_with_shape(&self, transform : Transform2D, shape : &dyn Shape, shape_trans : Transform2D) -> (Vec2, bool) {
 		let rot_basis = Mat2::from_angle(transform.rotation);
 		let extents = rot_basis * (self.extents * transform.scale);
 		let extents_con = rot_basis * (self.extents * transform.scale * Vec2::new(1.0,-1.0));

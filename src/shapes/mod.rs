@@ -38,7 +38,7 @@ pub trait Shape {
 	/// Check for a collision between 2 `Shape` objects at given `Transform2D`
 	///
 	/// Should be used after `Aabb` checks with movement and everything
-	fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool);
+	fn collide_with_shape(&self, transform : Transform2D, shape : &dyn Shape, shape_trans : Transform2D) -> (Vec2, bool);
 }
 
 /// This is a temporary struct until bevy gets it own `Transform2D` struct

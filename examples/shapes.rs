@@ -22,10 +22,6 @@ fn setup(
     // asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    // let icon = asset_server.load("icon.png");
-    // let plat = asset_server.load("platform.png");
-    // let square = asset_server.load("square.png");
-
     let blue = materials.add(Color::ALICE_BLUE.into());
     let black = materials.add(Color::BLACK.into());
     let another_color = materials.add(Color::GOLD.into());
@@ -36,21 +32,21 @@ fn setup(
 
 
     // Spawn character
-    // let _player_id = commands
-    //     .spawn_bundle(SpriteBundle {
-    //         sprite : Sprite::new(Vec2::new(28.0,28.0)),
-    //         material: blue.clone(),
-    //         ..Default::default()
-    //     })
-    //     .insert(
-    //         KinematicBody2D::new()
-    //             .with_terminal(Vec2::new(400.0, 1000.0))
-    //             .with_mask(3)
-    //             .with_friction(1.5)
-    //     )
-    //     .insert(CharacterController::default())
-    //     .insert(Square::size(Vec2::new(28.0,28.0)))
-	// 	.id();
+    let _player_id = commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::new(28.0,28.0)),
+            material: blue.clone(),
+            ..Default::default()
+        })
+        .insert(
+            KinematicBody2D::new()
+                .with_terminal(Vec2::new(400.0, 1000.0))
+                .with_mask(3)
+                .with_friction(1.5)
+        )
+        .insert(CharacterController::default())
+        .insert(Square::size(Vec2::new(28.0,28.0)))
+		.id();
     
     // center floor
     commands
@@ -78,7 +74,7 @@ fn setup(
             KinematicBody2D::new()
                 .with_mass(2.0)
                 .with_friction(0.1) // Basically almost no friction, should be fun :D
-                .with_bounciness(0.9) // Make it bouncy(also on walls)
+                .with_bounciness(0.5) // Make it bouncy(also on walls)
                 .with_linear_velocity(Vec2::new(220.0,0.0))
 		)
 		.insert(Square::size(Vec2::new(20.0, 20.0)));

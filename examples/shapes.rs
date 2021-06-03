@@ -40,9 +40,10 @@ fn setup(
         })
         .insert(
             KinematicBody2D::new()
-                .with_terminal(Vec2::new(400.0, 1000.0))
+                .with_terminal(Vec2::new(400.0, f32::INFINITY))
                 .with_mask(3)
                 .with_friction(1.5)
+                .with_bounciness(0.0)
         )
         .insert(CharacterController::default())
         .insert(Square::size(Vec2::new(28.0,28.0)))
@@ -51,7 +52,7 @@ fn setup(
     // center floor
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(600.0,20.0)),
+            sprite : Sprite::new(Vec2::new(600.0,30.0)),
             material: black.clone(),
             transform : Transform::from_xyz(150.0,-200.0,0.0),
             ..Default::default()
@@ -60,7 +61,18 @@ fn setup(
             StaticBody2D::new()
                 .with_layer(3)
         )
-		.insert(Square::size(Vec2::new(600.0,20.0)));
+		.insert(Square::size(Vec2::new(600.0,30.0)));
+    
+    // side wall
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::new(20.0,300.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(450.0, 0.0, 0.0),
+            ..Default::default()
+        })
+        .insert(StaticBody2D::new())
+        .insert(Square::size(Vec2::new(20.0,300.0)));
 
     // Spawn the cube near us
     commands
@@ -74,7 +86,7 @@ fn setup(
             KinematicBody2D::new()
                 .with_mass(2.0)
                 .with_friction(0.1) // Basically almost no friction, should be fun :D
-                .with_bounciness(0.5) // Make it bouncy(also on walls)
+                .with_bounciness(0.3) // Make it bouncy(also on walls)
                 .with_linear_velocity(Vec2::new(220.0,0.0))
 		)
 		.insert(Square::size(Vec2::new(20.0, 20.0)));
@@ -140,6 +152,13 @@ fn character_system(
             controller.double_jump = false;
             jump(&mut body);
         }
+
+        // This is for the testing purpose of the continous collision thingy
+        if input.just_pressed(KeyCode::S) && body.on_floor().is_none() {
+            body.apply_linear_impulse(Vec2::new(0.0, -50000000.0));
+            println!("STOMP!!! {:?}", body.linvel);
+        }
+
         // It might look like we need to multiply by delta_time but the apply_force function does it for us(in the physics step)
         let acc = Vec2::new(1000.0,0.0);
         if input.pressed(KeyCode::A) {

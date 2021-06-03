@@ -35,6 +35,7 @@ pub struct PhysicsSettings {
 
     /// Gravity direction and strength(up direction is opposite to gravity)
     pub gravity : Vec2,
+
     pub transform_mode : TransformMode,
     /// What angles are considered floor/wall/ceilling
     ///

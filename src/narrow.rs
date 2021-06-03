@@ -45,6 +45,7 @@ pub fn narrow_phase_system(
 	let obb_data = obb_data.iter().collect::<Vec<_>>();
 
 	let trans_mode = phy_set.transform_mode;
+	let up_dir = -phy_set.gravity.normalize();
 
 	for obb_kin in obb_kinematic.iter() {
 		let entity_kin = obb_kin.entity;
@@ -102,6 +103,7 @@ pub fn narrow_phase_system(
 
 			let mut normal = Vec2::ZERO;
 			let mut remainder = Vec2::ZERO;
+			let mut penetration = Vec2::ZERO;
 			let mut coll_index = -1;
 
 			for (i, obb) in surroundings.iter().enumerate() {
@@ -127,7 +129,11 @@ pub fn narrow_phase_system(
 					};
 
 					let (dis, is_pen) = shape_kin.collide_with_shape(coll_pos, obb_shape, obb_transform);
-					
+					let (dis2, is_pen2) = obb_shape.collide_with_shape(obb_transform, shape_kin, coll_pos);
+
+					let dis = if is_pen { dis } else { dis2 };
+					let is_pen = is_pen | is_pen2;
+
 					// We branch here, if the obb is a sensor we should not // TODO Maybe find a better solution to this part
 					if is_pen && obb.sensor {
 						match sensors.get_component_mut::<Sensor2D>(obb.entity) {
@@ -142,7 +148,9 @@ pub fn narrow_phase_system(
 						normal = dis.normalize();
 						
 						let moved = new_pos - kin_pos.translation;
-						remainder = movement - moved.project(movement.normalize());
+						remainder = movement - moved;
+
+						penetration = dis;
 
 						// movement = movement - remainder;
 						coll_index = i as i32;
@@ -151,7 +159,9 @@ pub fn narrow_phase_system(
 			} // out of the surroindings for loop
 
 			if normal != Vec2::ZERO {
-				let obb = surroundings.remove(coll_index as usize);
+				// Should we remove it? what if we are stuck between 4 walls and keep on colliding them with full bounce?
+				// let obb = surroundings.remove(coll_index as usize);
+				let obb = surroundings[coll_index as usize];
 
 				if obb.sensor {
 					continue; // this shouldnt happen...
@@ -174,6 +184,9 @@ pub fn narrow_phase_system(
 
 				// basically what we still need to move
 				movement = rem_slide - rem_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
+
+				// Do the on_* stuff
+				check_on_stuff(&mut kin, normal, up_dir, phy_set.floor_angle);
 			}
 			else { // There was no collisions here so we can break
 				kin_pos.translation += movement; // need to move whatever left to move with
@@ -252,6 +265,21 @@ fn raycast_aabb(
     }
     else {
         min
+    }
+}
+
+/// Checks for `on_floor`,`on_wall`,`on_ceil` - up should be normalized
+fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2, up : Vec2, floor_angle : f32) {
+    let dot = up.dot(normal);
+
+    if dot >= floor_angle {
+        body.on_floor = Some(normal);
+    }
+    if dot.abs() < floor_angle {
+        body.on_wall = Some(normal);
+    }
+    if dot <= -floor_angle {
+        body.on_ceil = Some(normal);
     }
 }
 

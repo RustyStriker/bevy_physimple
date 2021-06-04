@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
@@ -36,6 +38,7 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(28.0,28.0)),
             material: blue.clone(),
+            transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
             ..Default::default()
         })
         .insert(
@@ -47,6 +50,7 @@ fn setup(
         )
         .insert(CharacterController::default())
         .insert(Square::size(Vec2::new(28.0,28.0)))
+        // .insert(Circle::new(14.0))
 		.id();
     
     // center floor
@@ -66,13 +70,13 @@ fn setup(
     // side wall
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(20.0,300.0)),
+            sprite : Sprite::new(Vec2::new(30.0,300.0)),
             material : black.clone(),
             transform : Transform::from_xyz(450.0, 0.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new())
-        .insert(Square::size(Vec2::new(20.0,300.0)));
+        .insert(Square::size(Vec2::new(30.0,300.0)));
 
     // Spawn the cube near us
     commands
@@ -118,7 +122,7 @@ fn setup(
 fn character_system(
     input: Res<Input<KeyCode>>,
     phys_sets : Res<PhysicsSettings>,
-    mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
+    mut query: Query<(&mut CharacterController, &mut KinematicBody2D,)>,
 ) {
     let gravity = phys_sets.gravity;
 
@@ -156,7 +160,6 @@ fn character_system(
         // This is for the testing purpose of the continous collision thingy
         if input.just_pressed(KeyCode::S) && body.on_floor().is_none() {
             body.apply_linear_impulse(Vec2::new(0.0, -50000000.0));
-            println!("STOMP!!! {:?}", body.linvel);
         }
 
         // It might look like we need to multiply by delta_time but the apply_force function does it for us(in the physics step)

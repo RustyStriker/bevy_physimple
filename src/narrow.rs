@@ -1,6 +1,7 @@
-use bevy::{ecs::entity, prelude::*};
+use bevy::prelude::*;
 use crate::{bodies::*, broad::{ObbData, ObbDataKinematic, ShapeType}, prelude::{PhysicsSettings, Vec2Ext}, shapes::*};
 
+#[allow(clippy::clippy::too_many_arguments)]
 pub fn narrow_phase_system(
 	phy_set : Res<PhysicsSettings>,
 	// Shape queries
@@ -103,14 +104,13 @@ pub fn narrow_phase_system(
 
 			let mut normal = Vec2::ZERO;
 			let mut remainder = Vec2::ZERO;
-			let mut penetration = Vec2::ZERO;
 			let mut coll_index = -1;
 
 			for (i, obb) in surroundings.iter().enumerate() {
 				let coll_position = raycast_aabb(kin.prev_position, movement, obb.aabb);
 				let coll_position = coll_position.min(1.0); // Lock coll_position between [0,1]
 
-				if coll_position != -1.0 {
+				if (coll_position + 1.0).abs() >= f32::EPSILON { // coll_position != -1
 					// Get the obb shape thingy
 					let obb_shape = match get_shape(obb.entity, obb.shape_type) {
 						Some(s) => s,
@@ -150,8 +150,6 @@ pub fn narrow_phase_system(
 						let moved = new_pos - kin_pos.translation;
 						remainder = movement - moved;
 
-						penetration = dis;
-
 						// movement = movement - remainder;
 						coll_index = i as i32;
 					}
@@ -177,7 +175,7 @@ pub fn narrow_phase_system(
 
 				kin.linvel = move_slide - move_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
 				kin_pos.translation += movement - remainder;
-				
+
 				let rem_proj = remainder.project(normal);
 				let rem_slide = remainder - rem_proj;
 
@@ -196,11 +194,8 @@ pub fn narrow_phase_system(
 
 		// Set the end position of kin and its new movement
 
-		match transforms.get_component_mut::<GlobalTransform>(entity_kin) {
-			Ok(mut t) => {
-				trans_mode.set_position(&mut t, kin_pos.translation);
-			},
-			Err(_) => { /* we should probably panic in here too */}
+		if let Ok(mut t) = transforms.get_component_mut::<GlobalTransform>(entity_kin) {
+			trans_mode.set_position(&mut t, kin_pos.translation);
 		}
 	}
 }
@@ -257,10 +252,7 @@ fn raycast_aabb(
     if max < 0.0 {
         -1.0
     }
-    else if min > max {
-        max
-    }
-    else if min < 0.0 {
+    else if min > max || min < 0.0 {
         max
     }
     else {

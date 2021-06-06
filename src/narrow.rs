@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{bodies::*, broad::{ObbData, ObbDataKinematic, ShapeType}, prelude::{PhysicsSettings, Vec2Ext}, shapes::*};
+use crate::{bodies::*, broad::{ObbData, ObbDataKinematic, ShapeType}, plugin::CollisionEvent, prelude::{PhysicsSettings, Vec2Ext}, shapes::*};
 
 #[allow(clippy::clippy::too_many_arguments)]
 pub fn narrow_phase_system(
@@ -16,6 +16,8 @@ pub fn narrow_phase_system(
 	// Simple collision data
 	mut obb_data : EventReader<ObbData>,
 	mut obb_kinematic : EventReader<ObbDataKinematic>,
+	// Writer to throw collision events
+	mut collision_writer : EventWriter<CollisionEvent>,
 ) {
 	// Loop over kinematic bodies
 	// Capture their sensor/static surroundings
@@ -48,6 +50,8 @@ pub fn narrow_phase_system(
 	let trans_mode = phy_set.transform_mode;
 	let up_dir = -phy_set.gravity.normalize();
 
+	let mut kin_data : Vec<(Entity, &dyn Shape, Aabb)> = Vec::new();
+
 	for obb_kin in obb_kinematic.iter() {
 		let entity_kin = obb_kin.entity;
 				
@@ -73,6 +77,9 @@ pub fn narrow_phase_system(
 			}
 		};
 		
+		// Push this body so we could check kin VS kin collisions later
+		kin_data.push((entity_kin, shape_kin, obb_kin.aabb));
+
 		// Capture stuff
 		// This should be the end result of the movement
 		let move_kin = kin_pos.translation - kin.prev_position;
@@ -86,7 +93,9 @@ pub fn narrow_phase_system(
 
 		// Loop over the sensors and statics to see who we capture
 		for obb in obb_data.iter() {
-			if aabb_circle(center, radius_sqrd, &obb.aabb) {
+			let same_layer = ((obb.coll_layer & kin.mask) | (obb.coll_mask & kin.layer)) != 0;
+
+			if same_layer && aabb_circle(center, radius_sqrd, &obb.aabb) {
 				surroundings.push(obb);
 			}
 		}
@@ -185,6 +194,14 @@ pub fn narrow_phase_system(
 
 				// Do the on_* stuff
 				check_on_stuff(&mut kin, normal, up_dir, phy_set.floor_angle);
+
+				// Throw an event
+				collision_writer.send(CollisionEvent {
+					entity_a: entity_kin,
+					entity_b: obb.entity,
+					is_b_static: true, // we only collide with static bodies here
+					normal,
+				});
 			}
 			else { // There was no collisions here so we can break
 				kin_pos.translation += movement; // need to move whatever left to move with
@@ -196,6 +213,31 @@ pub fn narrow_phase_system(
 
 		if let Ok(mut t) = transforms.get_component_mut::<GlobalTransform>(entity_kin) {
 			trans_mode.set_position(&mut t, kin_pos.translation);
+		}
+	} // out of kin_obb for loop
+
+	// Loop over the kinematic bodies and check for collisions
+	for (i, (e, s, aabb)) in kin_data.iter().enumerate() {
+		let kin = match kinematics.get_component::<KinematicBody2D>(*e) {
+			Ok(k) => k,
+			Err(_) => continue,
+		};
+		
+		for (e2, s2, aabb2) in kin_data.iter().skip(i + 1) {
+			let kin2 = match kinematics.get_component::<KinematicBody2D>(*e2) {
+				Ok(k) => k,
+				Err(_) => continue,
+			};
+
+			// Skip this iteration there is no shared layer/mask thingy
+			if (kin.layer & kin2.mask) | (kin.mask & kin2.layer) == 0 {
+				continue;
+			}
+
+			if get_aabb_collision(*aabb, *aabb2) {
+				// TODO !!!
+				// let (dis, pen) = s.collide_with_shape()
+			}
 		}
 	}
 }
@@ -222,22 +264,22 @@ fn raycast_aabb(
     //      We do this explicit check because the raycast formula i used doesnt handle cases where one of the components is 0
     //       as it would lead to division by 0(thus errors) and the `else NAN` part will make it completly ignore the collision
     //       on that axle
-    if ray_cast.x == 0.0 {
-        let ray_min = ray_from.x.min(ray_from.x + ray_cast.x);
-        let ray_max = ray_from.x.max(ray_from.x + ray_cast.x);
+    // if ray_cast.x == 0.0 {
+    //     let ray_min = ray_from.x.min(ray_from.x + ray_cast.x);
+    //     let ray_max = ray_from.x.max(ray_from.x + ray_cast.x);
 
-        if !(aabb_min.x <= ray_max && aabb_max.x >= ray_min) {
-            return -1.0; // if it doesnt collide on the X axle terminate it early
-        }
-    }
-    if ray_cast.y == 0.0 {
-        let ray_min = ray_from.y.min(ray_from.y + ray_cast.y);
-        let ray_max = ray_from.y.max(ray_from.y + ray_cast.y);
+    //     if !(aabb_min.x <= ray_max && aabb_max.x >= ray_min) {
+    //         return -1.0; // if it doesnt collide on the X axle terminate it early
+    //     }
+    // }
+    // if ray_cast.y == 0.0 {
+    //     let ray_min = ray_from.y.min(ray_from.y + ray_cast.y);
+    //     let ray_max = ray_from.y.max(ray_from.y + ray_cast.y);
 
-        if !(aabb_min.y <= ray_max && aabb_max.y >= ray_min) {
-            return -1.0; // if it doesnt collide on the X axle terminate it early
-        }
-    }
+    //     if !(aabb_min.y <= ray_max && aabb_max.y >= ray_min) {
+    //         return -1.0; // if it doesnt collide on the X axle terminate it early
+    //     }
+    // }
 
     // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
     // it will never collide(thus division by 0.0)
@@ -273,6 +315,20 @@ fn check_on_stuff(body : &mut KinematicBody2D, normal : Vec2, up : Vec2, floor_a
     if dot <= -floor_angle {
         body.on_ceil = Some(normal);
     }
+}
+
+/// Checks for collision between 2 AABB objects and returns the penetration(of a in b) if existing
+fn get_aabb_collision(a : Aabb, b : Aabb) -> bool {
+    let amin = a.position - a.extents;
+    let amax = a.position + a.extents;
+    let bmin = b.position - b.extents;
+    let bmax = b.position + b.extents;
+
+    // Check for a general collision
+    let coll_x = amax.x >= bmin.x && bmax.x >= amin.x;
+    let coll_y = amax.y >= bmin.y && bmax.y >= amin.y;
+
+    coll_x && coll_y
 }
 
 // 1. All Shapes with bodies        -> AABB + Entity + Shape Type(for later use) + Body Type(for later use as well)

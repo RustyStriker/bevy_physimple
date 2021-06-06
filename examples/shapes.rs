@@ -79,21 +79,21 @@ fn setup(
         .insert(Square::size(Vec2::new(30.0,300.0)));
 
     // Spawn the cube near us
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(20.0)),
-            material: another_color.clone(),
-            transform : Transform::from_xyz(30.0,60.0,0.0),
-            ..Default::default()
-        })
-        .insert(
-            KinematicBody2D::new()
-                .with_mass(2.0)
-                .with_friction(0.1) // Basically almost no friction, should be fun :D
-                .with_bounciness(0.3) // Make it bouncy(also on walls)
-                .with_linear_velocity(Vec2::new(220.0,0.0))
-		)
-		.insert(Square::size(Vec2::new(20.0, 20.0)));
+    // commands
+    //     .spawn_bundle(SpriteBundle {
+    //         sprite : Sprite::new(Vec2::splat(20.0)),
+    //         material: another_color.clone(),
+    //         transform : Transform::from_xyz(30.0,60.0,0.0),
+    //         ..Default::default()
+    //     })
+    //     .insert(
+    //         KinematicBody2D::new()
+    //             .with_mass(2.0)
+    //             .with_friction(0.1) // Basically almost no friction, should be fun :D
+    //             .with_bounciness(0.3) // Make it bouncy(also on walls)
+    //             .with_linear_velocity(Vec2::new(220.0,0.0))
+	// 	)
+	// 	.insert(Square::size(Vec2::new(20.0, 20.0)));
 
     // Circles
 

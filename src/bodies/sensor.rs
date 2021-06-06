@@ -14,6 +14,9 @@ pub struct Sensor2D {
 	/// Generally to bodies will colide if (a.mask & b.layer) | (b.mask & a.layer) > 0
 	pub layer : u8,
 
+	/// Whether to check for collision events or not
+	pub active : bool,
+
 	pub(crate) overlapping_bodies : Vec<Entity>,
 }
 
@@ -23,6 +26,7 @@ impl Sensor2D {
 			mask : 1,
 			layer : 1,
 			overlapping_bodies : Vec::with_capacity(5),
+			active : true,
 		}
 	}
 	pub fn with_mask(mut self, mask : u8) -> Self {
@@ -31,6 +35,10 @@ impl Sensor2D {
 	}
 	pub fn with_layer(mut self, layer : u8) -> Self {
 		self.layer = layer;
+		self
+	}
+	pub fn with_active(mut self, active : bool) -> Self {
+		self.active = active;
 		self
 	}
 

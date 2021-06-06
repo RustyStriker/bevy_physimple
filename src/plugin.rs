@@ -1,7 +1,9 @@
+//! # Main plugin
+//!
+//! Defining The Plugins and some other important stuff, like user facing events
+
 use std::f32::consts::PI;
-
 use bevy::prelude::*;
-
 use crate::{broad::{self, ObbData, ObbDataKinematic}, common::*, narrow};
 use crate::bodies::*;
 use crate::shapes::*;
@@ -117,6 +119,17 @@ impl TransformMode {
             TransformMode::YZ => Quat::from_rotation_x(rot),
         }
     }
+}
+/// General collision event that happens between 2 bodies.
+pub struct CollisionEvent {
+    /// First entity
+    pub entity_a : Entity,
+    /// Second entity
+    pub entity_b : Entity,
+    /// Wether `entity_b` is a static body or not(if not then its a kinematicbody)
+    pub is_b_static : bool,
+    /// Normal of the collision(from `entity_a`'s perspective)
+    pub normal : Vec2,
 }
 
 /// labels for the physics stages

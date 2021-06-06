@@ -27,6 +27,8 @@ pub struct ObbData {
 	pub(crate) shape_type : ShapeType,
 	/// True - sensor, False - static
 	pub(crate) sensor : bool,
+	pub(crate) coll_layer : u8,
+	pub(crate) coll_mask : u8,
 }
 pub struct ObbDataKinematic {
 	pub(crate) entity : Entity,
@@ -37,8 +39,8 @@ pub struct ObbDataKinematic {
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
 pub fn broad_phase_system<T>(
 	settings : Res<PhysicsSettings>,
-	statics : Query<(Entity, &GlobalTransform,&T), With<StaticBody2D>>, 
-	sensors : Query<(Entity, &GlobalTransform,&T), With<Sensor2D>>,
+	statics : Query<(Entity, &GlobalTransform,&T, &StaticBody2D)>,
+	sensors : Query<(Entity, &GlobalTransform,&T, &Sensor2D)>,
 	kinematics : Query<(Entity, &GlobalTransform,&T, &KinematicBody2D)>,
 	mut writer : EventWriter<ObbData>,
 	mut writer_kin : EventWriter<ObbDataKinematic>,
@@ -52,39 +54,47 @@ where
 	let tm = settings.transform_mode;
 
 	// Static bodies
-	for (e, t, s) in statics.iter() {
-		let data = ObbData {
-			entity: e,
-			aabb: s.to_aabb(Transform2D::from((t, tm))),
-			shape_type,
-			sensor: false,
-		};
-		writer.send(data);
+	for (e, t, s, sb) in statics.iter() {
+		if sb.active {
+			let data = ObbData {
+				entity: e,
+				aabb: s.to_aabb(Transform2D::from((t, tm))),
+				shape_type,
+				sensor: false,
+				coll_layer : sb.layer,
+				coll_mask : sb.mask,
+			};
+			writer.send(data);
+		}
 	}
 	// Sensors :D
-	for (e, t, s) in sensors.iter() {
+	for (e, t, s, sen) in sensors.iter() {
 		let data = ObbData {
 			entity: e,
 			aabb: s.to_aabb(Transform2D::from((t, tm))),
 			shape_type,
 			sensor: true,
+			coll_layer : sen.layer,
+			coll_mask : sen.mask,
 		};
 		writer.send(data);
 	}
 	// Kinematic stuff are complex af
 	for (e, t, s, k) in kinematics.iter() {
-		let t = Transform2D::from((t, tm));
-		let t = Transform2D {
-			translation : k.prev_position,
-			..t
-		};
+		if k.active {
+			let t = Transform2D::from((t, tm));
+			let t = Transform2D {
+				translation : k.prev_position,
+				..t
+			};
 
-		let data = ObbDataKinematic {
-			entity: e,
-			aabb: s.to_aabb(t),
-			shape_type,
-		};
-		writer_kin.send(data);
+			let data = ObbDataKinematic {
+				entity: e,
+				aabb: s.to_aabb(t),
+				shape_type,
+			};
+			writer_kin.send(data);
+		}
 	}
 
 }

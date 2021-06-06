@@ -18,16 +18,18 @@ pub struct StaticBody2D {
 	/// (0 - hard, 1 - full trampoline, >1 funny and weird)
 	pub bounciness : f32,
 
+	/// Whether the body checks for collisions
+	pub active : bool,
+
 }
 impl StaticBody2D {
 	/// Creates a new StaticBody with default parameters
 	pub fn new() -> Self {
 		Self {
-			// position : Vec2::ZERO,
-			// rotation : 0.0,
 			mask : 1,
 			layer : 1,
 			bounciness : 0.0,
+			active : true,
 		}
 	}
 	pub fn with_mask(mut self, mask : u8) -> Self {
@@ -40,6 +42,10 @@ impl StaticBody2D {
 	}
 	pub fn with_bounciness(mut self, bounce : f32) -> Self {
 		self.bounciness = bounce;
+		self
+	}
+	pub fn with_active(mut self, active : bool) -> Self {
+		self.active = active;
 		self
 	}
 }

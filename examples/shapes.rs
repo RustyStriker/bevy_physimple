@@ -26,7 +26,7 @@ fn setup(
 ) {
     let blue = materials.add(Color::ALICE_BLUE.into());
     let black = materials.add(Color::BLACK.into());
-    let another_color = materials.add(Color::GOLD.into());
+    // let another_color = materials.add(Color::GOLD.into());
 
     // Spawn the damn camera
     commands

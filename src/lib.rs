@@ -18,4 +18,3 @@ pub mod prelude {
     pub use crate::bodies::*;
     pub use crate::shapes::*;
 }
-

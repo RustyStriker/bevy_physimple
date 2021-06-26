@@ -125,8 +125,15 @@ impl Shape for Circle {
 		}
 		else {
 			let dis_len = dis.length();
+
+			if dis_len < f32::EPSILON {
+				return (Vec2::ZERO, false);
+			}
+
 			// calculate the distance to the shape
-			let pen = (self.radius - dis.length()) * dis / dis.length();
+			let pen = (self.radius - dis_len) * dis / dis_len;
+
+
 			if dis_len < self.radius {
 				(-pen, true)
 			}

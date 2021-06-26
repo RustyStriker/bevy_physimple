@@ -83,10 +83,6 @@ where
 	for (e, t, s, k) in kinematics.iter() {
 		if k.active {
 			let t = Transform2D::from((t, tm));
-			let t = Transform2D {
-				translation : k.prev_position,
-				..t
-			};
 
 			let data = ObbDataKinematic {
 				entity: e,

@@ -70,7 +70,7 @@ pub enum TransformMode {
 }
 impl TransformMode {
     /// Returns the position from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_position(&self, transform : &GlobalTransform) -> Vec2 {
+    pub fn get_global_position(&self, transform : &GlobalTransform) -> Vec2 {
         let t = transform.translation;
         
         match self {
@@ -80,7 +80,7 @@ impl TransformMode {
         }
     }
     /// Returns the rotation from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_rotation(&self, transform : &GlobalTransform) -> f32 {
+    pub fn get_global_rotation(&self, transform : &GlobalTransform) -> f32 {
         let t = transform.rotation;
         
         match self {
@@ -90,7 +90,37 @@ impl TransformMode {
         }
     }
     /// Returns the scale from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_scale(&self, transform : &GlobalTransform) -> Vec2 {
+    pub fn get_global_scale(&self, transform : &GlobalTransform) -> Vec2 {
+        let t = transform.scale;
+
+        match self {
+            TransformMode::XY => Vec2::new(t.x,t.y),
+            TransformMode::XZ => Vec2::new(t.x,t.z),
+            TransformMode::YZ => Vec2::new(t.y,t.z),
+        }
+    }
+    /// Returns the position from a given `&Transform` and `TransformMode`
+    pub fn get_position(&self, transform : &Transform) -> Vec2 {
+        let t = transform.translation;
+        
+        match self {
+            TransformMode::XY => Vec2::new(t.x,t.y),
+            TransformMode::XZ => Vec2::new(t.x,t.z),
+            TransformMode::YZ => Vec2::new(t.y,t.z),
+        }
+    }
+    /// Returns the rotation from a given `&Transform` and `TransformMode`
+    pub fn get_rotation(&self, transform : &Transform) -> f32 {
+        let t = transform.rotation;
+        
+        match self {
+            TransformMode::XY => t.z,
+            TransformMode::XZ => t.y,
+            TransformMode::YZ => t.x,
+        }
+    }
+    /// Returns the scale from a given `&Transform` and `TransformMode`
+    pub fn get_scale(&self, transform : &Transform) -> Vec2 {
         let t = transform.scale;
 
         match self {
@@ -100,7 +130,7 @@ impl TransformMode {
         }
     }
     /// Sets position based on `TransformMode`
-    pub fn set_position(&self, transform : &mut GlobalTransform, pos : Vec2) {
+    pub fn set_position(&self, transform : &mut Transform, pos : Vec2) {
         let t = transform.translation;
 
         transform.translation = match self {
@@ -109,9 +139,8 @@ impl TransformMode {
             TransformMode::YZ => Vec3::new(t.x, pos.x, pos.y),
         };
     }
-
     /// Sets rotation based on `TransformMode` (erase previus rotation)
-    pub fn set_rotation(&self, transform : &mut GlobalTransform, rot : f32) {
+    pub fn set_rotation(&self, transform : &mut Transform, rot : f32) {
         // TODO make it persist the other axis rotations, i dont understand quaternions
         transform.rotation = match self {
             TransformMode::XY => Quat::from_rotation_z(rot),
@@ -189,7 +218,7 @@ impl Plugin for Physics2dPlugin {
 fn physics_step_system (
     time : Res<Time>,
     physics_sets : Res<PhysicsSettings>,
-    mut query : Query<(&mut KinematicBody2D, &mut GlobalTransform)>,
+    mut query : Query<(&mut KinematicBody2D, &mut Transform,)>,
 ) {
     let delta = time.delta_seconds();
     let gravity = physics_sets.gravity;
@@ -199,7 +228,6 @@ fn physics_step_system (
         if !body.active {
             continue;
         }
-        body.prev_position = trans_mode.get_position(&transform);
 
         let accelerating = body.accumulator.length_squared() > 0.1 || body.dynamic_acc.length_squared() > 0.1;
 
@@ -231,8 +259,10 @@ fn physics_step_system (
             }
         }
         // Apply movement and rotation
-        let position = trans_mode.get_position(&transform) + body.linvel * delta;
+        body.inst_linvel = body.linvel * delta;
+        let position = trans_mode.get_position(&transform) + body.inst_linvel;
         trans_mode.set_position(&mut transform, position);
+
 
         let rotation = trans_mode.get_rotation(&transform) + body.angvel * delta;
         trans_mode.set_rotation(&mut transform, rotation);

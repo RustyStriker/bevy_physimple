@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::{bodies::*, broad::{ObbData, ObbDataKinematic, ShapeType}, plugin::CollisionEvent, prelude::{PhysicsSettings, Vec2Ext}, shapes::*};
 
-#[allow(clippy::clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_system(
 	phy_set : Res<PhysicsSettings>,
 	// Shape queries
@@ -10,7 +10,8 @@ pub fn narrow_phase_system(
 	// ... more shape queries later when i do more shapes
 	// The different bodies
 	mut kinematics : Query<&mut KinematicBody2D>,
-	mut transforms : Query<&mut GlobalTransform>,
+	global_transforms : Query<&GlobalTransform>,
+	mut transforms : Query<&mut Transform>,
 	mut sensors : Query<&mut Sensor2D>,
 	statics : Query<&StaticBody2D>,
 	// Simple collision data
@@ -64,7 +65,7 @@ pub fn narrow_phase_system(
 		};
 
 		// TODO Maybe replace this later
-		let mut kin_pos = match transforms.get_component::<GlobalTransform>(entity_kin) {
+		let mut kin_pos = match global_transforms.get_component::<GlobalTransform>(entity_kin) {
 			Ok(t) => Transform2D::from((t, trans_mode)),
 			Err(_) => continue,
 		};
@@ -82,9 +83,7 @@ pub fn narrow_phase_system(
 
 		// Capture stuff
 		// This should be the end result of the movement
-		let move_kin = kin_pos.translation - kin.prev_position;
-
-		kin_pos.translation = kin.prev_position;
+		let move_kin = kin.inst_linvel;
 		
 		let center = obb_kin.aabb.position;
 		let radius_sqrd = (obb_kin.aabb.extents + move_kin.abs()).length_squared();
@@ -116,7 +115,7 @@ pub fn narrow_phase_system(
 			let mut coll_index = -1;
 
 			for (i, obb) in surroundings.iter().enumerate() {
-				let coll_position = raycast_aabb(kin.prev_position, movement, obb.aabb);
+				let coll_position = raycast_aabb(kin_pos.translation, movement, obb.aabb);
 				let coll_position = coll_position.min(1.0); // Lock coll_position between [0,1]
 
 				if (coll_position + 1.0).abs() >= f32::EPSILON { // coll_position != -1
@@ -126,14 +125,13 @@ pub fn narrow_phase_system(
 						None => continue,
 					};
 					// get the obb position as well
-					let obb_transform = match transforms.get_component::<GlobalTransform>(obb.entity) {
+					let obb_transform = match global_transforms.get_component::<GlobalTransform>(obb.entity) {
 						Ok(t) => Transform2D::from((t,trans_mode)),
 						Err(_) => continue,
 					};
 
-
 					let coll_pos = Transform2D {
-						translation : kin.prev_position + movement * coll_position,
+						translation : kin_pos.translation + movement * coll_position,
 						..kin_pos
 					};
 
@@ -211,7 +209,7 @@ pub fn narrow_phase_system(
 
 		// Set the end position of kin and its new movement
 
-		if let Ok(mut t) = transforms.get_component_mut::<GlobalTransform>(entity_kin) {
+		if let Ok(mut t) = transforms.get_component_mut::<Transform>(entity_kin) {
 			trans_mode.set_position(&mut t, kin_pos.translation);
 		}
 	} // out of kin_obb for loop
@@ -258,28 +256,6 @@ fn raycast_aabb(
 ) -> f32 {
     let aabb_min = aabb.position - aabb.extents;
     let aabb_max = aabb.position + aabb.extents;
-
-    // if one of the cast components is 0.0, make sure we are in the bounds of that axle
-    // Why?
-    //      We do this explicit check because the raycast formula i used doesnt handle cases where one of the components is 0
-    //       as it would lead to division by 0(thus errors) and the `else NAN` part will make it completly ignore the collision
-    //       on that axle
-    // if ray_cast.x == 0.0 {
-    //     let ray_min = ray_from.x.min(ray_from.x + ray_cast.x);
-    //     let ray_max = ray_from.x.max(ray_from.x + ray_cast.x);
-
-    //     if !(aabb_min.x <= ray_max && aabb_max.x >= ray_min) {
-    //         return -1.0; // if it doesnt collide on the X axle terminate it early
-    //     }
-    // }
-    // if ray_cast.y == 0.0 {
-    //     let ray_min = ray_from.y.min(ray_from.y + ray_cast.y);
-    //     let ray_max = ray_from.y.max(ray_from.y + ray_cast.y);
-
-    //     if !(aabb_min.y <= ray_max && aabb_max.y >= ray_min) {
-    //         return -1.0; // if it doesnt collide on the X axle terminate it early
-    //     }
-    // }
 
     // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
     // it will never collide(thus division by 0.0)

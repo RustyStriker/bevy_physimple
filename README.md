@@ -14,18 +14,17 @@ and eventually i want people to be able to use this crate as a simple collisions
 
 ## What is currently working?
 
-- Simple AABB collisions(without rotations)
-- I got raycasts(tho they still need some more features, but first I will focus on more collision shapes)
-- That is pretty much it
+- The Sqaure collision shape, tho it acts weird due to bad overlap detection code.
 
 ## Quickstart
 
 TODO, for now you can check the examples
 just run
-`cargo run --bevy/dynamic --example (showcase/simple/stress_2d) --release`
-to see it in action
+`cargo run --bevy/dynamic --example shapes --release`
+to see it in action(other examples are not updated to use shapes and will not work currently)
 
-Do note that each physics component needs a `GlobalTransform` with it now.
+Do note that each physics component needs a `GlobalTransform` with it now,
+and `KinematicBody2D` needs a `Transform` in order to actually move and be used.
 
 ## bevy - physimple versions
 
@@ -33,10 +32,8 @@ Do note that each physics component needs a `GlobalTransform` with it now.
 |------|-----------------|
 | 0.5  | 0.1.0 - current |
 
-## planned
+## A todo list
 
-- [ ] Rotation
-- [ ] More collision shapes
-- [x] Better friction - with per object values
-- [x] Raycasts
-- [ ] Joints(with support for custom types of joints)
+- [ ] Rewrite shape overlap
+- [ ] Implement the different shapes
+- [ ] Update the examples, and better showcase stuff

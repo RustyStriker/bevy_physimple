@@ -112,7 +112,7 @@ impl Shape for Circle {
 
     }
 
-    fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
+    fn collide_with_shape(&self, transform : Transform2D, shape : &dyn Shape, shape_trans : Transform2D) -> (Vec2, bool) {
         let center = transform.translation + self.offset;
 
 		let (dis, is_pen) = shape.get_vertex_penetration(center, shape_trans);
@@ -125,8 +125,15 @@ impl Shape for Circle {
 		}
 		else {
 			let dis_len = dis.length();
+
+			if dis_len < f32::EPSILON {
+				return (Vec2::ZERO, false);
+			}
+
 			// calculate the distance to the shape
-			let pen = (self.radius - dis.length()) * dis / dis.length();
+			let pen = (self.radius - dis_len) * dis / dis_len;
+
+
 			if dis_len < self.radius {
 				(-pen, true)
 			}

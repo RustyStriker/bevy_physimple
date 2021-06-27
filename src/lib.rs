@@ -2,6 +2,8 @@ pub mod common;
 pub mod plugin;
 pub mod bodies;
 pub mod shapes;
+mod narrow;
+mod broad;
 
 pub mod prelude {
     //! This module re-exports all the things you might need for 2d physics
@@ -16,4 +18,3 @@ pub mod prelude {
     pub use crate::bodies::*;
     pub use crate::shapes::*;
 }
-

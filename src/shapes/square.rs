@@ -134,7 +134,7 @@ impl Shape for Square {
 
 
 		// Check that indeed it is between at least 2 parallel edges
-		if vertex.abs() > extents {
+		if vertex.x.abs() > extents.x && vertex.y.abs() > extents.y {
 			// It is not inside any pair of parallel edges
 			// the closest edge will be the one where both signs of the edges will resemle the vertex's signs
 			// so it will end up being `extents * vertex.signum()` therefore
@@ -144,22 +144,6 @@ impl Shape for Square {
 			(distance, false)
 		}
 		else {
-			// This is counter intuitive but you want the distance between `vertex.x` and `-extents.x`
-			// 	 which in turns out as `vertex.x - (-extents.x) = vertex.x + extents.x`
-			// let xmin = (vertex.x + extents.x).min(extents.x - vertex.x);
-			// let ymin = (vertex.y + extents.y).min(extents.y - vertex.y);
-
-			// let min = xmin.min(ymin);
-
-			// // I will be honest, i dont really know why i need to do the `* vertex.[x/y].signum()` part
-			// //  it just makes it work as expected(maybe it has something to do with the collision part of things?)
-			// let res = if (min - xmin).abs() <= f32::EPSILON {
-			// 	Vec2::new(xmin * vertex.x.signum(),0.0)
-			// }
-			// else {
-			// 	Vec2::new(0.0,ymin * vertex.y.signum())
-			// };
-
 			let to_edge = extents.abs() - vertex.abs();
 			let res = if to_edge.x < to_edge.y {
 				Vec2::new(to_edge.x * vertex.x.signum(),0.0)
@@ -174,7 +158,7 @@ impl Shape for Square {
 		}
 	}
 
-    fn collide_with_shape<S : Shape>(&self, transform : Transform2D, shape : &S, shape_trans : Transform2D) -> (Vec2, bool) {
+    fn collide_with_shape(&self, transform : Transform2D, shape : &dyn Shape, shape_trans : Transform2D) -> (Vec2, bool) {
 		let rot_basis = Mat2::from_angle(transform.rotation);
 		let extents = rot_basis * (self.extents * transform.scale);
 		let extents_con = rot_basis * (self.extents * transform.scale * Vec2::new(1.0,-1.0));

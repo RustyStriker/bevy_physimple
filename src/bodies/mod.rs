@@ -1,7 +1,7 @@
 mod kinematic;
-mod staticbody;
 mod sensor;
+mod staticbody;
 
 pub use kinematic::*;
-pub use staticbody::*;
 pub use sensor::*;
+pub use staticbody::*;

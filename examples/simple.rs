@@ -3,7 +3,7 @@ use bevy_physimple::prelude::*;
 
 #[derive(Default)]
 pub struct CharacterController {
-    double_jump : bool
+    double_jump: bool,
 }
 
 fn main() {
@@ -31,14 +31,12 @@ fn setup(
     let another_color = materials.add(Color::GOLD.into());
 
     // Spawn the damn camera
-    commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d());
-
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     // Spawn character
     let _player_id = commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(28.0,28.0)),
+            sprite: Sprite::new(Vec2::new(28.0, 28.0)),
             material: blue.clone(),
             ..Default::default()
         })
@@ -46,54 +44,48 @@ fn setup(
             KinematicBody2D::new()
                 .with_terminal(Vec2::new(400.0, 1000.0))
                 .with_mask(3)
-                .with_friction(1.5)
+                .with_friction(1.5),
         )
         .insert(CharacterController::default())
         .with_children(|parent| {
-            parent.spawn().insert(Aabb::size(Vec2::new(28.0,28.0)));
-        }).id();
-    
+            parent.spawn().insert(Aabb::size(Vec2::new(28.0, 28.0)));
+        })
+        .id();
+
     // center floor
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(600.0,20.0)),
+            sprite: Sprite::new(Vec2::new(600.0, 20.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(150.0,-200.0,0.0),
+            transform: Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            StaticBody2D::new()
-                .with_layer(3)
-        )
+        .insert(StaticBody2D::new().with_layer(3))
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(600.0, 20.0)),));
         });
 
     // wall
     commands
-    .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(20.0,500.0)),
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite::new(Vec2::new(20.0, 500.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(450.0,0.0,0.0),
+            transform: Transform::from_xyz(450.0, 0.0, 0.0),
             ..Default::default()
-    })
-    .insert(
-        StaticBody2D::new()
-    )
-    .with_children(|parent| {
-        parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 500.0)),));
-    });
+        })
+        .insert(StaticBody2D::new())
+        .with_children(|parent| {
+            parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 500.0)),));
+        });
     // spawn another floor
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(300.0,20.0)),
+            sprite: Sprite::new(Vec2::new(300.0, 20.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(-300.0,-190.0,0.0),
+            transform: Transform::from_xyz(-300.0, -190.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            StaticBody2D::new()
-        )
+        .insert(StaticBody2D::new())
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(300.0, 20.0)),));
         });
@@ -101,14 +93,12 @@ fn setup(
     // yet another floor
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(120.0,20.0)),
+            sprite: Sprite::new(Vec2::new(120.0, 20.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(360.0,-50.0,0.0),
+            transform: Transform::from_xyz(360.0, -50.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            StaticBody2D::new()
-        )
+        .insert(StaticBody2D::new())
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(120.0, 20.0)),));
         });
@@ -116,14 +106,12 @@ fn setup(
     // is this the last floor?
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(120.0,20.0)),
+            sprite: Sprite::new(Vec2::new(120.0, 20.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(120.0,-10.0,0.0),
+            transform: Transform::from_xyz(120.0, -10.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            StaticBody2D::new()
-        )
+        .insert(StaticBody2D::new())
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(120.0, 20.0)),));
         });
@@ -131,14 +119,12 @@ fn setup(
     // dude i think there is enough floors already
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(120.0,20.0)),
+            sprite: Sprite::new(Vec2::new(120.0, 20.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(-120.0,20.0,0.0),
+            transform: Transform::from_xyz(-120.0, 20.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            StaticBody2D::new()
-        )
+        .insert(StaticBody2D::new())
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(120.0, 20.0)),));
         });
@@ -146,16 +132,16 @@ fn setup(
     // Spawn the cube near us
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(20.0)),
+            sprite: Sprite::new(Vec2::splat(20.0)),
             material: another_color.clone(),
-            transform : Transform::from_xyz(30.0,60.0,0.0),
+            transform: Transform::from_xyz(30.0, 60.0, 0.0),
             ..Default::default()
         })
         .insert(
             KinematicBody2D::new()
                 .with_mass(2.0)
                 .with_friction(0.1) // Basically almost no friction, should be fun :D
-                .with_bounciness(0.9) // Make it bouncy(also on walls)
+                .with_bounciness(0.9), // Make it bouncy(also on walls)
         )
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 20.0)),));
@@ -164,31 +150,25 @@ fn setup(
     // spawn the cube connected to us - no longer connected as there are no joints yet
     let _target_id = commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(20.0)),
+            sprite: Sprite::new(Vec2::splat(20.0)),
             material: another_color.clone(),
-            transform : Transform::from_xyz(100.0,100.0,0.0),
+            transform: Transform::from_xyz(100.0, 100.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            KinematicBody2D::new()
-                .with_mass(1.0)
-        )
+        .insert(KinematicBody2D::new().with_mass(1.0))
         .with_children(|parent| {
             parent.spawn_bundle((Aabb::size(Vec2::new(20.0, 20.0)),));
-        }).id();
+        })
+        .id();
 
     // spawn a cube with different layers
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(20.0)),
-            material : materials.add(Color::MAROON.into()),
+            sprite: Sprite::new(Vec2::splat(20.0)),
+            material: materials.add(Color::MAROON.into()),
             ..Default::default()
         })
-        .insert(
-            KinematicBody2D::new()
-            .with_layer(2)
-            .with_mask(2)
-        )
+        .insert(KinematicBody2D::new().with_layer(2).with_mask(2))
         .with_children(|p| {
             p.spawn().insert(Aabb::size(Vec2::splat(20.0)));
         });
@@ -218,7 +198,7 @@ fn setup(
 
 fn character_system(
     input: Res<Input<KeyCode>>,
-    phys_sets : Res<PhysicsSettings>,
+    phys_sets: Res<PhysicsSettings>,
     mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
 ) {
     let gravity = phys_sets.gravity;
@@ -232,7 +212,7 @@ fn character_system(
             }
         }
 
-        let jump = |body : &mut KinematicBody2D| {
+        let jump = |body: &mut KinematicBody2D| {
             body.linvel = body.linvel.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
             body.linvel += wall;
@@ -248,13 +228,12 @@ fn character_system(
                 // then adding the jump force(here its gravity * 0.5) to the velocity
                 jump(&mut body);
             }
-        }
-        else if controller.double_jump && should_jump {
+        } else if controller.double_jump && should_jump {
             controller.double_jump = false;
             jump(&mut body);
         }
         // It might look like we need to multiply by delta_time but the apply_force function does it for us(in the physics step)
-        let acc = Vec2::new(1000.0,0.0);
+        let acc = Vec2::new(1000.0, 0.0);
         if input.pressed(KeyCode::A) {
             body.apply_force(-acc);
             // body.apply_angular_impulse(1.0);

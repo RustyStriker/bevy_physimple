@@ -5,7 +5,7 @@ use bevy_physimple::prelude::*;
 
 #[derive(Default)]
 pub struct CharacterController {
-    double_jump : bool
+    double_jump: bool,
 }
 
 fn main() {
@@ -29,16 +29,14 @@ fn setup(
     let another_color = materials.add(Color::GOLD.into());
 
     // Spawn the damn camera
-    commands
-        .spawn_bundle(OrthographicCameraBundle::new_2d());
-
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     // Spawn character
     let _player_id = commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(28.0,28.0)),
+            sprite: Sprite::new(Vec2::new(28.0, 28.0)),
             material: blue.clone(),
-            transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
+            transform: Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
             ..Default::default()
         })
         .insert(
@@ -46,45 +44,42 @@ fn setup(
                 .with_terminal(Vec2::new(400.0, f32::INFINITY))
                 .with_mask(3)
                 .with_friction(1.5)
-                .with_bounciness(0.0)
+                .with_bounciness(0.0),
         )
         .insert(CharacterController::default())
-        .insert(Square::size(Vec2::new(28.0,28.0)))
+        .insert(Square::size(Vec2::new(28.0, 28.0)))
         // .insert(Circle::new(14.0))
-		.id();
-    
+        .id();
+
     // center floor
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(600.0,30.0)),
+            sprite: Sprite::new(Vec2::new(600.0, 30.0)),
             material: black.clone(),
-            transform : Transform::from_xyz(150.0,-200.0,0.0),
+            transform: Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
-        .insert(
-            StaticBody2D::new()
-                .with_layer(3)
-        )
-		.insert(Square::size(Vec2::new(600.0,30.0)));
-    
+        .insert(StaticBody2D::new().with_layer(3))
+        .insert(Square::size(Vec2::new(600.0, 30.0)));
+
     // side wall
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(30.0,300.0)),
-            material : black.clone(),
-            transform : Transform::from_xyz(450.0, 0.0, 0.0),
+            sprite: Sprite::new(Vec2::new(30.0, 300.0)),
+            material: black.clone(),
+            transform: Transform::from_xyz(450.0, 0.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new())
-        .insert(Square::size(Vec2::new(30.0,300.0)));
+        .insert(Square::size(Vec2::new(30.0, 300.0)));
 
     // Spawn the cube near us
-    const CUBE_SIZE : f32 = 40.0;
+    const CUBE_SIZE: f32 = 40.0;
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+            sprite: Sprite::new(Vec2::splat(CUBE_SIZE)),
             material: another_color.clone(),
-            transform : Transform::from_xyz(30.0,60.0,0.0),
+            transform: Transform::from_xyz(30.0, 60.0, 0.0),
             ..Default::default()
         })
         .insert(
@@ -92,9 +87,9 @@ fn setup(
                 .with_mass(2.0)
                 .with_friction(0.5) // Basically almost no friction, should be fun :D
                 .with_bounciness(0.3) // Make it bouncy(also on walls)
-                .with_linear_velocity(Vec2::new(220.0,0.0))
-		)
-		.insert(Square::size(Vec2::splat(CUBE_SIZE)));
+                .with_linear_velocity(Vec2::new(220.0, 0.0)),
+        )
+        .insert(Square::size(Vec2::splat(CUBE_SIZE)));
 
     // Circles
 
@@ -122,8 +117,8 @@ fn setup(
 
 fn character_system(
     input: Res<Input<KeyCode>>,
-    phys_sets : Res<PhysicsSettings>,
-    mut query: Query<(&mut CharacterController, &mut KinematicBody2D,)>,
+    phys_sets: Res<PhysicsSettings>,
+    mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
 ) {
     let gravity = phys_sets.gravity;
 
@@ -136,7 +131,7 @@ fn character_system(
             }
         }
 
-        let jump = |body : &mut KinematicBody2D| {
+        let jump = |body: &mut KinematicBody2D| {
             body.linvel = body.linvel.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
             body.linvel += wall;
@@ -152,8 +147,7 @@ fn character_system(
                 // then adding the jump force(here its gravity * 0.5) to the velocity
                 jump(&mut body);
             }
-        }
-        else if controller.double_jump && should_jump {
+        } else if controller.double_jump && should_jump {
             controller.double_jump = false;
             jump(&mut body);
         }
@@ -164,7 +158,7 @@ fn character_system(
         }
 
         // It might look like we need to multiply by delta_time but the apply_force function does it for us(in the physics step)
-        let acc = Vec2::new(1000.0,0.0);
+        let acc = Vec2::new(1000.0, 0.0);
         if input.pressed(KeyCode::A) {
             body.apply_force(-acc);
             // body.apply_angular_impulse(1.0);

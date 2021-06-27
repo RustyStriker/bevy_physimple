@@ -7,6 +7,10 @@ struct StartInTime {
 }
 
 fn main() {
+    println!("=========================================================");
+    println!("     Currently not working due to bad Collision code     ");
+    println!("=========================================================");
+
     let mut builder = App::build();
     builder
         .insert_resource(WindowDescriptor {
@@ -47,9 +51,8 @@ fn setup(
             ..Default::default()
         })
         .insert(StaticBody2D::new())
-        .with_children(|p| {
-            p.spawn().insert(Aabb::size(Vec2::new(500.0, 20.0)));
-        });
+        .insert(Square::size(Vec2::new(500.0, 20.0)))
+        ;
     commands // FLOOR
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::new(500.0, 20.0)),
@@ -57,10 +60,9 @@ fn setup(
             transform: Transform::from_xyz(0.0, -250.0, 0.0),
             ..Default::default()
         })
-        .insert(StaticBody2D::new().with_bounciness(0.1))
-        .with_children(|p| {
-            p.spawn().insert(Aabb::size(Vec2::new(500.0, 20.0)));
-        });
+        .insert(StaticBody2D::new().with_bounciness(0.9))
+        .insert(Square::size(Vec2::new(500.0, 20.0)))
+        ;
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::new(20.0, 500.0)),
@@ -69,9 +71,8 @@ fn setup(
             ..Default::default()
         })
         .insert(StaticBody2D::new())
-        .with_children(|p| {
-            p.spawn().insert(Aabb::size(Vec2::new(20.0, 500.0)));
-        });
+        .insert(Square::size(Vec2::new(20.0, 500.0)))
+        ;
     commands
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::new(20.0, 500.0)),
@@ -80,9 +81,8 @@ fn setup(
             ..Default::default()
         })
         .insert(StaticBody2D::new())
-        .with_children(|p| {
-            p.spawn().insert(Aabb::size(Vec2::new(20.0, 500.0)));
-        });
+        .insert(Square::size(Vec2::new(20.0, 500.0)))
+        ;
 
     let cyan = materials.add(Color::CYAN.into());
     let green = materials.add(Color::LIME_GREEN.into());
@@ -101,7 +101,7 @@ fn setup(
 
             commands
                 .spawn_bundle(SpriteBundle {
-                    sprite: Sprite::new(Vec2::new(SCALE, SCALE)),
+                    sprite: Sprite::new(Vec2::splat(SCALE)),
                     material: color,
                     transform: Transform::from_xyz(pos.x, pos.y, pos.z),
                     ..Default::default()
@@ -114,9 +114,7 @@ fn setup(
                 .insert(StartInTime {
                     seconds: (8 - k) as f64,
                 })
-                .with_children(|p| {
-                    p.spawn().insert(Aabb::size(Vec2::new(SCALE, SCALE)));
-                });
+                .insert(Square::size(Vec2::splat(SCALE)));
         })
     })
 }

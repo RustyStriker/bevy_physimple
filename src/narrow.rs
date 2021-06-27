@@ -51,7 +51,7 @@ pub fn narrow_phase_system(
 	let trans_mode = phy_set.transform_mode;
 	let up_dir = -phy_set.gravity.normalize();
 
-	let mut kin_data : Vec<(Entity, &dyn Shape, Aabb)> = Vec::new();
+	let mut kin_data : Vec<(Entity, &dyn Shape, Aabb, Transform2D)> = Vec::new();
 
 	for obb_kin in obb_kinematic.iter() {
 		let entity_kin = obb_kin.entity;
@@ -78,8 +78,6 @@ pub fn narrow_phase_system(
 			}
 		};
 		
-		// Push this body so we could check kin VS kin collisions later
-		kin_data.push((entity_kin, shape_kin, obb_kin.aabb));
 
 		// Capture stuff
 		// This should be the end result of the movement
@@ -212,30 +210,81 @@ pub fn narrow_phase_system(
 		if let Ok(mut t) = transforms.get_component_mut::<Transform>(entity_kin) {
 			trans_mode.set_position(&mut t, kin_pos.translation);
 		}
+
+		// Push this body so we could check kin VS kin collisions later
+		kin_data.push((entity_kin, shape_kin, obb_kin.aabb, kin_pos));
 	} // out of kin_obb for loop
 
 	// Loop over the kinematic bodies and check for collisions
-	for (i, (e, s, aabb)) in kin_data.iter().enumerate() {
-		let kin = match kinematics.get_component::<KinematicBody2D>(*e) {
-			Ok(k) => k,
-			Err(_) => continue,
-		};
+	for (i, &(e, s, aabb, mut t)) in kin_data.iter().enumerate() {
 		
-		for (e2, s2, aabb2) in kin_data.iter().skip(i + 1) {
-			let kin2 = match kinematics.get_component::<KinematicBody2D>(*e2) {
+		for &(e2, s2, aabb2, t2) in kin_data.iter().skip(i + 1) {
+			let k = match kinematics.get_component::<KinematicBody2D>(e) {
+				Ok(k) => k,
+				Err(_) => continue,
+			};
+			let k2 = match kinematics.get_component::<KinematicBody2D>(e2) {
 				Ok(k) => k,
 				Err(_) => continue,
 			};
 
 			// Skip this iteration there is no shared layer/mask thingy
-			if (kin.layer & kin2.mask) | (kin.mask & kin2.layer) == 0 {
+			if (k.layer & k2.mask) | (k.mask & k2.layer) == 0 {
 				continue;
 			}
 
-			if get_aabb_collision(*aabb, *aabb2) {
-				// TODO Kinematic vs Kinematic Collision
-				// let (dis, pen) = s.collide_with_shape()
+			if get_aabb_collision(aabb, aabb2) {
+				// TODO Kinematic vs Kinematic Apply impulses and actually persist tena on collision
+				let (dis, pen) = s.collide_with_shape(t, s2, t2);
+				let (dis2, pen2) = s2.collide_with_shape(t2, s, t);
+
+				let dis = if pen { dis } else { dis2 };
+				let pen = pen | pen2;
+				
+				// XXX Maybe add reverse collision check?
+				
+				if pen {
+					let normal = dis.normalize();
+	
+					// should i solve the penetration somewhere else?
+					collision_writer.send(CollisionEvent {
+						entity_a: e,
+						entity_b: e2,
+						is_b_static: false,
+						normal,
+					});
+
+					// Do calculations
+					let sum_recip = (k.mass + k2.mass).recip();
+					let r = k.linvel * k.mass;
+					let r2 = k2.linvel * k2.mass;
+            		let rv = r2 * sum_recip - r * sum_recip;
+
+					let impulse = rv.project(normal);
+
+					// Apply the stuff
+					if let Ok(mut k) = kinematics.get_component_mut::<KinematicBody2D>(e) {
+						// Undo the collision
+						t.translation += dis;
+						if k.linvel.signum() != dis.signum() {
+							k.linvel = k.linvel.slide(normal);
+						}
+						k.linvel += impulse;
+						check_on_stuff(&mut k, normal, up_dir, phy_set.floor_angle);
+					}
+					if let Ok(mut k) = kinematics.get_component_mut::<KinematicBody2D>(e2) {
+						if k.linvel.signum() != -dis.signum() {
+							k.linvel = k.linvel.slide(normal);
+						}
+						k.linvel -= impulse;
+						check_on_stuff(&mut k, normal, up_dir, phy_set.floor_angle);
+					}
+				}
 			}
+		}
+		// update the entity's translation
+		if let Ok(mut tr) = transforms.get_component_mut::<Transform>(e) {
+			trans_mode.set_position(&mut tr, t.translation);
 		}
 	}
 }

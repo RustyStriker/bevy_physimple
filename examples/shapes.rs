@@ -26,7 +26,7 @@ fn setup(
 ) {
     let blue = materials.add(Color::ALICE_BLUE.into());
     let black = materials.add(Color::BLACK.into());
-    // let another_color = materials.add(Color::GOLD.into());
+    let another_color = materials.add(Color::GOLD.into());
 
     // Spawn the damn camera
     commands
@@ -79,21 +79,22 @@ fn setup(
         .insert(Square::size(Vec2::new(30.0,300.0)));
 
     // Spawn the cube near us
-    // commands
-    //     .spawn_bundle(SpriteBundle {
-    //         sprite : Sprite::new(Vec2::splat(20.0)),
-    //         material: another_color.clone(),
-    //         transform : Transform::from_xyz(30.0,60.0,0.0),
-    //         ..Default::default()
-    //     })
-    //     .insert(
-    //         KinematicBody2D::new()
-    //             .with_mass(2.0)
-    //             .with_friction(0.1) // Basically almost no friction, should be fun :D
-    //             .with_bounciness(0.3) // Make it bouncy(also on walls)
-    //             .with_linear_velocity(Vec2::new(220.0,0.0))
-	// 	)
-	// 	.insert(Square::size(Vec2::new(20.0, 20.0)));
+    const CUBE_SIZE : f32 = 40.0;
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+            material: another_color.clone(),
+            transform : Transform::from_xyz(30.0,60.0,0.0),
+            ..Default::default()
+        })
+        .insert(
+            KinematicBody2D::new()
+                .with_mass(2.0)
+                .with_friction(0.5) // Basically almost no friction, should be fun :D
+                .with_bounciness(0.3) // Make it bouncy(also on walls)
+                .with_linear_velocity(Vec2::new(220.0,0.0))
+		)
+		.insert(Square::size(Vec2::splat(CUBE_SIZE)));
 
     // Circles
 

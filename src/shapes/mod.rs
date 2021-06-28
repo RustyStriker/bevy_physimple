@@ -1,27 +1,19 @@
 use crate::plugin::TransformMode;
-use bevy::{math::Mat2, prelude::*};
+use bevy::prelude::*;
 
 mod aabb;
 mod circle;
-mod line;
 mod raycast;
 mod square;
 
 pub use aabb::*;
 pub use circle::*;
-pub use line::*;
 pub use raycast::*;
 pub use square::*;
 
 pub trait Shape {
     /// Returns an Aabb instance containing the shape
     fn to_aabb(&self, transform: Transform2D) -> Aabb;
-    /// Returns an Aabb instance on the basis given axis containing the shape
-    fn to_basis_aabb(&self, basis_inv: Mat2, transform: Transform2D) -> Aabb;
-    /// Returns an Aabb isntance containing the shape both before and after movement
-    fn to_aabb_move(&self, movement: Vec2, transform: Transform2D) -> Aabb;
-    /// returns an Aabb instance on the basis given axis containing the shape before and after movement
-    fn to_basis_aabb_move(&self, basis_inv: Mat2, movement: Vec2, transform: Transform2D) -> Aabb;
     /// Returns the distance(as `Vec2`) from the shape to the vertex
     ///
     /// Returns : (distance from edge, is_penetrating)

@@ -42,55 +42,6 @@ impl Shape for Circle {
         }
     }
 
-    fn to_basis_aabb(&self, basis_inv: Mat2, transform: Transform2D) -> Aabb {
-        // rotate the scale
-        let rot_basis = Mat2::from_angle(transform.rotation);
-        let scale = rot_basis * transform.scale;
-
-        Aabb {
-            extents: basis_inv * scale * self.radius,
-            position: basis_inv * transform.translation + self.offset,
-        }
-    }
-
-    fn to_aabb_move(&self, movement: Vec2, transform: Transform2D) -> Aabb {
-        let prem = transform.translation + self.offset;
-        let postm = prem + movement;
-
-        let rot_basis = Mat2::from_angle(transform.rotation);
-        let scale = rot_basis * transform.scale;
-
-        let scaled_radius = Vec2::splat(self.radius) * scale;
-
-        let min = prem.min(postm) - scaled_radius; // Just subtract the radius from each element
-        let max = prem.max(postm) + scaled_radius; // Just add the radius for each element
-
-        let position = (min + max) * 0.5;
-        let extents = (max - position).abs();
-
-        Aabb { extents, position }
-    }
-
-    fn to_basis_aabb_move(&self, basis_inv: Mat2, movement: Vec2, transform: Transform2D) -> Aabb {
-        // Transform to the given basis
-        let movement = basis_inv * movement;
-        let pre = basis_inv * (transform.translation + self.offset);
-        let post = pre + movement;
-
-        let rot_basis = Mat2::from_angle(transform.rotation);
-        let scale = rot_basis * transform.scale;
-
-        let scaled_radius = Vec2::splat(self.radius) * (basis_inv * scale);
-
-        let min = pre.min(post) - scaled_radius;
-        let max = pre.max(post) + scaled_radius;
-
-        let position = (min + max) * 0.5;
-        let extents = (max - position).abs();
-
-        Aabb { extents, position }
-    }
-
     fn get_vertex_penetration(&self, vertex: Vec2, transform: Transform2D) -> (Vec2, bool) {
         let vertex = vertex - (transform.translation + self.offset);
 

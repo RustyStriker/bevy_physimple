@@ -64,55 +64,6 @@ impl Shape for Square {
         }
     }
 
-    fn to_basis_aabb(&self, basis_inv: Mat2, transform: Transform2D) -> Aabb {
-        let position = basis_inv * (transform.translation + self.offset);
-
-        let rot = Mat2::from_angle(transform.rotation);
-        let ex = (rot * (basis_inv * (self.extents * transform.scale))).abs(); // we abs in case of a rotation more than 45 degrees
-        let ex_con =
-            (rot * (basis_inv * self.extents * Vec2::new(1.0, -1.0) * transform.scale)).abs();
-        let extents = ex.max(ex_con);
-
-        Aabb { extents, position }
-    }
-
-    fn to_aabb_move(&self, movement: Vec2, transform: Transform2D) -> Aabb {
-        let pre = transform.translation + self.offset;
-        let post = pre + movement;
-
-        let rot = Mat2::from_angle(transform.rotation);
-        let ex = (rot * (self.extents * transform.scale)).abs(); // we abs in case of a rotation more than 45 degrees
-        let ex_con = (rot * (self.extents * Vec2::new(1.0, -1.0) * transform.scale)).abs();
-        let extents = ex.max(ex_con);
-
-        let min = pre.min(post) - extents;
-        let max = pre.max(post) + extents;
-
-        let position = (min + max) * 0.5;
-        let extents = (max - position).abs();
-
-        Aabb { extents, position }
-    }
-
-    fn to_basis_aabb_move(&self, basis_inv: Mat2, movement: Vec2, transform: Transform2D) -> Aabb {
-        let pre = basis_inv * (transform.translation + self.offset);
-        let post = pre + basis_inv * movement;
-
-        let rot = Mat2::from_angle(transform.rotation);
-        let ex = (rot * (basis_inv * (self.extents * transform.scale))).abs(); // we abs in case of a rotation more than 45 degrees
-        let ex_con =
-            (rot * (basis_inv * self.extents * Vec2::new(1.0, -1.0) * transform.scale)).abs();
-        let extents = ex.max(ex_con);
-
-        let min = pre.min(post) - extents;
-        let max = pre.max(post) + extents;
-
-        let position = (min + max) * 0.5;
-        let extents = (max - position).abs();
-
-        Aabb { extents, position }
-    }
-
     fn get_vertex_penetration(&self, vertex: Vec2, transform: Transform2D) -> (Vec2, bool) {
         let basis = Mat2::from_angle(transform.rotation);
         let basis_inv = basis.inverse();

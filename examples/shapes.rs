@@ -85,8 +85,8 @@ fn setup(
         .insert(
             KinematicBody2D::new()
                 .with_mass(2.0)
-                .with_friction(0.5) // Basically almost no friction, should be fun :D
-                .with_bounciness(0.3) // Make it bouncy(also on walls)
+                .with_friction(0.5)
+                .with_bounciness(0.3)
                 .with_linear_velocity(Vec2::new(220.0, 0.0)),
         )
         .insert(Square::size(Vec2::splat(CUBE_SIZE)));

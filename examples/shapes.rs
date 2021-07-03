@@ -5,7 +5,7 @@ use bevy_physimple::prelude::*;
 
 #[derive(Default)]
 pub struct CharacterController {
-    double_jump: bool,
+    double_jump : bool,
 }
 
 fn main() {
@@ -20,9 +20,9 @@ fn main() {
 }
 
 fn setup(
-    mut commands: Commands,
+    mut commands : Commands,
     // asset_server: Res<AssetServer>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials : ResMut<Assets<ColorMaterial>>,
 ) {
     let blue = materials.add(Color::ALICE_BLUE.into());
     let black = materials.add(Color::BLACK.into());
@@ -34,9 +34,9 @@ fn setup(
     // Spawn character
     let _player_id = commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(28.0, 28.0)),
-            material: blue.clone(),
-            transform: Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
+            sprite : Sprite::new(Vec2::new(28.0, 28.0)),
+            material : blue.clone(),
+            transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
             ..Default::default()
         })
         .insert(
@@ -54,9 +54,9 @@ fn setup(
     // center floor
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(600.0, 30.0)),
-            material: black.clone(),
-            transform: Transform::from_xyz(150.0, -200.0, 0.0),
+            sprite : Sprite::new(Vec2::new(600.0, 30.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new().with_layer(3))
@@ -65,21 +65,21 @@ fn setup(
     // side wall
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(30.0, 300.0)),
-            material: black.clone(),
-            transform: Transform::from_xyz(450.0, 0.0, 0.0),
+            sprite : Sprite::new(Vec2::new(30.0, 300.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(450.0, 0.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new())
         .insert(Square::size(Vec2::new(30.0, 300.0)));
 
     // Spawn the cube near us
-    const CUBE_SIZE: f32 = 40.0;
+    const CUBE_SIZE : f32 = 40.0;
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(CUBE_SIZE)),
-            material: another_color.clone(),
-            transform: Transform::from_xyz(30.0, 60.0, 0.0),
+            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+            material : another_color.clone(),
+            transform : Transform::from_xyz(30.0, 60.0, 0.0),
             ..Default::default()
         })
         .insert(
@@ -116,9 +116,9 @@ fn setup(
 }
 
 fn character_system(
-    input: Res<Input<KeyCode>>,
-    phys_sets: Res<PhysicsSettings>,
-    mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
+    input : Res<Input<KeyCode>>,
+    phys_sets : Res<PhysicsSettings>,
+    mut query : Query<(&mut CharacterController, &mut KinematicBody2D)>,
 ) {
     let gravity = phys_sets.gravity;
 
@@ -131,7 +131,7 @@ fn character_system(
             }
         }
 
-        let jump = |body: &mut KinematicBody2D| {
+        let jump = |body : &mut KinematicBody2D| {
             body.linvel = body.linvel.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
             body.linvel += wall;
@@ -147,7 +147,8 @@ fn character_system(
                 // then adding the jump force(here its gravity * 0.5) to the velocity
                 jump(&mut body);
             }
-        } else if controller.double_jump && should_jump {
+        }
+        else if controller.double_jump && should_jump {
             controller.double_jump = false;
             jump(&mut body);
         }

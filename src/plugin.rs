@@ -15,12 +15,12 @@ use std::f32::consts::PI;
 /// Physics plugin for 2D physics
 pub struct Physics2dPlugin {
     /// Global settings for the physics calculations
-    settings: PhysicsSettings,
+    settings : PhysicsSettings,
 }
 impl Default for Physics2dPlugin {
     fn default() -> Self {
         Physics2dPlugin {
-            settings: PhysicsSettings::default(),
+            settings : PhysicsSettings::default(),
         }
     }
 }
@@ -31,18 +31,18 @@ impl Default for Physics2dPlugin {
 #[derive(Clone, Debug)]
 pub struct PhysicsSettings {
     /// How strong the force of friction is(default - 400.0)
-    pub friction: f32,
+    pub friction : f32,
     /// The direction in which friction wont exist
     ///
     /// or the normal vector for the plane in which friction does exists(should be `gravity.normalize()`)
-    pub friction_normal: Vec2,
+    pub friction_normal : Vec2,
     /// Friction on the angular velocity in radians
-    pub ang_friction: f32,
+    pub ang_friction : f32,
 
     /// Gravity direction and strength(up direction is opposite to gravity)
-    pub gravity: Vec2,
+    pub gravity : Vec2,
 
-    pub transform_mode: TransformMode,
+    pub transform_mode : TransformMode,
     /// What angles are considered floor/wall/ceilling
     ///
     /// a number between 0-1 representing 'normal.dot(-gravity)'
@@ -50,17 +50,17 @@ pub struct PhysicsSettings {
     /// floor >= floor_angle // wall.abs() < floor_angle // ceil <= -floor_angle
     ///
     /// Defaults to 0.7
-    pub floor_angle: f32,
+    pub floor_angle : f32,
 }
 impl Default for PhysicsSettings {
     fn default() -> Self {
         PhysicsSettings {
-            friction: 400.0,
-            friction_normal: Vec2::Y,
-            ang_friction: PI,
-            gravity: Vec2::new(0.0, -540.0),
-            transform_mode: TransformMode::XY,
-            floor_angle: 0.7,
+            friction : 400.0,
+            friction_normal : Vec2::Y,
+            ang_friction : PI,
+            gravity : Vec2::new(0.0, -540.0),
+            transform_mode : TransformMode::XY,
+            floor_angle : 0.7,
         }
     }
 }
@@ -74,7 +74,10 @@ pub enum TransformMode {
 }
 impl TransformMode {
     /// Returns the position from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_global_position(&self, transform: &GlobalTransform) -> Vec2 {
+    pub fn get_global_position(
+        &self,
+        transform : &GlobalTransform,
+    ) -> Vec2 {
         let t = transform.translation;
 
         match self {
@@ -84,7 +87,10 @@ impl TransformMode {
         }
     }
     /// Returns the rotation from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_global_rotation(&self, transform: &GlobalTransform) -> f32 {
+    pub fn get_global_rotation(
+        &self,
+        transform : &GlobalTransform,
+    ) -> f32 {
         let t = transform.rotation;
 
         match self {
@@ -94,7 +100,10 @@ impl TransformMode {
         }
     }
     /// Returns the scale from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_global_scale(&self, transform: &GlobalTransform) -> Vec2 {
+    pub fn get_global_scale(
+        &self,
+        transform : &GlobalTransform,
+    ) -> Vec2 {
         let t = transform.scale;
 
         match self {
@@ -104,7 +113,10 @@ impl TransformMode {
         }
     }
     /// Returns the position from a given `&Transform` and `TransformMode`
-    pub fn get_position(&self, transform: &Transform) -> Vec2 {
+    pub fn get_position(
+        &self,
+        transform : &Transform,
+    ) -> Vec2 {
         let t = transform.translation;
 
         match self {
@@ -114,7 +126,10 @@ impl TransformMode {
         }
     }
     /// Returns the rotation from a given `&Transform` and `TransformMode`
-    pub fn get_rotation(&self, transform: &Transform) -> f32 {
+    pub fn get_rotation(
+        &self,
+        transform : &Transform,
+    ) -> f32 {
         let t = transform.rotation;
 
         match self {
@@ -124,7 +139,10 @@ impl TransformMode {
         }
     }
     /// Returns the scale from a given `&Transform` and `TransformMode`
-    pub fn get_scale(&self, transform: &Transform) -> Vec2 {
+    pub fn get_scale(
+        &self,
+        transform : &Transform,
+    ) -> Vec2 {
         let t = transform.scale;
 
         match self {
@@ -134,7 +152,11 @@ impl TransformMode {
         }
     }
     /// Sets position based on `TransformMode`
-    pub fn set_position(&self, transform: &mut Transform, pos: Vec2) {
+    pub fn set_position(
+        &self,
+        transform : &mut Transform,
+        pos : Vec2,
+    ) {
         let t = transform.translation;
 
         transform.translation = match self {
@@ -144,7 +166,11 @@ impl TransformMode {
         };
     }
     /// Sets rotation based on `TransformMode` (erase previus rotation)
-    pub fn set_rotation(&self, transform: &mut Transform, rot: f32) {
+    pub fn set_rotation(
+        &self,
+        transform : &mut Transform,
+        rot : f32,
+    ) {
         // TODO make it persist the other axis rotations, i dont understand quaternions
         transform.rotation = match self {
             TransformMode::XY => Quat::from_rotation_z(rot),
@@ -156,13 +182,13 @@ impl TransformMode {
 /// General collision event that happens between 2 bodies.
 pub struct CollisionEvent {
     /// First entity
-    pub entity_a: Entity,
+    pub entity_a : Entity,
     /// Second entity
-    pub entity_b: Entity,
+    pub entity_b : Entity,
     /// Wether `entity_b` is a static body or not(if not then its a kinematicbody)
-    pub is_b_static: bool,
+    pub is_b_static : bool,
     /// Normal of the collision(from `entity_a`'s perspective)
-    pub normal: Vec2,
+    pub normal : Vec2,
 }
 
 /// labels for the physics stages
@@ -170,23 +196,26 @@ pub mod stage {
     pub use bevy::prelude::CoreStage;
 
     /// update joint constraints based on current data
-    pub const JOINT_STEP: &str = "phy_joint_step";
+    pub const JOINT_STEP : &str = "phy_joint_step";
     /// Resets sensor collision data for the next step
-    pub const SENSOR_RESET_STEP: &str = "phy_sensor_reset_step";
+    pub const SENSOR_RESET_STEP : &str = "phy_sensor_reset_step";
     /// Physics step, gravity, friction, apply velocity and forces, move the bodies and such
-    pub const PHYSICS_STEP: &str = "phy_physics_step";
+    pub const PHYSICS_STEP : &str = "phy_physics_step";
 
-    pub const CAPTURE_STEP: &str = "phy_capture_step";
+    pub const CAPTURE_STEP : &str = "phy_capture_step";
     /// Check for collisions between objects, emitting events with AABBCollisionEvent(should be replaced later tho)
-    pub const COLLISION_DETECTION: &str = "phy_collision_detection";
+    pub const COLLISION_DETECTION : &str = "phy_collision_detection";
     /// Solve each collision and apply forces based on collision
-    pub const PHYSICS_SOLVE: &str = "phy_solve";
+    pub const PHYSICS_SOLVE : &str = "phy_solve";
     /// Check for raycasts and if they detect any object in their path.
-    pub const RAYCAST_DETECTION: &str = "phy_raycast_detection";
+    pub const RAYCAST_DETECTION : &str = "phy_raycast_detection";
 }
 
 impl Plugin for Physics2dPlugin {
-    fn build(&self, app: &mut AppBuilder) {
+    fn build(
+        &self,
+        app : &mut AppBuilder,
+    ) {
         let settings = self.settings.clone();
 
         // Stage order goes as follows
@@ -254,9 +283,9 @@ impl Plugin for Physics2dPlugin {
 
 /// apply gravity, movement, rotation, forces, friction and other stuff as well
 fn physics_step_system(
-    time: Res<Time>,
-    physics_sets: Res<PhysicsSettings>,
-    mut query: Query<(&mut KinematicBody2D, &mut Transform)>,
+    time : Res<Time>,
+    physics_sets : Res<PhysicsSettings>,
+    mut query : Query<(&mut KinematicBody2D, &mut Transform)>,
 ) {
     let delta = time.delta_seconds();
     let gravity = physics_sets.gravity;
@@ -316,7 +345,8 @@ fn physics_step_system(
             let friction_strength = physics_sets.friction * body.friction_mult * delta; // Current frame's friction
             if vel_slided_len <= friction_strength {
                 vel_slided = Vec2::ZERO;
-            } else {
+            }
+            else {
                 vel_slided -= (vel_slided / vel_slided_len) * friction_strength;
                 //             /\~~~~~~~~~~~~~~~~~~~~~~~~/\ normalized vel_slided
             }
@@ -326,7 +356,8 @@ fn physics_step_system(
         let angular_friction = physics_sets.ang_friction * delta;
         if body.angvel.abs() < angular_friction {
             body.angvel = 0.0;
-        } else {
+        }
+        else {
             let sign = body.angvel.signum();
             body.angvel -= sign * angular_friction;
         }

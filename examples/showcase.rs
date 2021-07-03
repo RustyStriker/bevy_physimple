@@ -4,7 +4,7 @@ use bevy_physimple::prelude::*;
 /// Just holds character controller ralted stuff, like if we can double jump or not
 #[derive(Default)]
 struct CharacterController {
-    double_jump: bool,
+    double_jump : bool,
 }
 
 /// Simple holds an entity for the raycast to toy with :)
@@ -15,10 +15,10 @@ fn main() {
 
     builder
         .insert_resource(WindowDescriptor {
-            width: 1024.0,
-            height: 720.0,
-            title: "Physimple Showcase :)".to_string(),
-            vsync: false,
+            width : 1024.0,
+            height : 720.0,
+            title : "Physimple Showcase :)".to_string(),
+            vsync : false,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -32,7 +32,10 @@ fn main() {
     builder.run();
 }
 
-fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn setup(
+    mut commands : Commands,
+    mut materials : ResMut<Assets<ColorMaterial>>,
+) {
     // Spawn a camera
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
@@ -42,9 +45,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     // Spawn a floor(s) for the player
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(500.0, 20.0)),
-            material: black.clone(),
-            transform: Transform::from_xyz(0.0, -250.0, 0.0),
+            sprite : Sprite::new(Vec2::new(500.0, 20.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(0.0, -250.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new())
@@ -53,9 +56,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
         });
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(300.0, 20.0)),
-            material: black.clone(),
-            transform: Transform::from_xyz(300.0, -150.0, 0.0),
+            sprite : Sprite::new(Vec2::new(300.0, 20.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(300.0, -150.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new())
@@ -65,8 +68,8 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     // Spawn a player for the floor(s)
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(20.0, 24.0)),
-            material: materials.add(Color::CYAN.into()),
+            sprite : Sprite::new(Vec2::new(20.0, 24.0)),
+            material : materials.add(Color::CYAN.into()),
             ..Default::default()
         })
         .insert(CharacterController::default())
@@ -78,9 +81,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     // Spawn a wall for the player to jump on :D
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(20.0, 300.0)),
-            material: black.clone(),
-            transform: Transform::from_xyz(440.0, 0.0, 0.0),
+            sprite : Sprite::new(Vec2::new(20.0, 300.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(440.0, 0.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new())
@@ -91,9 +94,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     // Spawn a bouncy floor at the other side
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(60.0, 20.0)),
-            material: materials.add(Color::PURPLE.into()),
-            transform: Transform::from_xyz(-400.0, -100.0, 0.0),
+            sprite : Sprite::new(Vec2::new(60.0, 20.0)),
+            material : materials.add(Color::PURPLE.into()),
+            transform : Transform::from_xyz(-400.0, -100.0, 0.0),
             ..Default::default()
         })
         .insert(StaticBody2D::new().with_bounciness(1.0))
@@ -103,9 +106,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     // Spawn a cube to bounce on
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(20.0, 20.0)),
-            material: materials.add(Color::MIDNIGHT_BLUE.into()),
-            transform: Transform::from_xyz(-400.0, 100.0, 0.0),
+            sprite : Sprite::new(Vec2::new(20.0, 20.0)),
+            material : materials.add(Color::MIDNIGHT_BLUE.into()),
+            transform : Transform::from_xyz(-400.0, 100.0, 0.0),
             ..Default::default()
         })
         .insert(KinematicBody2D::new().with_stiffness(1.0))
@@ -116,9 +119,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
 
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(50.0, 50.0)),
-            material: materials.add(Color::rgba(1.0, 0.0, 0.0, 0.5).into()),
-            transform: Transform::from_xyz(-400.0, 80.0, 0.0),
+            sprite : Sprite::new(Vec2::new(50.0, 50.0)),
+            material : materials.add(Color::rgba(1.0, 0.0, 0.0, 0.5).into()),
+            transform : Transform::from_xyz(-400.0, 80.0, 0.0),
             ..Default::default()
         })
         .insert(Sensor2D::new())
@@ -133,15 +136,16 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     (0..10).for_each(|i| {
         let color = if i % 2 == 0 {
             color_1.clone()
-        } else {
+        }
+        else {
             color_2.clone()
         };
 
         commands
             .spawn_bundle(SpriteBundle {
-                sprite: Sprite::new(Vec2::new(20.0, 20.0)),
-                material: color,
-                transform: Transform::from_xyz(350.0 + i as f32, i as f32 * 60.0, 0.0),
+                sprite : Sprite::new(Vec2::new(20.0, 20.0)),
+                material : color,
+                transform : Transform::from_xyz(350.0 + i as f32, i as f32 * 60.0, 0.0),
                 ..Default::default()
             })
             .insert(KinematicBody2D::new().with_stiffness(0.9))
@@ -153,17 +157,17 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     // Spawn a raycast with a cube to move around lul - this will be the end one
     let ray_head = commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(10.0, 10.0)),
-            material: materials.add(Color::ORANGE.into()),
+            sprite : Sprite::new(Vec2::new(10.0, 10.0)),
+            material : materials.add(Color::ORANGE.into()),
             ..Default::default()
         })
         .id();
     // spawn the ray with a tail cube because why not
     commands
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(5.0, 5.0)),
-            material: materials.add(Color::CRIMSON.into()),
-            transform: Transform::from_xyz(-100.0, -225.0, 0.0),
+            sprite : Sprite::new(Vec2::new(5.0, 5.0)),
+            material : materials.add(Color::CRIMSON.into()),
+            transform : Transform::from_xyz(-100.0, -225.0, 0.0),
             ..Default::default()
         })
         .insert(RayCast2D::new(Vec2::new(200.0, 0.0)))
@@ -171,9 +175,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
 }
 
 fn character_system(
-    input: Res<Input<KeyCode>>,
-    phys_sets: Res<PhysicsSettings>,
-    mut query: Query<(&mut CharacterController, &mut KinematicBody2D)>,
+    input : Res<Input<KeyCode>>,
+    phys_sets : Res<PhysicsSettings>,
+    mut query : Query<(&mut CharacterController, &mut KinematicBody2D)>,
 ) {
     let gravity = phys_sets.gravity;
 
@@ -183,7 +187,7 @@ fn character_system(
             // to stick to the wall
             body.linvel -= normal * 0.1;
 
-            const WALL_SLIDE_SPEED: f32 = -25.0;
+            const WALL_SLIDE_SPEED : f32 = -25.0;
             if body.linvel.y < WALL_SLIDE_SPEED {
                 body.linvel.y = WALL_SLIDE_SPEED;
             }
@@ -192,7 +196,7 @@ fn character_system(
         // This is just a weird way to do jump, using the gravity direction and size(tho you dont need the size)
         // it works by sliding on the gravity direction(so nothing in the direction of gravity)
         // then adding the jump force(here its gravity * 0.5) to the velocity
-        let jump = |body: &mut KinematicBody2D| {
+        let jump = |body : &mut KinematicBody2D| {
             body.linvel = body.linvel.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
             body.linvel += wall;
@@ -205,7 +209,8 @@ fn character_system(
             if should_jump {
                 jump(&mut body);
             }
-        } else if controller.double_jump && should_jump {
+        }
+        else if controller.double_jump && should_jump {
             controller.double_jump = false;
             jump(&mut body);
         }
@@ -223,21 +228,22 @@ fn character_system(
 }
 
 fn sensor_system(
-    mut sensors: Query<(&Sensor2D, &mut Handle<ColorMaterial>)>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut sensors : Query<(&Sensor2D, &mut Handle<ColorMaterial>)>,
+    mut materials : ResMut<Assets<ColorMaterial>>,
 ) {
     for (sensor, color) in sensors.iter_mut() {
         if sensor.iter_overlapping_bodies().count() == 0 {
             let _ = materials.set(color.id, Color::rgba(1.0, 0.0, 0.0, 0.5).into());
-        } else {
+        }
+        else {
             let _ = materials.set(color.id, Color::rgba(0.0, 1.0, 0.0, 0.5).into());
         }
     }
 }
 
 fn raycast_system(
-    query: Query<(Entity, &RayCast2D, &HeadEntity)>,
-    mut sprites: Query<&mut Transform>,
+    query : Query<(Entity, &RayCast2D, &HeadEntity)>,
+    mut sprites : Query<&mut Transform>,
 ) {
     for (entity, ray, head) in query.iter() {
         let head_pos = match ray.get_collision() {

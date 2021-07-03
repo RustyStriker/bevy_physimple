@@ -7,20 +7,23 @@ use super::{Aabb, Shape, Transform2D};
 #[derive(Clone, Debug, Serialize, Deserialize, Reflect)]
 pub struct Circle {
     /// Offset from the `Transform` translation component
-    pub offset: Vec2,
+    pub offset : Vec2,
 
     /// Circle's radius
-    pub radius: f32,
+    pub radius : f32,
 }
 impl Circle {
-    pub fn new(radius: f32) -> Self {
+    pub fn new(radius : f32) -> Self {
         Circle {
-            offset: Vec2::ZERO,
+            offset : Vec2::ZERO,
             radius,
         }
     }
     /// Offset from the `Transform` translation component
-    pub fn with_offset(mut self, offset: Vec2) -> Self {
+    pub fn with_offset(
+        mut self,
+        offset : Vec2,
+    ) -> Self {
         self.offset = offset;
         self
     }
@@ -31,18 +34,25 @@ impl Default for Circle {
     }
 }
 impl Shape for Circle {
-    fn to_aabb(&self, transform: Transform2D) -> Aabb {
+    fn to_aabb(
+        &self,
+        transform : Transform2D,
+    ) -> Aabb {
         // rotate the scale
         let basis = Mat2::from_angle(transform.rotation);
         let scale = basis * transform.scale;
 
         Aabb {
-            extents: scale * self.radius,
-            position: transform.translation + self.offset,
+            extents : scale * self.radius,
+            position : transform.translation + self.offset,
         }
     }
 
-    fn get_vertex_penetration(&self, vertex: Vec2, transform: Transform2D) -> (Vec2, bool) {
+    fn get_vertex_penetration(
+        &self,
+        vertex : Vec2,
+        transform : Transform2D,
+    ) -> (Vec2, bool) {
         let vertex = vertex - (transform.translation + self.offset);
 
         // Shrink down the vertex based on scale
@@ -57,9 +67,9 @@ impl Shape for Circle {
 
     fn collide_with_shape(
         &self,
-        transform: Transform2D,
-        shape: &dyn Shape,
-        shape_trans: Transform2D,
+        transform : Transform2D,
+        shape : &dyn Shape,
+        shape_trans : Transform2D,
     ) -> (Vec2, bool) {
         let center = transform.translation + self.offset;
 
@@ -70,7 +80,8 @@ impl Shape for Circle {
             let pen = dis + normal * self.radius;
 
             (pen, true)
-        } else {
+        }
+        else {
             let dis_len = dis.length();
 
             if dis_len < f32::EPSILON {
@@ -82,10 +93,19 @@ impl Shape for Circle {
 
             if dis_len < self.radius {
                 (-pen, true)
-            } else {
+            }
+            else {
                 (pen, false)
             }
         }
+    }
+
+    fn get_segment_penetration(
+        &self,
+        segment : super::Segment,
+        transform : Transform2D,
+    ) -> f32 {
+        todo!()
     }
 }
 
@@ -98,9 +118,9 @@ mod circle_tests {
         let circle = Circle::new(5.0).with_offset(Vec2::new(5.0, 0.0));
 
         let transform = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         let vertex_a = Vec2::new(0.0, 5.0); // Shouldnt be inside

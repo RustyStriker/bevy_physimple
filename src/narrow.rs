@@ -9,29 +9,29 @@ use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_system(
-    phy_set: Res<PhysicsSettings>,
+    phy_set : Res<PhysicsSettings>,
     // Shape queries
-    squares: Query<&Square>,
-    circles: Query<&Circle>,
+    squares : Query<&Square>,
+    circles : Query<&Circle>,
     // ... more shape queries later when i do more shapes
     // The different bodies
-    mut kinematics: Query<&mut KinematicBody2D>,
-    global_transforms: Query<&GlobalTransform>,
-    mut transforms: Query<&mut Transform>,
-    mut sensors: Query<&mut Sensor2D>,
-    statics: Query<&StaticBody2D>,
+    mut kinematics : Query<&mut KinematicBody2D>,
+    global_transforms : Query<&GlobalTransform>,
+    mut transforms : Query<&mut Transform>,
+    mut sensors : Query<&mut Sensor2D>,
+    statics : Query<&StaticBody2D>,
     // Simple collision data
-    mut obb_data: EventReader<ObbData>,
-    mut obb_kinematic: EventReader<ObbDataKinematic>,
+    mut obb_data : EventReader<ObbData>,
+    mut obb_kinematic : EventReader<ObbDataKinematic>,
     // Writer to throw collision events
-    mut collision_writer: EventWriter<CollisionEvent>,
+    mut collision_writer : EventWriter<CollisionEvent>,
 ) {
     // Loop over kinematic bodies
     // Capture their sensor/static surroundings
     // Move all kinematic bodies to where they need to be moved
     // check collision pairs between kinematic bodies
 
-    let get_shape = |e: Entity, s: ShapeType| -> Option<&dyn Shape> {
+    let get_shape = |e : Entity, s : ShapeType| -> Option<&dyn Shape> {
         match s {
             ShapeType::Square => match squares.get_component::<Square>(e) {
                 Ok(s) => Some(s),
@@ -51,7 +51,7 @@ pub fn narrow_phase_system(
     let trans_mode = phy_set.transform_mode;
     let up_dir = -phy_set.gravity.normalize();
 
-    let mut kin_data: Vec<(Entity, &dyn Shape, Aabb, Transform2D)> = Vec::new();
+    let mut kin_data : Vec<(Entity, &dyn Shape, Aabb, Transform2D)> = Vec::new();
 
     for obb_kin in obb_kinematic.iter() {
         let entity_kin = obb_kin.entity;
@@ -88,7 +88,7 @@ pub fn narrow_phase_system(
         let center = obb_kin.aabb.position;
         let radius_sqrd = (obb_kin.aabb.extents + move_kin.abs()).length_squared();
 
-        let mut surroundings: Vec<&ObbData> = Vec::with_capacity(5);
+        let mut surroundings : Vec<&ObbData> = Vec::with_capacity(5);
 
         // Loop over the sensors and statics to see who we capture
         for obb in obb_data.iter() {
@@ -113,7 +113,7 @@ pub fn narrow_phase_system(
             let mut coll_index = -1;
 
             for (i, obb) in surroundings.iter().enumerate() {
-				let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
+                let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
 
                 let coll_position = raycast_aabb(kin_pos.translation, cmove, obb.aabb);
                 let coll_position = coll_position.min(1.0); // Lock coll_position between [0,1]
@@ -133,7 +133,7 @@ pub fn narrow_phase_system(
                         };
 
                     let coll_pos = Transform2D {
-                        translation: kin_pos.translation + cmove * coll_position,
+                        translation : kin_pos.translation + cmove * coll_position,
                         ..kin_pos
                     };
 
@@ -155,7 +155,8 @@ pub fn narrow_phase_system(
                                 continue;
                             }
                         }
-                    } else if is_pen {
+                    }
+                    else if is_pen {
                         let new_pos = coll_pos.translation + dis;
                         normal = dis.normalize();
 
@@ -200,12 +201,13 @@ pub fn narrow_phase_system(
 
                 // Throw an event
                 collision_writer.send(CollisionEvent {
-                    entity_a: entity_kin,
-                    entity_b: obb.entity,
-                    is_b_static: true, // we only collide with static bodies here
+                    entity_a : entity_kin,
+                    entity_b : obb.entity,
+                    is_b_static : true, // we only collide with static bodies here
                     normal,
                 });
-            } else {
+            }
+            else {
                 // There was no collisions here so we can break
                 kin_pos.translation += movement; // need to move whatever left to move with
                 break;
@@ -251,9 +253,9 @@ pub fn narrow_phase_system(
 
                     // should i solve the penetration somewhere else?
                     collision_writer.send(CollisionEvent {
-                        entity_a: e,
-                        entity_b: e2,
-                        is_b_static: false,
+                        entity_a : e,
+                        entity_b : e2,
+                        is_b_static : false,
                         normal,
                     });
 
@@ -292,7 +294,11 @@ pub fn narrow_phase_system(
     }
 }
 
-fn aabb_circle(center: Vec2, radius_sqrd: f32, aabb: &Aabb) -> bool {
+fn aabb_circle(
+    center : Vec2,
+    radius_sqrd : f32,
+    aabb : &Aabb,
+) -> bool {
     let aabb_min = aabb.position - aabb.extents;
     let aabb_max = aabb.position + aabb.extents;
 
@@ -301,7 +307,11 @@ fn aabb_circle(center: Vec2, radius_sqrd: f32, aabb: &Aabb) -> bool {
     distance.length_squared() <= radius_sqrd
 }
 
-fn raycast_aabb(ray_from: Vec2, ray_cast: Vec2, aabb: Aabb) -> f32 {
+fn raycast_aabb(
+    ray_from : Vec2,
+    ray_cast : Vec2,
+    aabb : Aabb,
+) -> f32 {
     let aabb_min = aabb.position - aabb.extents;
     let aabb_max = aabb.position + aabb.extents;
 
@@ -309,22 +319,26 @@ fn raycast_aabb(ray_from: Vec2, ray_cast: Vec2, aabb: Aabb) -> f32 {
     // it will never collide(thus division by 0.0)
     let xmin = if ray_cast.x != 0.0 {
         (aabb_min.x - ray_from.x) / ray_cast.x
-    } else {
+    }
+    else {
         f32::NAN
     };
     let xmax = if ray_cast.x != 0.0 {
         (aabb_max.x - ray_from.x) / ray_cast.x
-    } else {
+    }
+    else {
         f32::NAN
     };
     let ymin = if ray_cast.y != 0.0 {
         (aabb_min.y - ray_from.y) / ray_cast.y
-    } else {
+    }
+    else {
         f32::NAN
     };
     let ymax = if ray_cast.y != 0.0 {
         (aabb_max.y - ray_from.y) / ray_cast.y
-    } else {
+    }
+    else {
         f32::NAN
     };
 
@@ -333,15 +347,22 @@ fn raycast_aabb(ray_from: Vec2, ray_cast: Vec2, aabb: Aabb) -> f32 {
 
     if max < 0.0 {
         -1.0
-    } else if min > max || min < 0.0 {
+    }
+    else if min > max || min < 0.0 {
         max
-    } else {
+    }
+    else {
         min
     }
 }
 
 /// Checks for `on_floor`,`on_wall`,`on_ceil` - up should be normalized
-fn check_on_stuff(body: &mut KinematicBody2D, normal: Vec2, up: Vec2, floor_angle: f32) {
+fn check_on_stuff(
+    body : &mut KinematicBody2D,
+    normal : Vec2,
+    up : Vec2,
+    floor_angle : f32,
+) {
     let dot = up.dot(normal);
 
     if dot >= floor_angle {
@@ -356,7 +377,10 @@ fn check_on_stuff(body: &mut KinematicBody2D, normal: Vec2, up: Vec2, floor_angl
 }
 
 /// Checks for collision between 2 AABB objects and returns the penetration(of a in b) if existing
-fn get_aabb_collision(a: Aabb, b: Aabb) -> bool {
+fn get_aabb_collision(
+    a : Aabb,
+    b : Aabb,
+) -> bool {
     let amin = a.position - a.extents;
     let amax = a.position + a.extents;
     let bmin = b.position - b.extents;

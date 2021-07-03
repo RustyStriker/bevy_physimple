@@ -9,41 +9,43 @@ pub enum ShapeType {
     None,
 }
 impl ShapeType {
-    pub fn from_id(id: TypeId) -> ShapeType {
+    pub fn from_id(id : TypeId) -> ShapeType {
         if id == TypeId::of::<Square>() {
             ShapeType::Square
-        } else if id == TypeId::of::<Circle>() {
+        }
+        else if id == TypeId::of::<Circle>() {
             ShapeType::Circle
-        } else {
+        }
+        else {
             ShapeType::None
         }
     }
 }
 pub struct ObbData {
-    pub(crate) entity: Entity,
-    pub(crate) aabb: Aabb,
-    pub(crate) shape_type: ShapeType,
+    pub(crate) entity : Entity,
+    pub(crate) aabb : Aabb,
+    pub(crate) shape_type : ShapeType,
     /// True - sensor, False - static
-    pub(crate) sensor: bool,
-    pub(crate) coll_layer: u8,
-    pub(crate) coll_mask: u8,
+    pub(crate) sensor : bool,
+    pub(crate) coll_layer : u8,
+    pub(crate) coll_mask : u8,
 }
 pub struct ObbDataKinematic {
-    pub(crate) entity: Entity,
-    pub(crate) aabb: Aabb,
-    pub(crate) shape_type: ShapeType,
+    pub(crate) entity : Entity,
+    pub(crate) aabb : Aabb,
+    pub(crate) shape_type : ShapeType,
 }
 
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
 pub fn broad_phase_system<T>(
-    settings: Res<PhysicsSettings>,
-    statics: Query<(Entity, &GlobalTransform, &T, &StaticBody2D)>,
-    sensors: Query<(Entity, &GlobalTransform, &T, &Sensor2D)>,
-    kinematics: Query<(Entity, &GlobalTransform, &T, &KinematicBody2D)>,
-    mut writer: EventWriter<ObbData>,
-    mut writer_kin: EventWriter<ObbDataKinematic>,
+    settings : Res<PhysicsSettings>,
+    statics : Query<(Entity, &GlobalTransform, &T, &StaticBody2D)>,
+    sensors : Query<(Entity, &GlobalTransform, &T, &Sensor2D)>,
+    kinematics : Query<(Entity, &GlobalTransform, &T, &KinematicBody2D)>,
+    mut writer : EventWriter<ObbData>,
+    mut writer_kin : EventWriter<ObbDataKinematic>,
 ) where
-    T: Shape + Component,
+    T : Shape + Component,
 {
     let shape_type = TypeId::of::<T>();
     let shape_type = ShapeType::from_id(shape_type);
@@ -54,12 +56,12 @@ pub fn broad_phase_system<T>(
     for (e, t, s, sb) in statics.iter() {
         if sb.active {
             let data = ObbData {
-                entity: e,
-                aabb: s.to_aabb(Transform2D::from((t, tm))),
+                entity : e,
+                aabb : s.to_aabb(Transform2D::from((t, tm))),
                 shape_type,
-                sensor: false,
-                coll_layer: sb.layer,
-                coll_mask: sb.mask,
+                sensor : false,
+                coll_layer : sb.layer,
+                coll_mask : sb.mask,
             };
             writer.send(data);
         }
@@ -67,12 +69,12 @@ pub fn broad_phase_system<T>(
     // Sensors :D
     for (e, t, s, sen) in sensors.iter() {
         let data = ObbData {
-            entity: e,
-            aabb: s.to_aabb(Transform2D::from((t, tm))),
+            entity : e,
+            aabb : s.to_aabb(Transform2D::from((t, tm))),
             shape_type,
-            sensor: true,
-            coll_layer: sen.layer,
-            coll_mask: sen.mask,
+            sensor : true,
+            coll_layer : sen.layer,
+            coll_mask : sen.mask,
         };
         writer.send(data);
     }
@@ -82,8 +84,8 @@ pub fn broad_phase_system<T>(
             let t = Transform2D::from((t, tm));
 
             let data = ObbDataKinematic {
-                entity: e,
-                aabb: s.to_aabb(t),
+                entity : e,
+                aabb : s.to_aabb(t),
                 shape_type,
             };
             writer_kin.send(data);

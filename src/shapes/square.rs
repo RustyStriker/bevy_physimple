@@ -7,38 +7,44 @@ use super::{Aabb, Shape, Transform2D};
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct Square {
     /// Offset from the `Transform` transltion component
-    pub offset: Vec2,
+    pub offset : Vec2,
     /// rotation offset from the `Transform` rotation component
-    pub rotation_offset: f32,
+    pub rotation_offset : f32,
     /// Square's extents
     ///
     /// `extents = Vec2::new(half width, half height)`
-    pub extents: Vec2,
+    pub extents : Vec2,
 }
 impl Square {
     /// Constructs a new square
-    pub fn new(extents: Vec2) -> Self {
+    pub fn new(extents : Vec2) -> Self {
         Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
             extents,
         }
     }
     /// Constructs a new square from absolute size(ie. width and height)
-    pub fn size(size: Vec2) -> Self {
+    pub fn size(size : Vec2) -> Self {
         Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: size * 0.5,
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : size * 0.5,
         }
     }
     /// Offset from the `Transform` transltion component
-    pub fn with_offset(mut self, offset: Vec2) -> Self {
+    pub fn with_offset(
+        mut self,
+        offset : Vec2,
+    ) -> Self {
         self.offset = offset;
         self
     }
     /// rotation offset from the `Transform` rotation component
-    pub fn with_rotation_offset(mut self, offset: f32) -> Self {
+    pub fn with_rotation_offset(
+        mut self,
+        offset : f32,
+    ) -> Self {
         self.rotation_offset = offset;
         self
     }
@@ -50,7 +56,10 @@ impl Default for Square {
     }
 }
 impl Shape for Square {
-    fn to_aabb(&self, transform: Transform2D) -> Aabb {
+    fn to_aabb(
+        &self,
+        transform : Transform2D,
+    ) -> Aabb {
         let rot = Mat2::from_angle(transform.rotation);
 
         // We do the conjugate because if we have extents of (1,1) and we rotate 45deg we get (sqrt_2,0)
@@ -60,11 +69,15 @@ impl Shape for Square {
 
         Aabb {
             extents,
-            position: transform.translation + self.offset,
+            position : transform.translation + self.offset,
         }
     }
 
-    fn get_vertex_penetration(&self, vertex: Vec2, transform: Transform2D) -> (Vec2, bool) {
+    fn get_vertex_penetration(
+        &self,
+        vertex : Vec2,
+        transform : Transform2D,
+    ) -> (Vec2, bool) {
         let basis = Mat2::from_angle(transform.rotation);
         let basis_inv = basis.inverse();
 
@@ -82,11 +95,13 @@ impl Shape for Square {
             let distance = vertex - (vertex.signum() * extents);
 
             (distance, false)
-        } else {
+        }
+        else {
             let to_edge = extents.abs() - vertex.abs();
             let res = if to_edge.x < to_edge.y {
                 Vec2::new(to_edge.x * vertex.x.signum(), 0.0)
-            } else {
+            }
+            else {
                 Vec2::new(0.0, to_edge.y * vertex.y.signum())
             };
 
@@ -98,9 +113,9 @@ impl Shape for Square {
 
     fn collide_with_shape(
         &self,
-        transform: Transform2D,
-        shape: &dyn Shape,
-        shape_trans: Transform2D,
+        transform : Transform2D,
+        shape : &dyn Shape,
+        shape_trans : Transform2D,
     ) -> (Vec2, bool) {
         let rot_basis = Mat2::from_angle(transform.rotation);
         let extents = rot_basis * (self.extents * transform.scale);
@@ -130,11 +145,20 @@ impl Shape for Square {
                 if dis.length_squared() > penetration.length_squared() {
                     penetration = dis;
                 }
-            } else if dis.length_squared() < penetration.length_squared() {
+            }
+            else if dis.length_squared() < penetration.length_squared() {
                 penetration = dis;
             }
         }
         (penetration, collide)
+    }
+
+    fn get_segment_penetration(
+        &self,
+        segment : super::Segment,
+        transform : Transform2D,
+    ) -> f32 {
+        todo!()
     }
 }
 
@@ -149,9 +173,9 @@ mod square_tests {
         let rect = Square::new(Vec2::new(10.0, 5.0));
 
         let transform = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.5 * PI, // 90 degrees in radians...
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.5 * PI, // 90 degrees in radians...
+            scale : Vec2::splat(1.0),
         };
 
         let outside = Vec2::new(7.0, 7.0);
@@ -163,7 +187,7 @@ mod square_tests {
 
         // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
         //  around 0.0000005 miss
-        const EPSILON: f32 = 0.001;
+        const EPSILON : f32 = 0.001;
         eprintln!("res {:?}, pen {:?}", res, pen);
 
         assert!(res.x <= EPSILON && res.y <= EPSILON && !colliding);
@@ -174,9 +198,9 @@ mod square_tests {
         let rect = Square::new(Vec2::new(10.0, 5.0));
 
         let transform = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.5 * PI,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.5 * PI,
+            scale : Vec2::splat(1.0),
         };
 
         let vertex = Vec2::new(-3.0, 7.0);
@@ -185,7 +209,7 @@ mod square_tests {
 
         let res = (pen - Vec2::new(-2.0, 0.0)).abs();
 
-        const EPSILON: f32 = 0.001;
+        const EPSILON : f32 = 0.001;
         eprintln!("res {:?} pen {:?}", res, pen);
 
         assert!(res.x <= EPSILON && res.y <= EPSILON && coll);

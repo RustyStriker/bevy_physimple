@@ -1,0 +1,3 @@
+control_brace_style = "ClosingNextLine"
+fn_args_layout = "Vertical"
+space_before_colon = true

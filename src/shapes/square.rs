@@ -2,6 +2,7 @@ use bevy::math::Mat2;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::Segment;
 use super::{Aabb, Shape, Transform2D};
 
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
@@ -111,61 +112,98 @@ impl Shape for Square {
         }
     }
 
+    fn get_segment_penetration(
+        &self,
+        segment : super::Segment,
+        transform : Transform2D,
+        segment_origin : Vec2,
+    ) -> f32 {
+        let rot = Mat2::from_angle(transform.rotation);
+        let extents = rot * (self.extents * transform.scale);
+        let extents_con = rot * (self.extents * transform.scale * Vec2::new(1.0, -1.0));
+
+        let center = transform.translation + self.offset;
+
+        let v = [
+            center + extents,
+            center + extents_con,
+            center - extents,
+            center - extents_con,
+        ];
+
+        let segments = [
+            Segment { a: v[0], b: v[1], n: rot * Vec2::new(1.0,0.0) },
+            Segment { a: v[1], b: v[2], n: rot * Vec2::new(0.0,-1.0) },
+            Segment { a: v[2], b: v[3], n: rot * Vec2::new(-1.0,0.0) },
+            Segment { a: v[3], b: v[0], n: rot * Vec2::new(0.0,1.0) },
+        ];
+        
+        let del_origin = segment_origin - transform.translation;
+        
+        let mut res = f32::INFINITY; // I should probably replace this later on
+
+        for &s in segments.iter() {
+            if s.n.dot(del_origin) > 0.0 {
+                res = res.min(segment.collide(s).unwrap_or(res));
+            }
+        }
+        res
+    }
+
     fn collide_with_shape(
         &self,
         transform : Transform2D,
         shape : &dyn Shape,
         shape_trans : Transform2D,
-    ) -> (Vec2, bool) {
-        let rot_basis = Mat2::from_angle(transform.rotation);
-        let extents = rot_basis * (self.extents * transform.scale);
-        let extents_con = rot_basis * (self.extents * transform.scale * Vec2::new(1.0, -1.0));
+    ) -> Option<Vec2> {
+        let rot = Mat2::from_angle(transform.rotation);
+        let extents = rot * (self.extents * transform.scale);
+        let extents_con = rot * (self.extents * transform.scale * Vec2::new(1.0, -1.0));
 
         let center = transform.translation + self.offset;
 
-        let vertices = [
+        let v = [
             center + extents,
-            center - extents,
             center + extents_con,
+            center - extents,
             center - extents_con,
         ];
 
-        let mut collide = false;
-        let mut penetration = Vec2::splat(f32::INFINITY);
+        let segments = [
+            Segment { a: v[0], b: v[1], n: rot * Vec2::new(1.0,0.0) },
+            Segment { a: v[1], b: v[2], n: rot * Vec2::new(0.0,-1.0) },
+            Segment { a: v[2], b: v[3], n: rot * Vec2::new(-1.0,0.0) },
+            Segment { a: v[3], b: v[0], n: rot * Vec2::new(0.0,1.0) },
+        ];
+        
+        let del_origin = transform.translation - shape_trans.translation;
+        
+        let mut res = f32::INFINITY; // I should probably replace this later on
+        let mut normal = Vec2::ZERO;
 
-        for v in vertices.iter() {
-            let (dis, is_pen) = shape.get_vertex_penetration(*v, shape_trans);
-
-            if is_pen && !collide {
-                penetration = Vec2::ZERO;
-            }
-
-            collide |= is_pen;
-            if is_pen {
-                if dis.length_squared() > penetration.length_squared() {
-                    penetration = dis;
+        for &s in segments.iter() {
+            if s.n.dot(del_origin) < 0.0 {
+                let pen = shape.get_segment_penetration(s, shape_trans, transform.translation);
+                if pen.abs() < res.abs() {
+                    res = pen;
+                    normal = s.n;
                 }
             }
-            else if dis.length_squared() < penetration.length_squared() {
-                penetration = dis;
-            }
         }
-        (penetration, collide)
-    }
 
-    fn get_segment_penetration(
-        &self,
-        segment : super::Segment,
-        transform : Transform2D,
-    ) -> f32 {
-        todo!()
+        if res < 0.0 {
+            Some(res * normal)
+        }
+        else {
+            None
+        }
+
     }
 }
 
 #[cfg(test)]
 mod square_tests {
     use std::f32::consts::PI;
-
     use super::*;
 
     #[test]
@@ -213,5 +251,60 @@ mod square_tests {
         eprintln!("res {:?} pen {:?}", res, pen);
 
         assert!(res.x <= EPSILON && res.y <= EPSILON && coll);
+    }
+
+    #[test]
+    fn segment_collision() {
+        let square = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(1.0),
+        };
+
+        let trans = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        let seg = Segment {
+            a: Vec2::new(0.7,2.0),
+            b: Vec2::new(0.7, 0.0),
+            n: Vec2::new(-1.0,0.0),
+        };
+
+        assert_eq!(square.get_segment_penetration(seg, trans, Vec2::new(1.0,0.0)), -0.3);
+    }
+
+    #[test]
+    fn square_collision() {
+        let square = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(1.0),
+        };
+
+        let trans = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        let square2 = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(1.0),
+        };
+
+        let trans2 = Transform2D {
+            translation: Vec2::new(1.5,0.0),
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        assert_eq!(
+            square.collide_with_shape(trans, &square2, trans2),
+            Some(Vec2::new(-0.5,0.0))
+        );
     }
 }

@@ -70,7 +70,7 @@ impl Shape for Circle {
         transform : Transform2D,
         shape : &dyn Shape,
         shape_trans : Transform2D,
-    ) -> (Vec2, bool) {
+    ) -> Option<Vec2> {
         let center = transform.translation + self.offset;
 
         let (dis, is_pen) = shape.get_vertex_penetration(center, shape_trans);
@@ -79,23 +79,23 @@ impl Shape for Circle {
             let normal = dis.normalize();
             let pen = dis + normal * self.radius;
 
-            (pen, true)
+            Some(pen)
         }
         else {
             let dis_len = dis.length();
 
             if dis_len < f32::EPSILON {
-                return (Vec2::ZERO, false);
+                return Some(center - shape_trans.translation)
             }
 
             // calculate the distance to the shape
             let pen = (self.radius - dis_len) * dis / dis_len;
 
             if dis_len < self.radius {
-                (-pen, true)
+                Some(-pen)
             }
             else {
-                (pen, false)
+                None
             }
         }
     }
@@ -104,8 +104,18 @@ impl Shape for Circle {
         &self,
         segment : super::Segment,
         transform : Transform2D,
+        _ : Vec2,
     ) -> f32 {
-        todo!()
+        let (n,p) = segment.collide_point(transform.translation + self.offset);
+
+        // check we are actually close enough to the circle
+        if (n.powi(2) + p.powi(2)) < self.radius.powi(2) {
+            n - self.radius
+        }
+        else {
+            f32::INFINITY
+        }
+
     }
 }
 

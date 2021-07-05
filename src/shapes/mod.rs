@@ -28,11 +28,12 @@ pub trait Shape {
 
     /// Returns the distance(as result of `normal * normal.dot(distance)`) from the shape to the segment
     ///
-    /// Returnts : segment.n * segment.n.dot(distance)
+    /// Returnts : segment.n.dot(distance)
     fn get_segment_penetration(
         &self,
         segment : Segment,
         transform : Transform2D,
+        segment_origin : Vec2,
     ) -> f32;
 
     /// Check for a collision between 2 `Shape` objects at given `Transform2D`
@@ -43,7 +44,7 @@ pub trait Shape {
         transform : Transform2D,
         shape : &dyn Shape,
         shape_trans : Transform2D,
-    ) -> (Vec2, bool);
+    ) -> Option<Vec2>;
 }
 
 /// This is a temporary struct until bevy gets it own `Transform2D` struct
@@ -90,26 +91,70 @@ pub struct Segment {
     pub n : Vec2,
 }
 impl Segment {
-    /// Returns the minimum distance between the 2 segments projected on their normals and wether they collide
+    /// Returns the `a` where `penetration = a * self.normal`
+    ///
+    /// if `a > 0.0` -> no penetration happend, this is the distance
     fn collide(
         self,
         other : Segment,
-    ) -> (Vec2, bool) {
+    ) -> Option<f32> {
         let np = self.n.perp();
         let c = (self.a + self.b) * 0.5;
 
         let ap = np.dot(self.a - c);
         let bp = np.dot(self.b - c);
 
-        let oan = self.n.dot(other.a - c);
-        let obn = self.b.dot(other.b - c);
         let oap = np.dot(other.a - c);
         let obp = np.dot(other.b - c);
+        
+        let np_min = ap.min(bp);
+        let np_max = ap.max(bp);
+        
+        let op_min = oap.min(obp);
+        let op_max = oap.max(obp);
+        
+        if op_min <= np_max && op_max >= np_min {
+            let oan = self.n.dot(other.a - c);
+            let obn = self.n.dot(other.b - c);
 
-        let coll_n = (oan >= 0.0 && obn <= 0.0) || (oan <= 0.0 && obn >= 0.0);
-        // let coll_np = (oap <= bp && obp >= ap) || (oap )
+            let min = oan.min(obn);
 
-        // FIXME
-        (Vec2::ZERO, false)
+            Some(min)
+        }
+        else {
+            None
+        }
+    }
+
+    /// Returns the minimum distance between the segment and a given point
+    ///
+    /// Returns: (length on normal, length perp to normal)
+    fn collide_point(
+        self,
+        point : Vec2,
+    ) -> (f32,f32) {
+        let np = self.n.perp();
+        let c = (self.a + self.b) * 0.5;
+
+        let ap = np.dot(self.a - c);
+        let bp = np.dot(self.b - c);
+
+        let pp = np.dot(point - c);
+        
+        let np_part = if pp >= ap.min(bp) && pp <= ap.max(bp) {
+            0.0
+        }
+        else {
+            let a = pp - ap;
+            let b = pp - bp;
+            if a.abs() > b.abs() {
+                a
+            }
+            else {
+                b
+            }
+        };
+
+        (self.n.dot(point - c), np_part)
     }
 }

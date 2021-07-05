@@ -137,33 +137,35 @@ pub fn narrow_phase_system(
                         ..kin_pos
                     };
 
-                    let (dis, is_pen) =
+                    let dis =
                         shape_kin.collide_with_shape(coll_pos, obb_shape, obb_transform);
-                    let (dis2, is_pen2) =
+                    let dis2 =
                         obb_shape.collide_with_shape(obb_transform, shape_kin, coll_pos);
 
-                    let dis = if is_pen { dis } else { dis2 };
-                    let is_pen = is_pen | is_pen2;
+                    // if we use dis2 we need to reverse the direction
+                    let dis = if dis.is_some() { dis } else if let Some(d) = dis2 { Some(-d) } else { None };
 
                     // We branch here, if the obb is a sensor we should not collide
-                    if is_pen && obb.sensor {
-                        match sensors.get_component_mut::<Sensor2D>(obb.entity) {
-                            Ok(mut s) => {
-                                s.overlapping_bodies.push(entity_kin);
-                            }
-                            Err(_) => {
-                                continue;
+                    if let Some(dis) = dis {
+                        if obb.sensor {
+                            match sensors.get_component_mut::<Sensor2D>(obb.entity) {
+                                Ok(mut s) => {
+                                    s.overlapping_bodies.push(entity_kin);
+                                }
+                                Err(_) => {
+                                    continue;
+                                }
                             }
                         }
-                    }
-                    else if is_pen {
-                        let new_pos = coll_pos.translation + dis;
-                        normal = dis.normalize();
+                        else {
+                            let new_pos = coll_pos.translation + dis;
+                            normal = dis.normalize();
 
-                        let moved = new_pos - kin_pos.translation;
-                        remainder = movement - moved;
+                            let moved = new_pos - kin_pos.translation;
+                            remainder = movement - moved;
 
-                        coll_index = i as i32;
+                            coll_index = i as i32;
+                        }
                     }
                 }
             } // out of the surroindings for loop
@@ -242,13 +244,13 @@ pub fn narrow_phase_system(
             }
 
             if get_aabb_collision(aabb, aabb2) {
-                let (dis, pen) = s.collide_with_shape(t, s2, t2);
-                let (dis2, pen2) = s2.collide_with_shape(t2, s, t);
+                let dis = s.collide_with_shape(t, s2, t2);
+                let dis2 = s2.collide_with_shape(t2, s, t);
 
-                let dis = if pen { dis } else { dis2 };
-                let pen = pen | pen2;
+                // if we use dis2 we need to reverse the direction
+                let dis = if dis.is_some() { dis } else if let Some(d) = dis2 { Some(-d) } else { None };
 
-                if pen {
+                if let Some(dis) = dis {
                     let normal = dis.normalize();
 
                     // should i solve the penetration somewhere else?

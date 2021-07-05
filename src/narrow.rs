@@ -137,13 +137,19 @@ pub fn narrow_phase_system(
                         ..kin_pos
                     };
 
-                    let dis =
-                        shape_kin.collide_with_shape(coll_pos, obb_shape, obb_transform);
-                    let dis2 =
-                        obb_shape.collide_with_shape(obb_transform, shape_kin, coll_pos);
+                    let dis = shape_kin.collide_with_shape(coll_pos, obb_shape, obb_transform);
+                    let dis2 = obb_shape.collide_with_shape(obb_transform, shape_kin, coll_pos);
 
                     // if we use dis2 we need to reverse the direction
-                    let dis = if dis.is_some() { dis } else if let Some(d) = dis2 { Some(-d) } else { None };
+                    let dis = if dis.is_some() {
+                        dis
+                    }
+                    else if let Some(d) = dis2 {
+                        Some(-d)
+                    }
+                    else {
+                        None
+                    };
 
                     // We branch here, if the obb is a sensor we should not collide
                     if let Some(dis) = dis {
@@ -248,7 +254,15 @@ pub fn narrow_phase_system(
                 let dis2 = s2.collide_with_shape(t2, s, t);
 
                 // if we use dis2 we need to reverse the direction
-                let dis = if dis.is_some() { dis } else if let Some(d) = dis2 { Some(-d) } else { None };
+                let dis = if dis.is_some() {
+                    dis
+                }
+                else if let Some(d) = dis2 {
+                    Some(-d)
+                }
+                else {
+                    None
+                };
 
                 if let Some(dis) = dis {
                     let normal = dis.normalize();

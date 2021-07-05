@@ -122,7 +122,6 @@ fn character_system(
 ) {
     let gravity = phys_sets.gravity;
 
-    
     for (mut controller, mut body) in query.iter_mut() {
         if let Some(normal) = body.on_wall() {
             body.linvel -= normal * 0.1;

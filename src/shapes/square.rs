@@ -132,14 +132,30 @@ impl Shape for Square {
         ];
 
         let segments = [
-            Segment { a: v[0], b: v[1], n: rot * Vec2::new(1.0,0.0) },
-            Segment { a: v[1], b: v[2], n: rot * Vec2::new(0.0,-1.0) },
-            Segment { a: v[2], b: v[3], n: rot * Vec2::new(-1.0,0.0) },
-            Segment { a: v[3], b: v[0], n: rot * Vec2::new(0.0,1.0) },
+            Segment {
+                a : v[0],
+                b : v[1],
+                n : rot * Vec2::new(1.0, 0.0),
+            },
+            Segment {
+                a : v[1],
+                b : v[2],
+                n : rot * Vec2::new(0.0, -1.0),
+            },
+            Segment {
+                a : v[2],
+                b : v[3],
+                n : rot * Vec2::new(-1.0, 0.0),
+            },
+            Segment {
+                a : v[3],
+                b : v[0],
+                n : rot * Vec2::new(0.0, 1.0),
+            },
         ];
-        
+
         let del_origin = segment_origin - transform.translation;
-        
+
         let mut res = f32::INFINITY; // I should probably replace this later on
 
         for &s in segments.iter() {
@@ -170,14 +186,30 @@ impl Shape for Square {
         ];
 
         let segments = [
-            Segment { a: v[0], b: v[1], n: rot * Vec2::new(1.0,0.0) },
-            Segment { a: v[1], b: v[2], n: rot * Vec2::new(0.0,-1.0) },
-            Segment { a: v[2], b: v[3], n: rot * Vec2::new(-1.0,0.0) },
-            Segment { a: v[3], b: v[0], n: rot * Vec2::new(0.0,1.0) },
+            Segment {
+                a : v[0],
+                b : v[1],
+                n : rot * Vec2::new(1.0, 0.0),
+            },
+            Segment {
+                a : v[1],
+                b : v[2],
+                n : rot * Vec2::new(0.0, -1.0),
+            },
+            Segment {
+                a : v[2],
+                b : v[3],
+                n : rot * Vec2::new(-1.0, 0.0),
+            },
+            Segment {
+                a : v[3],
+                b : v[0],
+                n : rot * Vec2::new(0.0, 1.0),
+            },
         ];
-        
+
         let del_origin = transform.translation - shape_trans.translation;
-        
+
         let mut res = f32::INFINITY; // I should probably replace this later on
         let mut normal = Vec2::ZERO;
 
@@ -197,14 +229,13 @@ impl Shape for Square {
         else {
             None
         }
-
     }
 }
 
 #[cfg(test)]
 mod square_tests {
-    use std::f32::consts::PI;
     use super::*;
+    use std::f32::consts::PI;
 
     #[test]
     fn vertex_rotated_square() {
@@ -256,55 +287,58 @@ mod square_tests {
     #[test]
     fn segment_collision() {
         let square = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(1.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(1.0),
         };
 
         let trans = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         let seg = Segment {
-            a: Vec2::new(0.7,2.0),
-            b: Vec2::new(0.7, 0.0),
-            n: Vec2::new(-1.0,0.0),
+            a : Vec2::new(0.7, 2.0),
+            b : Vec2::new(0.7, 0.0),
+            n : Vec2::new(-1.0, 0.0),
         };
 
-        assert_eq!(square.get_segment_penetration(seg, trans, Vec2::new(1.0,0.0)), -0.3);
+        assert_eq!(
+            square.get_segment_penetration(seg, trans, Vec2::new(1.0, 0.0)),
+            -0.3
+        );
     }
 
     #[test]
     fn square_collision() {
         let square = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(1.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(1.0),
         };
 
         let trans = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         let square2 = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(1.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(1.0),
         };
 
         let trans2 = Transform2D {
-            translation: Vec2::new(1.5,0.0),
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::new(1.5, 0.0),
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         assert_eq!(
             square.collide_with_shape(trans, &square2, trans2),
-            Some(Vec2::new(-0.5,0.0))
+            Some(Vec2::new(-0.5, 0.0))
         );
     }
 }

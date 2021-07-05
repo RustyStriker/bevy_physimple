@@ -85,7 +85,7 @@ impl Shape for Circle {
             let dis_len = dis.length();
 
             if dis_len < f32::EPSILON {
-                return Some(center - shape_trans.translation)
+                return Some(center - shape_trans.translation);
             }
 
             // calculate the distance to the shape
@@ -106,7 +106,7 @@ impl Shape for Circle {
         transform : Transform2D,
         _ : Vec2,
     ) -> f32 {
-        let (n,p) = segment.collide_point(transform.translation + self.offset);
+        let (n, p) = segment.collide_point(transform.translation + self.offset);
 
         // check we are actually close enough to the circle
         if (n.powi(2) + p.powi(2)) < self.radius.powi(2) {
@@ -115,7 +115,6 @@ impl Shape for Circle {
         else {
             f32::INFINITY
         }
-
     }
 }
 

@@ -1,94 +1,104 @@
-use crate::{bodies::*, prelude::PhysicsSettings, shapes::*};
+use crate::{bodies::*, physics_components::{angular_velocity::AngVel, velocity::Vel}, settings::TransformMode, shapes::*};
 use bevy::{ecs::component::Component, prelude::*};
 use std::any::TypeId;
 
-#[derive(Clone, Copy, Debug)]
-pub enum ShapeType {
-    Square,
-    Circle,
-    None,
-}
-impl ShapeType {
-    pub fn from_id(id : TypeId) -> ShapeType {
-        if id == TypeId::of::<Square>() {
-            ShapeType::Square
-        }
-        else if id == TypeId::of::<Circle>() {
-            ShapeType::Circle
-        }
-        else {
-            ShapeType::None
-        }
-    }
-}
-pub struct ObbData {
+// FIXME outdated
+// BUG
+// XXX
+// TODO
+// HACK
+
+/// Kinematic body's entity(with vels) with its surrounding static bodies(without vels)
+pub struct BroadData {
+    /// Kinematic entity
     pub(crate) entity : Entity,
-    pub(crate) aabb : Aabb,
-    pub(crate) shape_type : ShapeType,
-    /// True - sensor, False - static
-    pub(crate) sensor : bool,
-    pub(crate) coll_layer : u8,
-    pub(crate) coll_mask : u8,
+    pub(crate) inst_vel : Vec2,
+    /// Static bodies in the area(who wants to chat)
+    pub(crate) area : Vec<Entity>,
+    /// Sensors in the area(dont trip the alarm!)
+    pub(crate) sensors : Vec<Entity>,
 }
-pub struct ObbDataKinematic {
-    pub(crate) entity : Entity,
-    pub(crate) aabb : Aabb,
-    pub(crate) shape_type : ShapeType,
+/// Kinematic body pairs, which might collide during broad phase calculation 
+pub struct KinematicCollisionCouple {
+    pub(crate) a : Entity,
+    pub(crate) b : Entity,
 }
 
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
-pub fn broad_phase_system<T>(
-    settings : Res<PhysicsSettings>,
-    statics : Query<(Entity, &GlobalTransform, &T, &StaticBody2D)>,
-    sensors : Query<(Entity, &GlobalTransform, &T, &Sensor2D)>,
-    kinematics : Query<(Entity, &GlobalTransform, &T, &KinematicBody2D)>,
-    mut writer : EventWriter<ObbData>,
-    mut writer_kin : EventWriter<ObbDataKinematic>,
-) where
-    T : Shape + Component,
-{
-    let shape_type = TypeId::of::<T>();
-    let shape_type = ShapeType::from_id(shape_type);
+pub fn broad_phase_1(
+    time : Res<Time>,
+    trans_mode : Res<TransformMode>,
+    kinematics : Query<(Entity, &Obv, Option<&Vel>, &GlobalTransform), Or<(With<Vel>, With<AngVel>)>>,
+    statics : Query<(Entity, &Obv, &GlobalTransform), (Without<Vel>, Without<AngVel>)>,
+    sensors : Query<(Entity, &Obv, &GlobalTransform), With<Sensor2D>>,
+    mut broad_writer : EventWriter<BroadData>,
+) {
+    // TODO Optimize it later, when all is done and the earth is gone
+    // probably get space partition or quad trees up and running
 
-    let tm = settings.transform_mode;
+    let delta = time.delta_seconds();
 
-    // Static bodies
-    for (e, t, s, sb) in statics.iter() {
-        if sb.active {
-            let data = ObbData {
-                entity : e,
-                aabb : s.to_aabb(Transform2D::from((t, tm))),
-                shape_type,
-                sensor : false,
-                coll_layer : sb.layer,
-                coll_mask : sb.mask,
-            };
-            writer.send(data);
+    for (e, obv, vel, gt) in kinematics.iter() {
+        
+        let inst_vel = vel.unwrap_or(&Vel::ZERO).0 * delta;
+
+        let circle_center = trans_mode.get_global_position(gt) + obv.offset;
+        let circle_radius_sqrd = (inst_vel + get_obv_extents(obv)).length_squared();
+        
+        // Get all staticbodies which might collide with use
+        let mut st_en : Vec<Entity> = Vec::new();
+        for (se, sv, sgt) in statics.iter() {
+            if obv_circle(circle_center, circle_radius_sqrd, sv, trans_mode.get_global_position(sgt)) {
+                st_en.push(se);
+            }
+        }
+        // same for sensors(we do the extra calculations for sensors which does not move)
+        let mut se_en : Vec<Entity> = Vec::new();
+        for (se, sv, sgt) in sensors.iter() {
+            if obv_circle(circle_center, circle_radius_sqrd, sv, trans_mode.get_global_position(sgt)) {
+                se_en.push(se);
+            }
+        }
+        // wrap it up to an event
+        broad_writer.send(BroadData {
+            entity: e,
+            inst_vel,
+            area: st_en,
+            sensors: se_en,
+        });
+        
+    }
+}
+
+fn obv_circle(
+    center : Vec2,
+    radius_sqrd : f32,
+    obv : &Obv,
+    obv_pos : Vec2,
+) -> bool {
+    let obv_pos = obv_pos + obv.offset;
+
+    match &obv.shape {
+        BoundingShape::Aabb(b) => {
+            let min = obv_pos - b.extents;
+            let max = obv_pos + b.extents;
+
+            let distance = min.max(center.min(max)) - center;
+
+            distance.length_squared() < radius_sqrd
+        },
+        BoundingShape::Circle(c) => {
+            let distance = center - obv_pos;
+
+            // This is a crude way of doing it based on the formula `(a-b)^2 <= a^2 + b^2`
+            distance.length_squared() < c.radius.powi(2) + radius_sqrd
         }
     }
-    // Sensors :D
-    for (e, t, s, sen) in sensors.iter() {
-        let data = ObbData {
-            entity : e,
-            aabb : s.to_aabb(Transform2D::from((t, tm))),
-            shape_type,
-            sensor : true,
-            coll_layer : sen.layer,
-            coll_mask : sen.mask,
-        };
-        writer.send(data);
-    }
-    // Kinematic stuff are complex af
-    for (e, t, s, k) in kinematics.iter() {
-        if k.active {
-            let t = Transform2D::from((t, tm));
+}
 
-            let data = ObbDataKinematic {
-                entity : e,
-                aabb : s.to_aabb(t),
-                shape_type,
-            };
-            writer_kin.send(data);
-        }
+fn get_obv_extents(obv : &Obv) -> Vec2 {
+    match &obv.shape {
+        BoundingShape::Aabb(a) => a.extents,
+        BoundingShape::Circle(c) => Vec2::splat(c.radius),
     }
 }

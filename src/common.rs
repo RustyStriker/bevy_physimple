@@ -1,19 +1,11 @@
 use bevy::prelude::*;
 
-// Extentions to the Bevy 'Vec2' type
-pub trait Vec2Ext {
-    /// Returns a projected copy of the current vector on other
-    fn project(
-        self,
-        other : Vec2,
-    ) -> Vec2;
-    /// Returns a slided copy of the current vector on normal
-    fn slide(
-        self,
-        normal : Vec2,
-    ) -> Vec2;
+pub trait VecOp<T> {
+    fn project(self, normal : T) -> T;
+    fn slide(self, normal : T) -> T;
 }
-impl Vec2Ext for Vec2 {
+
+impl VecOp<Vec2> for Vec2 {
     fn project(
         self,
         n : Vec2,

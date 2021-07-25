@@ -1,7 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::prelude::*;
-use bevy_physimple::prelude::*;
+use bevy_physimple::{physics_components::{CollisionLayer, velocity::Vel}, prelude::*, settings::Gravity};
 
 #[derive(Default)]
 pub struct CharacterController {
@@ -12,7 +12,7 @@ fn main() {
     let mut builder = App::build();
     builder
         .add_plugins(DefaultPlugins)
-        .add_plugin(Physics2dPlugin::default())
+        .add_plugin(Physics2dPlugin)
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
     builder.add_system(character_system.system());
@@ -36,19 +36,21 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(28.0, 28.0)),
             material : blue.clone(),
-            transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
+            // transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
             ..Default::default()
         })
-        .insert(
-            KinematicBody2D::new()
-                .with_terminal(Vec2::new(400.0, f32::INFINITY))
-                .with_mask(3)
-                .with_friction(1.5)
-                .with_bounciness(0.0),
+        .insert_bundle(
+            KinematicBundle {
+                obv: Obv {
+                    offset: Vec2::ZERO,
+                    shape: BoundingShape::Aabb(Aabb::size(Vec2::splat(28.0))),
+                },
+                shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+                // shape : CollisionShape::Circle(Circle::new(14.0)),
+                ..Default::default()
+            }
         )
         .insert(CharacterController::default())
-        .insert(Square::size(Vec2::new(28.0, 28.0)))
-        // .insert(Circle::new(14.0))
         .id();
 
     // center floor
@@ -59,8 +61,16 @@ fn setup(
             transform : Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
-        .insert(StaticBody2D::new().with_layer(3))
-        .insert(Square::size(Vec2::new(600.0, 30.0)));
+        .insert_bundle(
+            StaticBundle {
+                shape: CollisionShape::Square(Square::size(Vec2::new(600.0,30.0))),
+                obv: Obv {
+                    offset: Vec2::ZERO,
+                    shape: BoundingShape::Aabb(Aabb::size(Vec2::new(600.0,30.0))),
+                },
+                coll_layer: CollisionLayer::default(),
+            }
+        );
 
     // side wall
     commands
@@ -70,27 +80,36 @@ fn setup(
             transform : Transform::from_xyz(450.0, 0.0, 0.0),
             ..Default::default()
         })
-        .insert(StaticBody2D::new())
-        .insert(Square::size(Vec2::new(30.0, 300.0)));
+        .insert_bundle(
+            StaticBundle {
+                shape: CollisionShape::Square(Square::size(Vec2::new(30.0,300.0))),
+                obv: Obv {
+                    offset: Vec2::ZERO,
+                    shape: BoundingShape::Aabb(Aabb::size(Vec2::new(30.0,300.0))),
+                },
+                coll_layer: CollisionLayer::default(),
+            }
+        );
 
     // Spawn the cube near us
-    const CUBE_SIZE : f32 = 40.0;
-    commands
-        .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
-            material : another_color.clone(),
-            transform : Transform::from_xyz(30.0, 60.0, 0.0),
-            ..Default::default()
-        })
-        .insert(
-            KinematicBody2D::new()
-                .with_mass(2.0)
-                .with_friction(0.5)
-                .with_bounciness(0.3)
-                .with_linear_velocity(Vec2::new(220.0, 0.0)),
-        )
-        .insert(Square::size(Vec2::splat(CUBE_SIZE)));
-
+    // const CUBE_SIZE : f32 = 40.0;
+    // commands
+    //     .spawn_bundle(SpriteBundle {
+    //         sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+    //         material : another_color.clone(),
+    //         transform : Transform::from_xyz(30.0, 60.0, 0.0),
+    //         ..Default::default()
+    //     })
+    //     .insert(
+    //         KinematicBundle {
+    //             obv: Obv {
+    //                 offset: Vec2::ZERO,
+    //                 shape: BoundingShape::Aabb(Aabb::size(Vec2::splat(CUBE_SIZE))),
+    //             },
+    //             shape: CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))),
+    //             ..Default::default()
+    //         }
+    //     );
     // Circles
 
     // commands
@@ -117,24 +136,25 @@ fn setup(
 
 fn character_system(
     input : Res<Input<KeyCode>>,
-    phys_sets : Res<PhysicsSettings>,
-    mut query : Query<(&mut CharacterController, &mut KinematicBody2D)>,
+    time : Res<Time>,
+    gravity : Res<Gravity>,
+    mut query : Query<(&mut CharacterController, &KinematicBody2D, &mut Vel)>,
 ) {
-    let gravity = phys_sets.gravity;
+    let gravity = gravity.0;
 
-    for (mut controller, mut body) in query.iter_mut() {
+    for (mut controller, body, mut vel) in query.iter_mut() {
         if let Some(normal) = body.on_wall() {
-            body.linvel -= normal * 0.1;
+            vel.0 -= normal * 0.1;
 
-            if body.linvel.y < -1.0 {
-                body.linvel.y = -1.0;
+            if vel.0.y < -1.0 {
+                vel.0.y = -1.0;
             }
         }
 
-        let jump = |body : &mut KinematicBody2D| {
-            body.linvel = body.linvel.slide(gravity.normalize()) - gravity * 0.6;
+        let jump = |body : &KinematicBody2D, vel : &mut Vel| {
+            vel.0 = vel.0.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall().unwrap_or(Vec2::ZERO) * 250.0;
-            body.linvel += wall;
+            vel.0 += wall;
         };
 
         let should_jump = input.just_pressed(KeyCode::Space) || input.just_pressed(KeyCode::W);
@@ -145,27 +165,27 @@ fn character_system(
                 // This is just a weird way to do jump, using the gravity direction and size(tho you dont need the size)
                 // it works by sliding on the gravity direction(so nothing in the direction of gravity)
                 // then adding the jump force(here its gravity * 0.5) to the velocity
-                jump(&mut body);
+                jump(body, &mut vel);
             }
         }
         else if controller.double_jump && should_jump {
             controller.double_jump = false;
-            jump(&mut body);
+            jump(body, &mut vel);
         }
 
         // This is for the testing purpose of the continous collision thingy
         if input.just_pressed(KeyCode::S) && body.on_floor().is_none() {
-            body.apply_linear_impulse(Vec2::new(0.0, -50000000.0));
+            vel.0 = Vec2::new(0.0, -50000000.0);
         }
 
         // It might look like we need to multiply by delta_time but the apply_force function does it for us(in the physics step)
         let acc = Vec2::new(1000.0, 0.0);
         if input.pressed(KeyCode::A) {
-            body.apply_force(-acc);
+            vel.0 -= acc * time.delta_seconds();
             // body.apply_angular_impulse(1.0);
         }
         if input.pressed(KeyCode::D) {
-            body.apply_force(acc);
+            vel.0 += acc * time.delta_seconds();
             // body.apply_angular_impulse(-1.0);
         }
     }

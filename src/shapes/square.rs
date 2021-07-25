@@ -70,7 +70,6 @@ impl Shape for Square {
 
         Aabb {
             extents,
-            position : transform.translation + self.offset,
         }
     }
 

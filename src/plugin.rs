@@ -3,182 +3,23 @@
 //! Defining The Plugins and some other important stuff, like user facing events
 
 use crate::bodies::*;
+use crate::physics_components::angular_velocity::AngVel;
+use crate::physics_components::angular_velocity::TerAngVel;
+use crate::physics_components::velocity::TerVel;
+use crate::physics_components::{physical_properties::{FrictionMult, Mass}, velocity::Vel};
+use crate::settings::{AngFriction, Friction, Gravity, TransformMode};
 use crate::shapes::*;
 use crate::{
-    broad::{self, ObbData, ObbDataKinematic},
+    broad,
     common::*,
     narrow,
 };
 use bevy::prelude::*;
-use std::f32::consts::PI;
 
 /// Physics plugin for 2D physics
-pub struct Physics2dPlugin {
-    /// Global settings for the physics calculations
-    settings : PhysicsSettings,
-}
-impl Default for Physics2dPlugin {
-    fn default() -> Self {
-        Physics2dPlugin {
-            settings : PhysicsSettings::default(),
-        }
-    }
-}
+pub struct Physics2dPlugin;
 
-/// Settings for the physics systems to use
-///
-/// usually the defaults should be enough, besides a couple of parameters(friction, gravity, ang_friction)
-#[derive(Clone, Debug)]
-pub struct PhysicsSettings {
-    /// How strong the force of friction is(default - 400.0)
-    pub friction : f32,
-    /// The direction in which friction wont exist
-    ///
-    /// or the normal vector for the plane in which friction does exists(should be `gravity.normalize()`)
-    pub friction_normal : Vec2,
-    /// Friction on the angular velocity in radians
-    pub ang_friction : f32,
 
-    /// Gravity direction and strength(up direction is opposite to gravity)
-    pub gravity : Vec2,
-
-    pub transform_mode : TransformMode,
-    /// What angles are considered floor/wall/ceilling
-    ///
-    /// a number between 0-1 representing 'normal.dot(-gravity)'
-    ///
-    /// floor >= floor_angle // wall.abs() < floor_angle // ceil <= -floor_angle
-    ///
-    /// Defaults to 0.7
-    pub floor_angle : f32,
-}
-impl Default for PhysicsSettings {
-    fn default() -> Self {
-        PhysicsSettings {
-            friction : 400.0,
-            friction_normal : Vec2::Y,
-            ang_friction : PI,
-            gravity : Vec2::new(0.0, -540.0),
-            transform_mode : TransformMode::XY,
-            floor_angle : 0.7,
-        }
-    }
-}
-
-/// Which plane acts as the XY plane, rotation axis is the perpendicular axis
-#[derive(Debug, Clone, Copy)]
-pub enum TransformMode {
-    XY,
-    XZ,
-    YZ,
-}
-impl TransformMode {
-    /// Returns the position from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_global_position(
-        &self,
-        transform : &GlobalTransform,
-    ) -> Vec2 {
-        let t = transform.translation;
-
-        match self {
-            TransformMode::XY => Vec2::new(t.x, t.y),
-            TransformMode::XZ => Vec2::new(t.x, t.z),
-            TransformMode::YZ => Vec2::new(t.y, t.z),
-        }
-    }
-    /// Returns the rotation from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_global_rotation(
-        &self,
-        transform : &GlobalTransform,
-    ) -> f32 {
-        let t = transform.rotation;
-
-        match self {
-            TransformMode::XY => t.z,
-            TransformMode::XZ => t.y,
-            TransformMode::YZ => t.x,
-        }
-    }
-    /// Returns the scale from a given `&GlobalTransform` and `TransformMode`
-    pub fn get_global_scale(
-        &self,
-        transform : &GlobalTransform,
-    ) -> Vec2 {
-        let t = transform.scale;
-
-        match self {
-            TransformMode::XY => Vec2::new(t.x, t.y),
-            TransformMode::XZ => Vec2::new(t.x, t.z),
-            TransformMode::YZ => Vec2::new(t.y, t.z),
-        }
-    }
-    /// Returns the position from a given `&Transform` and `TransformMode`
-    pub fn get_position(
-        &self,
-        transform : &Transform,
-    ) -> Vec2 {
-        let t = transform.translation;
-
-        match self {
-            TransformMode::XY => Vec2::new(t.x, t.y),
-            TransformMode::XZ => Vec2::new(t.x, t.z),
-            TransformMode::YZ => Vec2::new(t.y, t.z),
-        }
-    }
-    /// Returns the rotation from a given `&Transform` and `TransformMode`
-    pub fn get_rotation(
-        &self,
-        transform : &Transform,
-    ) -> f32 {
-        let t = transform.rotation;
-
-        match self {
-            TransformMode::XY => t.z,
-            TransformMode::XZ => t.y,
-            TransformMode::YZ => t.x,
-        }
-    }
-    /// Returns the scale from a given `&Transform` and `TransformMode`
-    pub fn get_scale(
-        &self,
-        transform : &Transform,
-    ) -> Vec2 {
-        let t = transform.scale;
-
-        match self {
-            TransformMode::XY => Vec2::new(t.x, t.y),
-            TransformMode::XZ => Vec2::new(t.x, t.z),
-            TransformMode::YZ => Vec2::new(t.y, t.z),
-        }
-    }
-    /// Sets position based on `TransformMode`
-    pub fn set_position(
-        &self,
-        transform : &mut Transform,
-        pos : Vec2,
-    ) {
-        let t = transform.translation;
-
-        transform.translation = match self {
-            TransformMode::XY => Vec3::new(pos.x, pos.y, t.z),
-            TransformMode::XZ => Vec3::new(pos.x, t.y, pos.y),
-            TransformMode::YZ => Vec3::new(t.x, pos.x, pos.y),
-        };
-    }
-    /// Sets rotation based on `TransformMode` (erase previus rotation)
-    pub fn set_rotation(
-        &self,
-        transform : &mut Transform,
-        rot : f32,
-    ) {
-        // TODO make it persist the other axis rotations, i dont understand quaternions
-        transform.rotation = match self {
-            TransformMode::XY => Quat::from_rotation_z(rot),
-            TransformMode::XZ => Quat::from_rotation_y(rot),
-            TransformMode::YZ => Quat::from_rotation_x(rot),
-        }
-    }
-}
 /// General collision event that happens between 2 bodies.
 pub struct CollisionEvent {
     /// First entity
@@ -216,12 +57,10 @@ impl Plugin for Physics2dPlugin {
         &self,
         app : &mut AppBuilder,
     ) {
-        let settings = self.settings.clone();
-
         // Stage order goes as follows
         // Joints step -> Physics step -> collision detection -> solve -> sync -> Raycast detection
 
-        app.insert_resource(settings)
+        app
             .add_stage_before(
                 CoreStage::Update,
                 stage::PHYSICS_STEP,
@@ -257,114 +96,158 @@ impl Plugin for Physics2dPlugin {
                 stage::RAYCAST_DETECTION,
                 SystemStage::single_threaded(),
             );
-
+            
         // Add the event type
-        app.add_event::<ObbData>();
-        app.add_event::<ObbDataKinematic>();
+        app.add_event::<broad::BroadData>();
         app.add_event::<CollisionEvent>();
 
+        // insert the resources
+        crate::settings::insert_physics_resources(app);
+
         // Add the systems themselves for each step
-        app.add_system_to_stage(stage::PHYSICS_STEP, physics_step_system.system())
+        app
             .add_system_to_stage(
                 stage::CAPTURE_STEP,
-                broad::broad_phase_system::<Square>.system(),
-            )
-            .add_system_to_stage(
-                stage::CAPTURE_STEP,
-                broad::broad_phase_system::<Circle>.system(),
+                broad::broad_phase_1.system(),
             )
             .add_system_to_stage(
                 stage::COLLISION_DETECTION,
                 narrow::narrow_phase_system.system(),
             );
+
+        app.add_system_set_to_stage(stage::PHYSICS_STEP,
+            SystemSet::new()
+                .with_system(global_gravity_system.system())
+                .with_system(friction_system.system())
+                .with_system(ang_friction_system.system())
+                .with_system(terminal_vel_system.system())
+                .with_system(terminal_ang_vel_system.system())
+                .with_system(kinematic_pre_update_system.system())
+                .with_system(apply_ang_vel_system.system())
+        );
         // TODO Recreate the Joint systems
     }
 }
 
-/// apply gravity, movement, rotation, forces, friction and other stuff as well
-fn physics_step_system(
+fn global_gravity_system(
     time : Res<Time>,
-    physics_sets : Res<PhysicsSettings>,
-    mut query : Query<(&mut KinematicBody2D, &mut Transform)>,
+    gravity : Res<Gravity>,
+    mut query : Query<(&mut Vel, &Mass)>,
 ) {
     let delta = time.delta_seconds();
-    let gravity = physics_sets.gravity;
-    let trans_mode = physics_sets.transform_mode;
 
-    for (mut body, mut transform) in query.iter_mut() {
-        if !body.active {
-            continue;
+    for (mut vel, mass) in query.iter_mut() {
+        if mass.mass() > f32::EPSILON { // Not 0
+            vel.0 += gravity.0 * delta;
         }
-
-        let accelerating =
-            body.accumulator.length_squared() > 0.1 || body.dynamic_acc.length_squared() > 0.1;
-
-        // Gravity
-        if body.mass > f32::EPSILON {
-            body.linvel += gravity * delta;
-        }
-        // Apply forces and such
-        let linvel = body.linvel + body.accumulator * delta;
-        let linvel = linvel + body.dynamic_acc;
-        body.linvel = linvel;
-        body.accumulator = Vec2::ZERO;
-        body.dynamic_acc = Vec2::ZERO;
-
-        // Terminal velocity cheks(per axis)
-        {
-            // Brackets because we no longer need those variables
-            let vel = body.linvel;
-            let limit = body.terminal;
-            if vel.x.abs() > limit.x {
-                body.linvel.x = vel.x.signum() * limit.x;
-            }
-            if vel.y.abs() > limit.y {
-                body.linvel.y = vel.y.signum() * limit.y;
-            }
-            let vel = body.angvel;
-            let limit = body.ang_terminal;
-            if vel.abs() > limit {
-                body.angvel = vel.signum() * limit;
-            }
-        }
-        // Apply movement and rotation
-        body.inst_linvel = body.linvel * delta;
-        let position = trans_mode.get_position(&transform) + body.inst_linvel;
-        trans_mode.set_position(&mut transform, position);
-
-        let rotation = trans_mode.get_rotation(&transform) + body.angvel * delta;
-        trans_mode.set_rotation(&mut transform, rotation);
-
-        // Apply friction
-        if !accelerating {
-            let friction_normal = physics_sets.friction_normal;
-            let vel_proj = body.linvel.project(friction_normal);
-            let mut vel_slided = body.linvel - vel_proj; // This is pretty much how project works
-
-            let vel_slided_len = vel_slided.length(); // We keep it to normalize the vector later
-            let friction_strength = physics_sets.friction * body.friction_mult * delta; // Current frame's friction
-            if vel_slided_len <= friction_strength {
-                vel_slided = Vec2::ZERO;
-            }
-            else {
-                vel_slided -= (vel_slided / vel_slided_len) * friction_strength;
-                //             /\~~~~~~~~~~~~~~~~~~~~~~~~/\ normalized vel_slided
-            }
-
-            body.linvel = vel_proj + vel_slided; // Apply the new friction values to linvel
-        }
-        let angular_friction = physics_sets.ang_friction * delta;
-        if body.angvel.abs() < angular_friction {
-            body.angvel = 0.0;
-        }
-        else {
-            let sign = body.angvel.signum();
-            body.angvel -= sign * angular_friction;
-        }
-
-        // Reset on_* variables
-        body.on_floor = None;
-        body.on_wall = None;
-        body.on_ceil = None;
     }
 }
+
+fn friction_system(
+    time : Res<Time>,
+    friction : Res<Friction>,
+    mut query : Query<(&mut Vel, &FrictionMult)>,
+) {
+    let delta = time.delta_seconds();
+
+    for (mut vel, mult) in query.iter_mut() {
+        // Holy shit this is ugly... it doesnt look TOO bad but  boi its ugly af
+        let vel_proj = vel.0.project(friction.normal);
+        let mut vel_slided = vel.0 - vel_proj; // This is pretty much how project works
+
+        let vel_slided_len = vel_slided.length(); // We keep it to normalize the vector later
+        let friction_strength = friction.strength * mult.0 * delta; // Current frame's friction
+        if vel_slided_len <= friction_strength {
+            vel_slided = Vec2::ZERO;
+        }
+        else {
+            vel_slided -= (vel_slided / vel_slided_len) * friction_strength;
+            //             /\~~~~~~~~~~~~~~~~~~~~~~~~/\ normalized vel_slided
+        }
+
+        vel.0 = vel_proj + vel_slided; // Apply the new friction values to vel
+    }
+}
+
+fn ang_friction_system(
+    time : Res<Time>,
+    ang_fric : Res<AngFriction>,
+    mut query: Query<&mut AngVel>,
+) {
+    let strength = time.delta_seconds() * ang_fric.0;
+
+    for mut v in query.iter_mut() {
+        if v.0 < strength {
+            v.0 = 0.0;
+        }
+        else {
+            let sign = v.0.signum();
+            v.0 -= sign * strength;
+        }
+    }
+}
+
+fn terminal_vel_system(
+    mut query : Query<(&mut Vel, &TerVel)>,
+) {
+    for (mut vel, ter) in query.iter_mut() {
+        let v = vel.0;
+        let limit = ter.0;
+        if v.x.abs() > limit.x {
+            vel.0.x = v.x.signum() * limit.x;
+        }
+        if v.y.abs() > limit.y {
+            vel.0.y = v.y.signum() * limit.y;
+        }
+    }
+}
+
+fn terminal_ang_vel_system(
+    mut query : Query<(&mut AngVel, &TerAngVel)>,
+) {
+    for (mut vel, ter) in query.iter_mut() {
+        if vel.0.abs() > ter.0 {
+            let sign = vel.0.signum();
+            vel.0 = sign * ter.0;
+        }
+    }
+}
+
+fn kinematic_pre_update_system(
+    mut query : Query<&mut KinematicBody2D>,
+) {
+    for mut k in query.iter_mut() {
+        // Reset collision data
+        k.on_floor = None;
+        k.on_wall = None;
+        k.on_ceil = None;
+
+    }
+}
+
+fn apply_ang_vel_system(
+    time : Res<Time>,
+    trans_mode : Res<TransformMode>,
+    mut query : Query<(&AngVel, &mut Transform)>,
+) {
+    let delta = time.delta_seconds();
+
+    for (av, mut t) in query.iter_mut() {
+        let angle = trans_mode.get_rotation(&t);
+        trans_mode.set_rotation(&mut t, angle + av.0 * delta);
+    }
+}
+
+
+
+/*
+    Simply adding to movement
+    
+    Applying changes based on movement
+
+    Limits/cleanup of movement
+
+    Movement/update kinematic data
+
+    Collision detection
+*/

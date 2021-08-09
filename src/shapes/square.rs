@@ -73,7 +73,7 @@ impl Shape for Square {
         }
     }
 
-    fn get_vertex_penetration(
+    fn collide_vertex(
         &self,
         vertex : Vec2,
         transform : Transform2D,
@@ -92,17 +92,29 @@ impl Shape for Square {
             // the closest edge will be the one where both signs of the edges will resemle the vertex's signs
             // so it will end up being `extents * vertex.signum()` therefore
 
-            let distance = vertex - (vertex.signum() * extents);
+            let distance = (vertex.signum() * extents) - vertex;
 
-            (distance, false)
+            (basis * distance, false)
         }
         else {
             let to_edge = extents.abs() - vertex.abs();
-            let res = if to_edge.x < to_edge.y {
-                Vec2::new(to_edge.x * vertex.x.signum(), 0.0)
+            let res = if to_edge.x > 0.0 && to_edge.y > 0.0 {
+                // if both of them are positive, we have penetration and we want the "fastest" way out
+                if to_edge.x < to_edge.y {
+                    Vec2::new(to_edge.x * vertex.x.signum(), 0.0)
+                }
+                else {
+                    Vec2::new(0.0, to_edge.y * vertex.y.signum())
+                }
             }
             else {
-                Vec2::new(0.0, to_edge.y * vertex.y.signum())
+                // if 1 of them is negative then there is no penetration and we want the negative value
+                if to_edge.x < 0.0 {
+                    Vec2::new(to_edge.x * vertex.x.signum(),0.0)
+                }
+                else {
+                    Vec2::new(0.0, to_edge.y * vertex.y.signum())
+                }
             };
 
             let is_pen = vertex.x.abs() < extents.x && vertex.y.abs() < extents.y;
@@ -111,11 +123,11 @@ impl Shape for Square {
         }
     }
 
-    fn get_segment_penetration(
+    fn collide_segment(
         &self,
         segment : super::Segment,
         transform : Transform2D,
-        segment_origin : Vec2,
+        _ : Vec2, // TODO remove when fully realising its useless
     ) -> f32 {
         let rot = Mat2::from_angle(transform.rotation);
         let extents = rot * (self.extents * transform.scale);
@@ -153,19 +165,22 @@ impl Shape for Square {
             },
         ];
 
-        let del_origin = segment_origin - transform.translation;
-
         let mut res = f32::INFINITY; // I should probably replace this later on
 
         for &s in segments.iter() {
-            if s.n.dot(del_origin) > 0.0 {
-                res = res.min(segment.collide(s).unwrap_or(res));
+            if s.n.dot(segment.n) < 0.0 {
+                let seg = segment.collide(s);
+                if let Some(s) = seg {
+                    if s.abs() < res.abs() {
+                        res = s;
+                    }
+                }
             }
         }
         res
     }
 
-    fn collide_with_shape(
+    fn collide(
         &self,
         transform : Transform2D,
         shape : &dyn Shape,
@@ -207,14 +222,14 @@ impl Shape for Square {
             },
         ];
 
-        let del_origin = transform.translation - shape_trans.translation;
+        let (dis, _) = shape.collide_vertex(center, shape_trans);
 
         let mut res = f32::INFINITY; // I should probably replace this later on
         let mut normal = Vec2::ZERO;
 
         for &s in segments.iter() {
-            if s.n.dot(del_origin) < 0.0 {
-                let pen = shape.get_segment_penetration(s, shape_trans, transform.translation);
+            if s.n.dot(dis) >= 0.0 {
+                let pen = shape.collide_segment(s, shape_trans, transform.translation);
                 if pen.abs() < res.abs() {
                     res = pen;
                     normal = s.n;
@@ -235,52 +250,53 @@ impl Shape for Square {
 mod square_tests {
     use super::*;
     use std::f32::consts::PI;
+    // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
+    //  around 0.0000005 miss
+    const EPSILON : f32 = 0.001;
 
     #[test]
-    fn vertex_rotated_square() {
+    fn vertex_no_rot() {
         let rect = Square::new(Vec2::new(10.0, 5.0));
 
         let transform = Transform2D {
             translation : Vec2::ZERO,
-            rotation : 0.5 * PI, // 90 degrees in radians...
+            rotation : 0.0,
             scale : Vec2::splat(1.0),
         };
 
-        let outside = Vec2::new(7.0, 7.0);
-        println!("vertex : {:?}", outside);
+        let inside = Vec2::new(7.0,1.0);
 
-        let (pen, colliding) = rect.get_vertex_penetration(outside, transform);
+        let (inside_res, inside_pen) = rect.collide_vertex(inside, transform);
+        assert!(inside_pen && (inside_res - Vec2::new(3.0,0.0)).length() < EPSILON);
+        
+        let outside = Vec2::new(-3.0,7.0);
 
-        let res = (pen - Vec2::new(-2.0, 0.0)).abs();
+        let (out_res, out_pen) = rect.collide_vertex(outside, transform);
+        assert!(!out_pen && (out_res - Vec2::new(0.0,-2.0)).length() < EPSILON);
 
-        // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
-        //  around 0.0000005 miss
-        const EPSILON : f32 = 0.001;
-        eprintln!("res {:?}, pen {:?}", res, pen);
-
-        assert!(res.x <= EPSILON && res.y <= EPSILON && !colliding);
     }
 
     #[test]
-    fn vertex_inside_square() {
+    fn vertex_rot() {
         let rect = Square::new(Vec2::new(10.0, 5.0));
 
         let transform = Transform2D {
             translation : Vec2::ZERO,
-            rotation : 0.5 * PI,
+            rotation : 0.25 * PI,
             scale : Vec2::splat(1.0),
         };
 
-        let vertex = Vec2::new(-3.0, 7.0);
+        // Basically the point (7.0,0.0) rotated 0.25 * PI...
+        let inside = Mat2::from_angle(0.25 * PI) * Vec2::new(7.0,0.0);
 
-        let (pen, coll) = rect.get_vertex_penetration(vertex, transform);
+        let (ins_res, ins_pen) = rect.collide_vertex(inside, transform);
+        assert!(ins_pen && (ins_res - Mat2::from_angle(0.25 * PI) * Vec2::new(3.0,0.0)).length() < EPSILON);
 
-        let res = (pen - Vec2::new(-2.0, 0.0)).abs();
+        let outside = Mat2::from_angle(0.25 * PI) * Vec2::new(-11.0, -6.0);
 
-        const EPSILON : f32 = 0.001;
-        eprintln!("res {:?} pen {:?}", res, pen);
-
-        assert!(res.x <= EPSILON && res.y <= EPSILON && coll);
+        let (out_res, out_pen) = rect.collide_vertex(outside, transform);
+        println!("r {:?}", out_res);
+        assert!(!out_pen && (out_res - Mat2::from_angle(0.25 * PI) * Vec2::new(1.0,1.0)).length() < EPSILON);
     }
 
     #[test]
@@ -304,13 +320,13 @@ mod square_tests {
         };
 
         assert_eq!(
-            square.get_segment_penetration(seg, trans, Vec2::new(1.0, 0.0)),
+            square.collide_segment(seg, trans, Vec2::new(1.0, 0.0)),
             -0.3
         );
     }
 
     #[test]
-    fn square_collision() {
+    fn collision_no_rotation() {
         let square = Square {
             offset : Vec2::ZERO,
             rotation_offset : 0.0,
@@ -336,8 +352,103 @@ mod square_tests {
         };
 
         assert_eq!(
-            square.collide_with_shape(trans, &square2, trans2),
+            square.collide(trans, &square2, trans2),
             Some(Vec2::new(-0.5, 0.0))
         );
+    }
+
+    #[test]
+    fn collision_rotate() {
+        let a = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(1.0),
+        };
+        let ta = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        let b = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(1.0),
+        };
+        let tb = Transform2D {
+            translation: Vec2::new(2.0,0.5),
+            rotation: PI * 0.25,
+            scale: Vec2::splat(1.0),
+        };
+
+        let a_b = a.collide(ta, &b, tb);
+        let b_a = b.collide(tb, &a, ta);
+
+        // make sure both see the collision...
+        assert_eq!(a_b.is_some(), b_a.is_some());
+        println!("{:?}", a_b);
+        assert!((a_b.unwrap() + Vec2::new(2.0_f32.sqrt() - 1.0, 0.0)).length() < EPSILON);
+    }
+
+    #[test]
+    fn collision_big() {
+        let big = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::new(100.0,10.0),
+        };
+
+        let tbig = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        let a = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(10.0),
+        };
+
+        let ta = Transform2D {
+            translation: Vec2::new(50.0, 10.0),
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        // --------- TEST 1 -------------
+        let big_a = big.collide(tbig, &a, ta);
+        let a_bg = a.collide(ta, &big, tbig);
+
+        // make sure both register
+        assert_eq!(big_a.is_some(), a_bg.is_some());
+
+        assert!((big_a.unwrap() - Vec2::new(0.0, -10.0)).length() < EPSILON);
+        // this time imma check both for proper result
+        assert!((a_bg.unwrap() - Vec2::new(0.0, 10.0)).length() < EPSILON);
+
+        // ------- END TEST 1 ----------
+
+        let r = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(10.0),
+        };
+
+        let tr = Transform2D {
+            translation: Vec2::new(-70.0,-10.0),
+            rotation: 0.25 * PI,
+            scale: Vec2::splat(1.0),
+        };
+
+        // ------ TEST 2 --------
+        let big_r = big.collide(tbig, &r, tr);
+        let r_big = r.collide(tr, &big, tbig);
+
+        // both register
+        assert_eq!(big_r.is_some(), r_big.is_some());
+
+        assert!((big_r.unwrap() - Vec2::new(0.0, 10.0_f32 * 2.0_f32.sqrt())).length() < EPSILON);
+
     }
 }

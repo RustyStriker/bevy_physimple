@@ -60,23 +60,34 @@ pub struct Transform2D {
 impl From<(&GlobalTransform, TransformMode)> for Transform2D {
     fn from((trans, mode) : (&GlobalTransform, TransformMode)) -> Self {
         let t = trans.translation;
-        let r = trans.rotation;
+        let q = trans.rotation;
         let s = trans.scale;
 
+        // the weird conversion is from - it actually works...
+        // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
+        // i hope they are correct
         match mode {
             TransformMode::XY => Transform2D {
                 translation : Vec2::new(t.x, t.y),
-                rotation : r.z,
+                rotation : (2.0 * (q.w * q.z + q.x * q.y)).atan2(1.0 - 2.0 * (q.y * q.y + q.z * q.z)),
                 scale : Vec2::new(s.x, s.y),
             },
             TransformMode::XZ => Transform2D {
                 translation : Vec2::new(t.x, t.z),
-                rotation : r.y,
+                rotation : {
+                    let sinp = 2.0 * (q.w * q.y - q.z * q.x);
+                    if sinp.abs() >= 1.0 {
+                        0.5 * std::f32::consts::PI.copysign(sinp)
+                    }
+                    else {
+                        sinp.asin()
+                    }
+                },
                 scale : Vec2::new(s.x, s.z),
             },
             TransformMode::YZ => Transform2D {
                 translation : Vec2::new(t.y, t.z),
-                rotation : r.x,
+                rotation : (2.0 * (q.w * q.x + q.y * q.z)).atan2(1.0 - 2.0 * (q.x * q.x + q.y * q.y)),
                 scale : Vec2::new(s.y, s.z),
             },
         }

@@ -38,7 +38,7 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(28.0)),
             material : blue.clone(),
-            // transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
+            transform : Transform::from_rotation(Quat::from_rotation_z(0.25 * PI)),
             ..Default::default()
         })
         .insert_bundle(

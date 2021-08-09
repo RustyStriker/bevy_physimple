@@ -41,8 +41,6 @@ pub trait Shape {
     /// Check for a collision between 2 `Shape` objects at given `Transform2D`
     /// And returns the penetration.
     ///
-    /// In order to solve the collision: `translation = translation - collide(...).unwrap()`
-    ///
     /// Should be used after `Aabb` checks with movement and everything
     fn collide(
         &self,

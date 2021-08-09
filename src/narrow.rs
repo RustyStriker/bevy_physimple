@@ -125,8 +125,8 @@ pub fn narrow_phase_system(
                     };
 
                     if let Some(dis) = dis {
-                        let new_pos = coll_pos.translation - dis;
-                        normal = -dis.normalize();
+                        let new_pos = coll_pos.translation + dis;
+                        normal = dis.normalize();
 
                         let moved = new_pos - kin_pos.translation;
                         remainder = movement - moved;

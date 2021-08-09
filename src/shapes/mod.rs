@@ -22,7 +22,7 @@ pub trait Shape {
     /// Returns the distance(as `Vec2`) from the shape to the vertex
     ///
     /// Returns : (distance from edge, is_penetrating)
-    fn get_vertex_penetration(
+    fn collide_vertex(
         &self,
         vertex : Vec2,
         transform : Transform2D,
@@ -31,7 +31,7 @@ pub trait Shape {
     /// Returns the distance(as result of `normal * normal.dot(distance)`) from the shape to the segment
     ///
     /// Returnts : segment.n.dot(distance)
-    fn get_segment_penetration(
+    fn collide_segment(
         &self,
         segment : Segment,
         transform : Transform2D,
@@ -39,9 +39,12 @@ pub trait Shape {
     ) -> f32;
 
     /// Check for a collision between 2 `Shape` objects at given `Transform2D`
+    /// And returns the penetration.
+    ///
+    /// In order to solve the collision: `translation = translation - collide(...).unwrap()`
     ///
     /// Should be used after `Aabb` checks with movement and everything
-    fn collide_with_shape(
+    fn collide(
         &self,
         transform : Transform2D,
         shape : &dyn Shape,

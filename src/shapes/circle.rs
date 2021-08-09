@@ -47,7 +47,7 @@ impl Shape for Circle {
         }
     }
 
-    fn get_vertex_penetration(
+    fn collide_vertex(
         &self,
         vertex : Vec2,
         transform : Transform2D,
@@ -64,7 +64,7 @@ impl Shape for Circle {
         (normal * (self.radius - distance), distance < self.radius) // Return the penetration value
     }
 
-    fn collide_with_shape(
+    fn collide(
         &self,
         transform : Transform2D,
         shape : &dyn Shape,
@@ -72,7 +72,7 @@ impl Shape for Circle {
     ) -> Option<Vec2> {
         let center = transform.translation + self.offset;
 
-        let (dis, is_pen) = shape.get_vertex_penetration(center, shape_trans);
+        let (dis, is_pen) = shape.collide_vertex(center, shape_trans);
 
         if is_pen {
             let normal = dis.normalize();
@@ -99,7 +99,7 @@ impl Shape for Circle {
         }
     }
 
-    fn get_segment_penetration(
+    fn collide_segment(
         &self,
         segment : super::Segment,
         transform : Transform2D,
@@ -107,8 +107,10 @@ impl Shape for Circle {
     ) -> f32 {
         let (n, p) = segment.collide_point(transform.translation + self.offset);
 
+        
         // check we are actually close enough to the circle
         if (n.powi(2) + p.powi(2)) < self.radius.powi(2) {
+            // FIXME this is not a correct way to find the penetration...
             n - self.radius
         }
         else {
@@ -133,13 +135,13 @@ mod circle_tests {
 
         let vertex_a = Vec2::new(0.0, 5.0); // Shouldnt be inside
 
-        let (_, a_coll) = circle.get_vertex_penetration(vertex_a, transform);
+        let (_, a_coll) = circle.collide_vertex(vertex_a, transform);
         // vertex shouldnt be inside the thing
         assert!(!a_coll);
 
         let vertex_b = Vec2::new(2.0, 0.0); // should be inside
 
-        let (b_pen, b_coll) = circle.get_vertex_penetration(vertex_b, transform);
+        let (b_pen, b_coll) = circle.collide_vertex(vertex_b, transform);
 
         assert!(b_coll);
         assert_eq!(b_pen, Vec2::new(-2.0, 0.0));

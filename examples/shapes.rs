@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*};
 use bevy_physimple::{physics_components::{CollisionLayer, velocity::Vel}, prelude::*, settings::Gravity};
 
 #[derive(Default)]
@@ -13,6 +13,8 @@ fn main() {
     builder
         .add_plugins(DefaultPlugins)
         .add_plugin(Physics2dPlugin)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
     builder.add_system(character_system.system());
@@ -34,7 +36,7 @@ fn setup(
     // Spawn character
     let _player_id = commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(28.0, 28.0)),
+            sprite : Sprite::new(Vec2::splat(28.0)),
             material : blue.clone(),
             // transform : Transform::from_rotation(Quat::from_rotation_z(0.5 * PI)),
             ..Default::default()

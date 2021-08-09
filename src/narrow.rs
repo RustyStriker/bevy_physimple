@@ -100,8 +100,8 @@ pub fn narrow_phase_system(
                         ..kin_pos
                     };
 
-                    let dis = shape_kin.collide_with_shape(coll_pos, s_shape, s_transform);
-                    let dis2 = s_shape.collide_with_shape(s_transform, shape_kin, coll_pos);
+                    let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
+                    let dis2 = s_shape.collide(s_transform, shape_kin, coll_pos);
 
                     // if we use dis2 we need to reverse the direction
                     let dis = if let Some(d1) = dis {
@@ -125,8 +125,8 @@ pub fn narrow_phase_system(
                     };
 
                     if let Some(dis) = dis {
-                        let new_pos = coll_pos.translation + dis;
-                        normal = dis.normalize();
+                        let new_pos = coll_pos.translation - dis;
+                        normal = -dis.normalize();
 
                         let moved = new_pos - kin_pos.translation;
                         remainder = movement - moved;

@@ -35,7 +35,6 @@ pub trait Shape {
         &self,
         segment : Segment,
         transform : Transform2D,
-        segment_origin : Vec2,
     ) -> f32;
 
     /// Check for a collision between 2 `Shape` objects at given `Transform2D`

@@ -34,6 +34,6 @@ and `KinematicBody2D` needs a `Transform` in order to actually move and be used.
 
 ## A todo list
 
-- [ ] Rewrite shape overlap
+- [ ] Rewrite shape overlap - current
 - [ ] Implement the different shapes
 - [ ] Update the examples, and better showcase stuff

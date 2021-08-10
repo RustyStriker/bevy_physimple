@@ -103,7 +103,6 @@ impl Shape for Circle {
         &self,
         segment : super::Segment,
         transform : Transform2D,
-        _ : Vec2,
     ) -> f32 {
         let (n, p) = segment.collide_point(transform.translation + self.offset);
 

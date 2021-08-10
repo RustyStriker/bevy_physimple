@@ -1,12 +1,5 @@
 use crate::{bodies::*, physics_components::{angular_velocity::AngVel, velocity::Vel}, settings::TransformMode, shapes::*};
-use bevy::{ecs::component::Component, prelude::*};
-use std::any::TypeId;
-
-// FIXME outdated
-// BUG
-// XXX
-// TODO
-// HACK
+use bevy::prelude::*;
 
 /// Kinematic body's entity(with vels) with its surrounding static bodies(without vels)
 pub struct BroadData {
@@ -16,13 +9,14 @@ pub struct BroadData {
     /// Static bodies in the area(who wants to chat)
     pub(crate) area : Vec<Entity>,
     /// Sensors in the area(dont trip the alarm!)
-    pub(crate) sensors : Vec<Entity>,
+    pub(crate) sensors : Vec<Entity>, // TODO check for sensors in broad
 }
 /// Kinematic body pairs, which might collide during broad phase calculation 
 pub struct KinematicCollisionCouple {
     pub(crate) a : Entity,
     pub(crate) b : Entity,
 }
+// TODO make broad_phase_2 for kinematic collision couples
 
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
 pub fn broad_phase_1(

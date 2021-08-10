@@ -127,7 +127,6 @@ impl Shape for Square {
         &self,
         segment : super::Segment,
         transform : Transform2D,
-        _ : Vec2, // TODO remove when fully realising its useless
     ) -> f32 {
         let rot = Mat2::from_angle(transform.rotation);
         let extents = rot * (self.extents * transform.scale);
@@ -229,7 +228,7 @@ impl Shape for Square {
 
         for &s in segments.iter() {
             if s.n.dot(dis) >= 0.0 {
-                let pen = shape.collide_segment(s, shape_trans, transform.translation);
+                let pen = shape.collide_segment(s, shape_trans);
                 if pen.abs() < res.abs() {
                     res = pen;
                     normal = s.n;
@@ -320,7 +319,7 @@ mod square_tests {
         };
 
         assert_eq!(
-            square.collide_segment(seg, trans, Vec2::new(1.0, 0.0)),
+            square.collide_segment(seg, trans),
             -0.3
         );
     }

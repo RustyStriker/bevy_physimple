@@ -42,7 +42,7 @@ pub fn narrow_phase_system(
             }
         };
 
-        // TODO Maybe replace this later
+        // TODO normal error messages would be better i guess?
         let mut kin_pos = match global_transforms.get_component::<GlobalTransform>(entity_kin) {
             Ok(t) => Transform2D::from((t, trans_mode)),
             Err(_) => continue,

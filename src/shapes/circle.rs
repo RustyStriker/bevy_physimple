@@ -126,7 +126,6 @@ mod circle_tests {
     // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
     //  around 0.0000005 miss
     const EPSILON : f32 = 0.001;
-    // TODO write better tests
     #[test]
     fn vetrex() {
         let c = Circle {

@@ -105,12 +105,11 @@ impl Shape for Circle {
         transform : Transform2D,
     ) -> f32 {
         let (n, p) = segment.collide_point(transform.translation + self.offset);
-
         
         // check we are actually close enough to the circle
         if (n.powi(2) + p.powi(2)) < self.radius.powi(2) {
-            // FIXME this is not a correct way to find the penetration...
-            n - self.radius
+            let b = (self.radius.powi(2) - p.powi(2)).sqrt(); // this is pretty much c^2 = a^2 + b^2 -> b^2 = c^2 - a^2
+            (n.abs() - b).copysign(n) // b is the "distance" between the point `center + p * normal.perp()` to the "bottom" of the circle
         }
         else {
             f32::INFINITY
@@ -120,29 +119,69 @@ impl Shape for Circle {
 
 #[cfg(test)]
 mod circle_tests {
+    use crate::prelude::Segment;
+
     use super::*;
 
+    // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
+    //  around 0.0000005 miss
+    const EPSILON : f32 = 0.001;
+    // TODO write better tests
     #[test]
-    fn vertex_testing() {
-        let circle = Circle::new(5.0).with_offset(Vec2::new(5.0, 0.0));
-
-        let transform = Transform2D {
-            translation : Vec2::ZERO,
-            rotation : 0.0,
-            scale : Vec2::splat(1.0),
+    fn vetrex() {
+        let c = Circle {
+            offset: Vec2::ZERO,
+            radius : 10.0,
         };
 
-        let vertex_a = Vec2::new(0.0, 5.0); // Shouldnt be inside
+        let tc = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
 
-        let (_, a_coll) = circle.collide_vertex(vertex_a, transform);
-        // vertex shouldnt be inside the thing
-        assert!(!a_coll);
+        let v1 = Vec2::new(10.0,10.0);
 
-        let vertex_b = Vec2::new(2.0, 0.0); // should be inside
+        let c1 = c.collide_vertex(v1, tc);
+        assert!(!c1.1); // Check it is outside
+        println!("{:?}",c1.0);
+        // the result should be -(10 - 5 * sqrt(2))
+        assert!((c1.0 - Vec2::splat(-10.0 + 5.0 * 2.0_f32.sqrt())).length() < EPSILON);
+        
+        let v2 = Vec2::new(0.0,-5.0);
+        let c2 = c.collide_vertex(v2, tc);
 
-        let (b_pen, b_coll) = circle.collide_vertex(vertex_b, transform);
+        assert!(c2.1); // make sure its inside
 
-        assert!(b_coll);
-        assert_eq!(b_pen, Vec2::new(-2.0, 0.0));
+        assert!((c2.0 - Vec2::new(0.0, -5.0)).length() < EPSILON);
     }
+
+    #[test]
+    fn segment() {
+        let c = Circle {
+            offset: Vec2::ZERO,
+            radius: 10.0,
+        };
+
+        let tc = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        let s1 = Segment {
+            a: Vec2::new(5.0,5.0),
+            b: Vec2::new(10.0,5.0),
+            n: Vec2::new(0.0,-1.0),
+        };
+
+        let c1 = c.collide_segment(s1, tc);
+        println!("{}",c1);
+
+        assert!((c1 - (5.0 * 3.0_f32.sqrt() - 5.0)).abs() < EPSILON);
+    }
+
 }
+
+// input: 2 arrays sorted(rising) 
+// output: 

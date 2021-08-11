@@ -64,7 +64,7 @@ impl From<(&GlobalTransform, TransformMode)> for Transform2D {
 
         // the weird conversion is from - it actually works...
         // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion
-        // i hope they are correct
+        // they are correct, but it really looks made up...
         match mode {
             TransformMode::XY => Transform2D {
                 translation : Vec2::new(t.x, t.y),

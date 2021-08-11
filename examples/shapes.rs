@@ -38,7 +38,7 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(28.0)),
             material : blue.clone(),
-            transform : Transform::from_rotation(Quat::from_rotation_z(0.25 * PI)),
+            // transform : Transform::from_rotation(Quat::from_rotation_z(0.25 * PI)),
             ..Default::default()
         })
         .insert_bundle(
@@ -47,8 +47,8 @@ fn setup(
                     offset: Vec2::ZERO,
                     shape: BoundingShape::Aabb(Aabb::size(Vec2::splat(28.0))),
                 },
-                shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
-                // shape : CollisionShape::Circle(Circle::new(14.0)),
+                // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+                shape : CollisionShape::Circle(Circle::new(14.0)),
                 ..Default::default()
             }
         )

@@ -6,19 +6,16 @@ use crate::bodies::*;
 use crate::physics_components::angular_velocity::AngVel;
 use crate::physics_components::angular_velocity::TerAngVel;
 use crate::physics_components::velocity::TerVel;
-use crate::physics_components::{physical_properties::{FrictionMult, Mass}, velocity::Vel};
-use crate::settings::{AngFriction, Friction, Gravity, TransformMode};
-use crate::shapes::*;
-use crate::{
-    broad,
-    common::*,
-    narrow,
+use crate::physics_components::{
+    physical_properties::{FrictionMult, Mass},
+    velocity::Vel,
 };
+use crate::settings::{AngFriction, Friction, Gravity, TransformMode};
+use crate::{broad, common::*, narrow};
 use bevy::prelude::*;
 
 /// Physics plugin for 2D physics
 pub struct Physics2dPlugin;
-
 
 /// General collision event that happens between 2 bodies.
 pub struct CollisionEvent {
@@ -36,12 +33,10 @@ pub struct CollisionEvent {
 pub mod stage {
     pub use bevy::prelude::CoreStage;
 
-    /// update joint constraints based on current data
-    pub const JOINT_STEP : &str = "phy_joint_step";
-    /// Resets sensor collision data for the next step
-    pub const SENSOR_RESET_STEP : &str = "phy_sensor_reset_step";
     /// Physics step, gravity, friction, apply velocity and forces, move the bodies and such
     pub const PHYSICS_STEP : &str = "phy_physics_step";
+    /// update joint constraints based on current data
+    pub const JOINT_STEP : &str = "phy_joint_step";
 
     pub const CAPTURE_STEP : &str = "phy_capture_step";
     /// Check for collisions between objects, emitting events with AABBCollisionEvent(should be replaced later tho)
@@ -60,43 +55,37 @@ impl Plugin for Physics2dPlugin {
         // Stage order goes as follows
         // Joints step -> Physics step -> collision detection -> solve -> sync -> Raycast detection
 
-        app
-            .add_stage_before(
-                CoreStage::Update,
-                stage::PHYSICS_STEP,
-                SystemStage::single_threaded(),
-            )
-            .add_stage_before(
-                stage::PHYSICS_STEP,
-                stage::JOINT_STEP,
-                SystemStage::single_threaded(),
-            )
-            .add_stage_after(
-                stage::PHYSICS_STEP,
-                stage::SENSOR_RESET_STEP,
-                SystemStage::single_threaded(),
-            )
-            .add_stage_after(
-                stage::SENSOR_RESET_STEP,
-                stage::CAPTURE_STEP,
-                SystemStage::parallel(),
-            )
-            .add_stage_after(
-                stage::CAPTURE_STEP,
-                stage::COLLISION_DETECTION,
-                SystemStage::single_threaded(),
-            )
-            .add_stage_after(
-                stage::COLLISION_DETECTION,
-                stage::PHYSICS_SOLVE,
-                SystemStage::single_threaded(),
-            )
-            .add_stage_after(
-                stage::PHYSICS_SOLVE,
-                stage::RAYCAST_DETECTION,
-                SystemStage::single_threaded(),
-            );
-            
+        app.add_stage_before(
+            CoreStage::Update,
+            stage::PHYSICS_STEP,
+            SystemStage::single_threaded(),
+        )
+        .add_stage_before(
+            stage::PHYSICS_STEP,
+            stage::JOINT_STEP,
+            SystemStage::single_threaded(),
+        )
+        .add_stage_after(
+            stage::PHYSICS_STEP,
+            stage::CAPTURE_STEP,
+            SystemStage::parallel(),
+        )
+        .add_stage_after(
+            stage::CAPTURE_STEP,
+            stage::COLLISION_DETECTION,
+            SystemStage::single_threaded(),
+        )
+        .add_stage_after(
+            stage::COLLISION_DETECTION,
+            stage::PHYSICS_SOLVE,
+            SystemStage::single_threaded(),
+        )
+        .add_stage_after(
+            stage::PHYSICS_SOLVE,
+            stage::RAYCAST_DETECTION,
+            SystemStage::single_threaded(),
+        );
+
         // Add the event type
         app.add_event::<broad::BroadData>();
         app.add_event::<CollisionEvent>();
@@ -105,17 +94,15 @@ impl Plugin for Physics2dPlugin {
         crate::settings::insert_physics_resources(app);
 
         // Add the systems themselves for each step
-        app
-            .add_system_to_stage(
-                stage::CAPTURE_STEP,
-                broad::broad_phase_1.system(),
-            )
+        app.add_system_to_stage(stage::CAPTURE_STEP, broad::broad_phase_1.system())
+            .add_system_to_stage(stage::CAPTURE_STEP, sensor_clean.system())
             .add_system_to_stage(
                 stage::COLLISION_DETECTION,
                 narrow::narrow_phase_system.system(),
             );
 
-        app.add_system_set_to_stage(stage::PHYSICS_STEP,
+        app.add_system_set_to_stage(
+            stage::PHYSICS_STEP,
             SystemSet::new()
                 .with_system(global_gravity_system.system())
                 .with_system(friction_system.system())
@@ -123,7 +110,7 @@ impl Plugin for Physics2dPlugin {
                 .with_system(terminal_vel_system.system())
                 .with_system(terminal_ang_vel_system.system())
                 .with_system(kinematic_pre_update_system.system())
-                .with_system(apply_ang_vel_system.system())
+                .with_system(apply_ang_vel_system.system()),
         );
         // TODO Recreate the Joint systems
     }
@@ -137,10 +124,17 @@ fn global_gravity_system(
     let delta = time.delta_seconds();
 
     for (mut vel, mass) in query.iter_mut() {
-        if mass.mass() > f32::EPSILON { // Not 0
+        if mass.mass() > f32::EPSILON {
+            // Not 0
             vel.0 += gravity.0 * delta;
         }
     }
+}
+
+fn sensor_clean(mut query : Query<&mut Sensor2D>) {
+    query
+        .iter_mut()
+        .for_each(|mut s| s.overlapping_bodies.clear());
 }
 
 fn friction_system(
@@ -172,7 +166,7 @@ fn friction_system(
 fn ang_friction_system(
     time : Res<Time>,
     ang_fric : Res<AngFriction>,
-    mut query: Query<&mut AngVel>,
+    mut query : Query<&mut AngVel>,
 ) {
     let strength = time.delta_seconds() * ang_fric.0;
 
@@ -187,9 +181,7 @@ fn ang_friction_system(
     }
 }
 
-fn terminal_vel_system(
-    mut query : Query<(&mut Vel, &TerVel)>,
-) {
+fn terminal_vel_system(mut query : Query<(&mut Vel, &TerVel)>) {
     for (mut vel, ter) in query.iter_mut() {
         let v = vel.0;
         let limit = ter.0;
@@ -202,9 +194,7 @@ fn terminal_vel_system(
     }
 }
 
-fn terminal_ang_vel_system(
-    mut query : Query<(&mut AngVel, &TerAngVel)>,
-) {
+fn terminal_ang_vel_system(mut query : Query<(&mut AngVel, &TerAngVel)>) {
     for (mut vel, ter) in query.iter_mut() {
         if vel.0.abs() > ter.0 {
             let sign = vel.0.signum();
@@ -213,15 +203,12 @@ fn terminal_ang_vel_system(
     }
 }
 
-fn kinematic_pre_update_system(
-    mut query : Query<&mut KinematicBody2D>,
-) {
+fn kinematic_pre_update_system(mut query : Query<&mut KinematicBody2D>) {
     for mut k in query.iter_mut() {
         // Reset collision data
         k.on_floor = None;
         k.on_wall = None;
         k.on_ceil = None;
-
     }
 }
 
@@ -238,11 +225,9 @@ fn apply_ang_vel_system(
     }
 }
 
-
-
 /*
     Simply adding to movement
-    
+
     Applying changes based on movement
 
     Limits/cleanup of movement

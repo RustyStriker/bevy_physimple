@@ -2,10 +2,10 @@ pub mod bodies;
 mod broad;
 pub mod common;
 mod narrow;
-pub mod plugin;
-pub mod shapes;
 pub mod physics_components;
+pub mod plugin;
 pub mod settings;
+pub mod shapes;
 
 pub mod prelude {
     //! This module re-exports all the things you might need for 2d physics

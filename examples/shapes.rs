@@ -1,7 +1,12 @@
-use std::f32::consts::PI;
-
-use bevy::{diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin}, prelude::*};
-use bevy_physimple::{physics_components::{CollisionLayer, velocity::Vel}, prelude::*, settings::Gravity};
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+};
+use bevy_physimple::{
+    physics_components::{velocity::Vel, CollisionLayer},
+    prelude::*,
+    settings::Gravity,
+};
 
 #[derive(Default)]
 pub struct CharacterController {
@@ -17,13 +22,14 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system());
-    builder.add_system(character_system.system());
+    builder
+        .add_system(character_system.system())
+        .add_system(change_sensor_color.system());
     builder.run();
 }
 
 fn setup(
     mut commands : Commands,
-    // asset_server: Res<AssetServer>,
     mut materials : ResMut<Assets<ColorMaterial>>,
 ) {
     let blue = materials.add(Color::ALICE_BLUE.into());
@@ -38,20 +44,18 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(28.0)),
             material : blue.clone(),
-            // transform : Transform::from_rotation(Quat::from_rotation_z(0.25 * PI)),
+            // transform : Transform::from_rotation(Quat::from_rotation_z(0.25 * std::f32::consts::PI)),
             ..Default::default()
         })
-        .insert_bundle(
-            KinematicBundle {
-                obv: Obv {
-                    offset: Vec2::ZERO,
-                    shape: BoundingShape::Aabb(Aabb::size(Vec2::splat(28.0))),
-                },
-                // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
-                shape : CollisionShape::Circle(Circle::new(14.0)),
-                ..Default::default()
-            }
-        )
+        .insert_bundle(KinematicBundle {
+            obv : Obv {
+                offset : Vec2::ZERO,
+                shape : BoundingShape::Aabb(Aabb::size(Vec2::splat(28.0))),
+            },
+            // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+            shape : CollisionShape::Circle(Circle::new(14.0)),
+            ..Default::default()
+        })
         .insert(CharacterController::default())
         .id();
 
@@ -63,16 +67,14 @@ fn setup(
             transform : Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
-        .insert_bundle(
-            StaticBundle {
-                shape: CollisionShape::Square(Square::size(Vec2::new(600.0,30.0))),
-                obv: Obv {
-                    offset: Vec2::ZERO,
-                    shape: BoundingShape::Aabb(Aabb::size(Vec2::new(600.0,30.0))),
-                },
-                coll_layer: CollisionLayer::default(),
-            }
-        );
+        .insert_bundle(StaticBundle {
+            shape : CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
+            obv : Obv {
+                offset : Vec2::ZERO,
+                shape : BoundingShape::Aabb(Aabb::size(Vec2::new(600.0, 30.0))),
+            },
+            coll_layer : CollisionLayer::default(),
+        });
 
     // side wall
     commands
@@ -82,58 +84,30 @@ fn setup(
             transform : Transform::from_xyz(450.0, 0.0, 0.0),
             ..Default::default()
         })
-        .insert_bundle(
-            StaticBundle {
-                shape: CollisionShape::Square(Square::size(Vec2::new(30.0,300.0))),
-                obv: Obv {
-                    offset: Vec2::ZERO,
-                    shape: BoundingShape::Aabb(Aabb::size(Vec2::new(30.0,300.0))),
-                },
-                coll_layer: CollisionLayer::default(),
-            }
-        );
+        .insert_bundle(StaticBundle {
+            shape : CollisionShape::Square(Square::size(Vec2::new(30.0, 300.0))),
+            obv : Obv {
+                offset : Vec2::ZERO,
+                shape : BoundingShape::Aabb(Aabb::size(Vec2::new(30.0, 300.0))),
+            },
+            coll_layer : CollisionLayer::default(),
+        });
 
     // Spawn the cube near us
-    // const CUBE_SIZE : f32 = 40.0;
-    // commands
-    //     .spawn_bundle(SpriteBundle {
-    //         sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
-    //         material : another_color.clone(),
-    //         transform : Transform::from_xyz(30.0, 60.0, 0.0),
-    //         ..Default::default()
-    //     })
-    //     .insert(
-    //         KinematicBundle {
-    //             obv: Obv {
-    //                 offset: Vec2::ZERO,
-    //                 shape: BoundingShape::Aabb(Aabb::size(Vec2::splat(CUBE_SIZE))),
-    //             },
-    //             shape: CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))),
-    //             ..Default::default()
-    //         }
-    //     );
-    // Circles
-
-    // commands
-    //     .spawn_bundle(SpriteBundle {
-    //         sprite : Sprite::new(Vec2::splat(40.0)),
-    //         material : another_color.clone(),
-    //         transform : Transform::from_xyz(-100.0, 0.0, 0.0),
-    //         ..Default::default()
-    //     })
-    //     .insert(
-    //         KinematicBody2D::new()
-    //     )
-    //     .insert(Circle::new(20.0));
-
-    // commands.spawn_bundle(SpriteBundle {
-    //     sprite : Sprite::new(Vec2::splat(40.0)),
-    //     material : black.clone(),
-    //     transform : Transform::from_xyz(-100.0, -200.0,0.0),
-    //     ..Default::default()
-    // })
-    // .insert(StaticBody2D::new())
-    // .insert(Circle::new(20.0));
+    const CUBE_SIZE : f32 = 40.0;
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+            material : another_color.clone(),
+            transform : Transform::from_xyz(30.0, -150.0, 0.0),
+            ..Default::default()
+        })
+        .insert(Obv {
+            offset : Vec2::ZERO,
+            shape : BoundingShape::Aabb(Aabb::size(Vec2::splat(CUBE_SIZE))),
+        })
+        .insert(CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))))
+        .insert(Sensor2D::new());
 }
 
 fn character_system(
@@ -189,6 +163,22 @@ fn character_system(
         if input.pressed(KeyCode::D) {
             vel.0 += acc * time.delta_seconds();
             // body.apply_angular_impulse(-1.0);
+        }
+    }
+}
+
+fn change_sensor_color(
+    mut materials : ResMut<Assets<ColorMaterial>>,
+    q : Query<(&Sensor2D, &Handle<ColorMaterial>)>,
+) {
+    for (s, h) in q.iter() {
+        if let Some(mut m) = materials.get_mut(h) {
+            m.color = if s.iter().len() == 0 {
+                Color::GOLD
+            }
+            else {
+                Color::rgba(0.0, 0.5, 1.0, 0.5)
+            }
         }
     }
 }

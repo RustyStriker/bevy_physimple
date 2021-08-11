@@ -2,16 +2,16 @@ use crate::settings::TransformMode;
 use bevy::prelude::*;
 
 mod circle;
-mod raycast;
-mod square;
 mod obv;
+mod raycast;
 mod segment;
+mod square;
 
 pub use circle::*;
-pub use raycast::*;
-pub use square::*;
 pub use obv::*;
+pub use raycast::*;
 pub use segment::Segment;
+pub use square::*;
 
 pub trait Shape {
     /// Returns an Aabb instance containing the shape
@@ -68,7 +68,8 @@ impl From<(&GlobalTransform, TransformMode)> for Transform2D {
         match mode {
             TransformMode::XY => Transform2D {
                 translation : Vec2::new(t.x, t.y),
-                rotation : (2.0 * (q.w * q.z + q.x * q.y)).atan2(1.0 - 2.0 * (q.y * q.y + q.z * q.z)),
+                rotation : (2.0 * (q.w * q.z + q.x * q.y))
+                    .atan2(1.0 - 2.0 * (q.y * q.y + q.z * q.z)),
                 scale : Vec2::new(s.x, s.y),
             },
             TransformMode::XZ => Transform2D {
@@ -86,7 +87,8 @@ impl From<(&GlobalTransform, TransformMode)> for Transform2D {
             },
             TransformMode::YZ => Transform2D {
                 translation : Vec2::new(t.y, t.z),
-                rotation : (2.0 * (q.w * q.x + q.y * q.z)).atan2(1.0 - 2.0 * (q.x * q.x + q.y * q.y)),
+                rotation : (2.0 * (q.w * q.x + q.y * q.z))
+                    .atan2(1.0 - 2.0 * (q.x * q.x + q.y * q.y)),
                 scale : Vec2::new(s.y, s.z),
             },
         }

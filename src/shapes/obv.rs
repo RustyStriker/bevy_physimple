@@ -1,24 +1,23 @@
 use bevy::prelude::*;
-use serde::{Serialize,Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 /// Object Bounding Volume
 #[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
 pub struct Obv {
     pub offset : Vec2,
-    pub shape : BoundingShape
+    pub shape : BoundingShape,
 }
 
 #[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
 pub enum BoundingShape {
-	Aabb(Aabb),
-	Circle(BoundingCircle),
+    Aabb(Aabb),
+    Circle(BoundingCircle),
 }
 
 /// Bounding circle
 #[derive(Debug, Clone, Default, Reflect, Serialize, Deserialize)]
 pub struct BoundingCircle {
-	pub radius : f32,
+    pub radius : f32,
 }
 
 /// Axis aligned bounding box

@@ -1,39 +1,38 @@
 use bevy::prelude::*;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 pub(crate) fn insert_physics_resources(app : &mut AppBuilder) {
-    app
-        .insert_resource(Gravity::default())
+    app.insert_resource(Gravity::default())
         .insert_resource(Friction::default())
         .insert_resource(AngFriction::default())
         .insert_resource(FloorAngle(0.7))
         .insert_resource(TransformMode::XY);
 }
 
-/// Gravity, 
+/// Gravity,
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
-pub struct Gravity (pub Vec2);
+pub struct Gravity(pub Vec2);
 impl Default for Gravity {
     fn default() -> Self {
-        Gravity(Vec2::new(0.0,-540.0))
+        Gravity(Vec2::new(0.0, -540.0))
     }
 }
 
 /// Global friction
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct Friction {
-	/// Friction's "plane of action" normal
-	///
-	/// Needs to be normalized(normal.len = 1)!!!
-	pub normal : Vec2,
-	/// How strong the force of friction is(default - 400.0)
-	pub strength : f32,
+    /// Friction's "plane of action" normal
+    ///
+    /// Needs to be normalized(normal.len = 1)!!!
+    pub normal : Vec2,
+    /// How strong the force of friction is(default - 400.0)
+    pub strength : f32,
 }
 impl Default for Friction {
     fn default() -> Self {
         Friction {
-            normal: Vec2::Y,
-            strength: 400.0,
+            normal : Vec2::Y,
+            strength : 400.0,
         }
     }
 }

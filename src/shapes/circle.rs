@@ -105,7 +105,7 @@ impl Shape for Circle {
         transform : Transform2D,
     ) -> f32 {
         let (n, p) = segment.collide_point(transform.translation + self.offset);
-        
+
         // check we are actually close enough to the circle
         if (n.powi(2) + p.powi(2)) < self.radius.powi(2) {
             let b = (self.radius.powi(2) - p.powi(2)).sqrt(); // this is pretty much c^2 = a^2 + b^2 -> b^2 = c^2 - a^2
@@ -129,25 +129,25 @@ mod circle_tests {
     #[test]
     fn vetrex() {
         let c = Circle {
-            offset: Vec2::ZERO,
+            offset : Vec2::ZERO,
             radius : 10.0,
         };
 
         let tc = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
-        let v1 = Vec2::new(10.0,10.0);
+        let v1 = Vec2::new(10.0, 10.0);
 
         let c1 = c.collide_vertex(v1, tc);
         assert!(!c1.1); // Check it is outside
-        println!("{:?}",c1.0);
+        println!("{:?}", c1.0);
         // the result should be -(10 - 5 * sqrt(2))
         assert!((c1.0 - Vec2::splat(-10.0 + 5.0 * 2.0_f32.sqrt())).length() < EPSILON);
-        
-        let v2 = Vec2::new(0.0,-5.0);
+
+        let v2 = Vec2::new(0.0, -5.0);
         let c2 = c.collide_vertex(v2, tc);
 
         assert!(c2.1); // make sure its inside
@@ -158,29 +158,28 @@ mod circle_tests {
     #[test]
     fn segment() {
         let c = Circle {
-            offset: Vec2::ZERO,
-            radius: 10.0,
+            offset : Vec2::ZERO,
+            radius : 10.0,
         };
 
         let tc = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         let s1 = Segment {
-            a: Vec2::new(5.0,5.0),
-            b: Vec2::new(10.0,5.0),
-            n: Vec2::new(0.0,-1.0),
+            a : Vec2::new(5.0, 5.0),
+            b : Vec2::new(10.0, 5.0),
+            n : Vec2::new(0.0, -1.0),
         };
 
         let c1 = c.collide_segment(s1, tc);
-        println!("{}",c1);
+        println!("{}", c1);
 
         assert!((c1 - (5.0 * 3.0_f32.sqrt() - 5.0)).abs() < EPSILON);
     }
-
 }
 
-// input: 2 arrays sorted(rising) 
-// output: 
+// input: 2 arrays sorted(rising)
+// output:

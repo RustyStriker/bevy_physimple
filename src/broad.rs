@@ -1,4 +1,9 @@
-use crate::{bodies::*, physics_components::{angular_velocity::AngVel, velocity::Vel}, settings::TransformMode, shapes::*};
+use crate::{
+    bodies::*,
+    physics_components::{angular_velocity::AngVel, velocity::Vel},
+    settings::TransformMode,
+    shapes::*,
+};
 use bevy::prelude::*;
 
 /// Kinematic body's entity(with vels) with its surrounding static bodies(without vels)
@@ -9,9 +14,9 @@ pub struct BroadData {
     /// Static bodies in the area(who wants to chat)
     pub(crate) area : Vec<Entity>,
     /// Sensors in the area(dont trip the alarm!)
-    pub(crate) sensors : Vec<Entity>, // TODO check for sensors in broad
+    pub(crate) sensors : Vec<Entity>,
 }
-/// Kinematic body pairs, which might collide during broad phase calculation 
+/// Kinematic body pairs, which might collide during broad phase calculation
 pub struct KinematicCollisionCouple {
     pub(crate) a : Entity,
     pub(crate) b : Entity,
@@ -22,8 +27,14 @@ pub struct KinematicCollisionCouple {
 pub fn broad_phase_1(
     time : Res<Time>,
     trans_mode : Res<TransformMode>,
-    kinematics : Query<(Entity, &Obv, Option<&Vel>, &GlobalTransform), Or<(With<Vel>, With<AngVel>)>>,
-    statics : Query<(Entity, &Obv, &GlobalTransform), (Without<Vel>, Without<AngVel>)>,
+    kinematics : Query<
+        (Entity, &Obv, Option<&Vel>, &GlobalTransform),
+        Or<(With<Vel>, With<AngVel>)>,
+    >,
+    statics : Query<
+        (Entity, &Obv, &GlobalTransform),
+        (Without<Vel>, Without<AngVel>, Without<Sensor2D>),
+    >,
     sensors : Query<(Entity, &Obv, &GlobalTransform), With<Sensor2D>>,
     mut broad_writer : EventWriter<BroadData>,
 ) {
@@ -33,34 +44,42 @@ pub fn broad_phase_1(
     let delta = time.delta_seconds();
 
     for (e, obv, vel, gt) in kinematics.iter() {
-        
         let inst_vel = vel.unwrap_or(&Vel::ZERO).0 * delta;
 
         let circle_center = trans_mode.get_global_position(gt) + obv.offset;
         let circle_radius_sqrd = (inst_vel + get_obv_extents(obv)).length_squared();
-        
+
         // Get all staticbodies which might collide with use
         let mut st_en : Vec<Entity> = Vec::new();
         for (se, sv, sgt) in statics.iter() {
-            if obv_circle(circle_center, circle_radius_sqrd, sv, trans_mode.get_global_position(sgt)) {
+            if obv_circle(
+                circle_center,
+                circle_radius_sqrd,
+                sv,
+                trans_mode.get_global_position(sgt),
+            ) {
                 st_en.push(se);
             }
         }
         // same for sensors(we do the extra calculations for sensors which does not move)
         let mut se_en : Vec<Entity> = Vec::new();
         for (se, sv, sgt) in sensors.iter() {
-            if obv_circle(circle_center, circle_radius_sqrd, sv, trans_mode.get_global_position(sgt)) {
+            if obv_circle(
+                circle_center,
+                circle_radius_sqrd,
+                sv,
+                trans_mode.get_global_position(sgt),
+            ) {
                 se_en.push(se);
             }
         }
         // wrap it up to an event
         broad_writer.send(BroadData {
-            entity: e,
+            entity : e,
             inst_vel,
-            area: st_en,
-            sensors: se_en,
+            area : st_en,
+            sensors : se_en,
         });
-        
     }
 }
 
@@ -80,7 +99,7 @@ fn obv_circle(
             let distance = min.max(center.min(max)) - center;
 
             distance.length_squared() < radius_sqrd
-        },
+        }
         BoundingShape::Circle(c) => {
             let distance = center - obv_pos;
 

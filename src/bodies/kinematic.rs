@@ -1,7 +1,14 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::{physics_components::{CollisionLayer, physical_properties::{FrictionMult, Mass}, velocity::{TerVel, Vel}}, prelude::{Aabb, BoundingShape, CollisionShape, Obv, Shape, Square}};
+use crate::{
+    physics_components::{
+        physical_properties::{FrictionMult, Mass},
+        velocity::{TerVel, Vel},
+        CollisionLayer,
+    },
+    prelude::{Aabb, BoundingShape, CollisionShape, Obv, Square},
+};
 
 #[derive(Bundle)]
 pub struct KinematicBundle {
@@ -13,26 +20,24 @@ pub struct KinematicBundle {
     pub coll_layer : CollisionLayer,
     pub terminal_vel : TerVel,
     pub friction : FrictionMult,
-
 }
 impl Default for KinematicBundle {
     fn default() -> Self {
         Self {
-            kin: KinematicBody2D::default(),
-            vel: Vel::ZERO,
-            mass: Mass::new(1.0),
-            obv: Obv {
-                offset: Vec2::ZERO,
-                shape: BoundingShape::Aabb(Aabb::size(Vec2::splat(1.0))),
+            kin : KinematicBody2D::default(),
+            vel : Vel::ZERO,
+            mass : Mass::new(1.0),
+            obv : Obv {
+                offset : Vec2::ZERO,
+                shape : BoundingShape::Aabb(Aabb::size(Vec2::splat(1.0))),
             },
-            shape: CollisionShape::Square(Square::size(Vec2::splat(1.0))),
-            coll_layer: CollisionLayer::new(1,1),
-            terminal_vel: TerVel::default(),
+            shape : CollisionShape::Square(Square::size(Vec2::splat(1.0))),
+            coll_layer : CollisionLayer::new(1, 1),
+            terminal_vel : TerVel::default(),
             friction : FrictionMult(1.0),
         }
     }
 }
-
 
 /// KinematicBody for 2D physics, for moving objects
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]

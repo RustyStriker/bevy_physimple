@@ -3,6 +3,8 @@ use std::slice::{Iter, IterMut};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+// TODO make a SensorBundle...
+
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct Sensor2D {
     /// Which collision layers this body search collisions for
@@ -51,10 +53,12 @@ impl Sensor2D {
         self
     }
 
-    pub fn iter_overlapping_bodies(&self) -> Iter<'_, Entity> {
+    /// Iterate over overlapping_bodies
+    pub fn iter(&self) -> Iter<'_, Entity> {
         self.overlapping_bodies.iter()
     }
-    pub fn iter_overlapping_bodies_mut(&mut self) -> IterMut<'_, Entity> {
+    /// Iterate(mutably) over  overlapping_bodies
+    pub fn iter_mut(&mut self) -> IterMut<'_, Entity> {
         self.overlapping_bodies.iter_mut()
     }
 }

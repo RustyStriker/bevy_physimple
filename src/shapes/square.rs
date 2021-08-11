@@ -68,9 +68,7 @@ impl Shape for Square {
         let ex_con = (rot * (self.extents * Vec2::new(1.0, -1.0) * transform.scale)).abs();
         let extents = ex.max(ex_con);
 
-        Aabb {
-            extents,
-        }
+        Aabb { extents }
     }
 
     fn collide_vertex(
@@ -110,7 +108,7 @@ impl Shape for Square {
             else {
                 // if 1 of them is negative then there is no penetration and we want the negative value
                 if to_edge.x < 0.0 {
-                    Vec2::new(to_edge.x * vertex.x.signum(),0.0)
+                    Vec2::new(to_edge.x * vertex.x.signum(), 0.0)
                 }
                 else {
                     Vec2::new(0.0, to_edge.y * vertex.y.signum())
@@ -263,16 +261,15 @@ mod square_tests {
             scale : Vec2::splat(1.0),
         };
 
-        let inside = Vec2::new(7.0,1.0);
+        let inside = Vec2::new(7.0, 1.0);
 
         let (inside_res, inside_pen) = rect.collide_vertex(inside, transform);
-        assert!(inside_pen && (inside_res - Vec2::new(3.0,0.0)).length() < EPSILON);
-        
-        let outside = Vec2::new(-3.0,7.0);
+        assert!(inside_pen && (inside_res - Vec2::new(3.0, 0.0)).length() < EPSILON);
+
+        let outside = Vec2::new(-3.0, 7.0);
 
         let (out_res, out_pen) = rect.collide_vertex(outside, transform);
-        assert!(!out_pen && (out_res - Vec2::new(0.0,-2.0)).length() < EPSILON);
-
+        assert!(!out_pen && (out_res - Vec2::new(0.0, -2.0)).length() < EPSILON);
     }
 
     #[test]
@@ -286,16 +283,22 @@ mod square_tests {
         };
 
         // Basically the point (7.0,0.0) rotated 0.25 * PI...
-        let inside = Mat2::from_angle(0.25 * PI) * Vec2::new(7.0,0.0);
+        let inside = Mat2::from_angle(0.25 * PI) * Vec2::new(7.0, 0.0);
 
         let (ins_res, ins_pen) = rect.collide_vertex(inside, transform);
-        assert!(ins_pen && (ins_res - Mat2::from_angle(0.25 * PI) * Vec2::new(3.0,0.0)).length() < EPSILON);
+        assert!(
+            ins_pen
+                && (ins_res - Mat2::from_angle(0.25 * PI) * Vec2::new(3.0, 0.0)).length() < EPSILON
+        );
 
         let outside = Mat2::from_angle(0.25 * PI) * Vec2::new(-11.0, -6.0);
 
         let (out_res, out_pen) = rect.collide_vertex(outside, transform);
         println!("r {:?}", out_res);
-        assert!(!out_pen && (out_res - Mat2::from_angle(0.25 * PI) * Vec2::new(1.0,1.0)).length() < EPSILON);
+        assert!(
+            !out_pen
+                && (out_res - Mat2::from_angle(0.25 * PI) * Vec2::new(1.0, 1.0)).length() < EPSILON
+        );
     }
 
     #[test]
@@ -318,10 +321,7 @@ mod square_tests {
             n : Vec2::new(-1.0, 0.0),
         };
 
-        assert_eq!(
-            square.collide_segment(seg, trans),
-            -0.3
-        );
+        assert_eq!(square.collide_segment(seg, trans), -0.3);
     }
 
     #[test]
@@ -359,25 +359,25 @@ mod square_tests {
     #[test]
     fn collision_rotate() {
         let a = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(1.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(1.0),
         };
         let ta = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         let b = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(1.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(1.0),
         };
         let tb = Transform2D {
-            translation: Vec2::new(2.0,0.5),
-            rotation: PI * 0.25,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::new(2.0, 0.5),
+            rotation : PI * 0.25,
+            scale : Vec2::splat(1.0),
         };
 
         let a_b = a.collide(ta, &b, tb);
@@ -392,27 +392,27 @@ mod square_tests {
     #[test]
     fn collision_big() {
         let big = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::new(100.0,10.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::new(100.0, 10.0),
         };
 
         let tbig = Transform2D {
-            translation: Vec2::ZERO,
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::ZERO,
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         let a = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(10.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(10.0),
         };
 
         let ta = Transform2D {
-            translation: Vec2::new(50.0, 10.0),
-            rotation: 0.0,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::new(50.0, 10.0),
+            rotation : 0.0,
+            scale : Vec2::splat(1.0),
         };
 
         // --------- TEST 1 -------------
@@ -429,15 +429,15 @@ mod square_tests {
         // ------- END TEST 1 ----------
 
         let r = Square {
-            offset: Vec2::ZERO,
-            rotation_offset: 0.0,
-            extents: Vec2::splat(10.0),
+            offset : Vec2::ZERO,
+            rotation_offset : 0.0,
+            extents : Vec2::splat(10.0),
         };
 
         let tr = Transform2D {
-            translation: Vec2::new(-70.0,-10.0),
-            rotation: 0.25 * PI,
-            scale: Vec2::splat(1.0),
+            translation : Vec2::new(-70.0, -10.0),
+            rotation : 0.25 * PI,
+            scale : Vec2::splat(1.0),
         };
 
         // ------ TEST 2 --------
@@ -448,6 +448,5 @@ mod square_tests {
         assert_eq!(big_r.is_some(), r_big.is_some());
 
         assert!((big_r.unwrap() - Vec2::new(0.0, 10.0_f32 * 2.0_f32.sqrt())).length() < EPSILON);
-
     }
 }

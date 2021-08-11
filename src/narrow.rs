@@ -1,4 +1,7 @@
-use crate::{bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent, prelude::VecOp, shapes::*};
+use crate::{
+    bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent,
+    prelude::VecOp, shapes::*,
+};
 use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
@@ -67,6 +70,7 @@ pub fn narrow_phase_system(
             let mut remainder = Vec2::ZERO;
             let mut coll_index = -1;
 
+            // TODO get rid of this `i` variable, it can be worked around
             for (i, se) in broad.area.iter().enumerate() {
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
 
@@ -77,13 +81,13 @@ pub fn narrow_phase_system(
                     }
                 };
 
-                let s_transform =
-                        match global_transforms.get(*se) {
-                            Ok(t) => Transform2D::from((t, trans_mode)),
-                            Err(_) => continue,
-                        };
+                let s_transform = match global_transforms.get(*se) {
+                    Ok(t) => Transform2D::from((t, trans_mode)),
+                    Err(_) => continue,
+                };
 
-                let coll_position = raycast_obv(kin_pos.translation, cmove, s_obv, s_transform.translation);
+                let coll_position =
+                    raycast_obv(kin_pos.translation, cmove, s_obv, s_transform.translation);
                 let coll_position = coll_position.min(1.0); // Lock coll_position between [0,1]
 
                 if (coll_position + 1.0).abs() >= f32::EPSILON {
@@ -93,7 +97,7 @@ pub fn narrow_phase_system(
                         Ok(s) => s,
                         Err(_) => continue,
                     };
-                    let s_shape = s_shape.shape();                    
+                    let s_shape = s_shape.shape();
 
                     let coll_pos = Transform2D {
                         translation : kin_pos.translation + cmove * coll_position,
@@ -117,11 +121,8 @@ pub fn narrow_phase_system(
                             dis
                         }
                     }
-                    else if let Some(d) = dis2 {
-                        Some(-d)
-                    }
                     else {
-                        None
+                        dis2.map(|d| -d)
                     };
 
                     if let Some(dis) = dis {
@@ -135,6 +136,55 @@ pub fn narrow_phase_system(
                     }
                 }
             } // out of the surroindings for loop
+
+            // We gonna check here for sensors, as we dont want to include it in our "main loop"
+            // and we want to check only when we know exactly how much we go further to avoid ghost triggers
+            for se in broad.sensors.iter() {
+                // this was pretty mostly copied from above
+                let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
+
+                let s_obv = match obvs.get(*se) {
+                    Ok(o) => o,
+                    Err(_) => {
+                        continue;
+                    }
+                };
+
+                let s_transform = match global_transforms.get(*se) {
+                    Ok(t) => Transform2D::from((t, trans_mode)),
+                    Err(_) => continue,
+                };
+
+                let coll_position =
+                    raycast_obv(kin_pos.translation, cmove, s_obv, s_transform.translation);
+                let coll_position = coll_position.min(1.0).max(0.0); // Lock coll_position between [0,1]
+
+                // TODO maybe do put some sort of simpler collision assurance here?
+
+                // Get the obb shape thingy
+                let s_shape = match shapes.get(*se) {
+                    Ok(s) => s,
+                    Err(_) => continue,
+                };
+                let s_shape = s_shape.shape();
+
+                let coll_pos = Transform2D {
+                    translation : kin_pos.translation + cmove * coll_position,
+                    ..kin_pos
+                };
+
+                let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
+                let dis2 = s_shape.collide(s_transform, shape_kin, coll_pos);
+
+                // we dont really care how far we are penetrating, only that we indeed are penetrating
+                if dis.is_some() || dis2.is_some() {
+                    // we indeed collide
+                    if let Ok(mut sensor) = sensors.get_mut(*se) {
+                        sensor.overlapping_bodies.push(entity_kin);
+                    }
+                    // TODO maybe also fire an event?
+                }
+            }
 
             if normal != Vec2::ZERO {
                 let se = broad.area[coll_index as usize];
@@ -159,7 +209,7 @@ pub fn narrow_phase_system(
                 let move_slide = vel.0 - move_proj;
 
                 vel.0 = move_slide; // Redo bounciness + stiffness
-                    // - move_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
+                                    // - move_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
                 kin_pos.translation += movement - remainder;
 
                 let rem_proj = remainder.project(normal);
@@ -167,7 +217,7 @@ pub fn narrow_phase_system(
 
                 // basically what we still need to move
                 movement = rem_slide; // same thing as 147
-                    // - rem_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
+                                      // - rem_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
 
                 // Do the on_* stuff
                 check_on_stuff(&mut kin, normal, up_dir, 0.7);
@@ -192,7 +242,6 @@ pub fn narrow_phase_system(
         if let Ok(mut t) = transforms.get_component_mut::<Transform>(entity_kin) {
             trans_mode.set_position(&mut t, kin_pos.translation);
         }
-
     } // out of kin_obb for loop
 
     // Loop over the kinematic bodies and check for collisions
@@ -286,7 +335,7 @@ fn raycast_obv(
         BoundingShape::Aabb(aabb) => {
             let aabb_min = obv_pos - aabb.extents;
             let aabb_max = obv_pos + aabb.extents;
-        
+
             // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
             // it will never collide(thus division by 0.0)
             let xmin = if ray_cast.x != 0.0 {
@@ -313,10 +362,10 @@ fn raycast_obv(
             else {
                 f32::NAN
             };
-        
+
             let min = (xmin.min(xmax)).max(ymin.min(ymax));
             let max = (xmin.max(xmax)).min(ymin.max(ymax));
-        
+
             if max < 0.0 {
                 -1.0
             }
@@ -327,11 +376,8 @@ fn raycast_obv(
                 min
             }
         }
-        BoundingShape::Circle(_c) => {
-            -1.0
-        }
+        BoundingShape::Circle(_c) => -1.0,
     }
-    
 }
 
 /// Checks for `on_floor`,`on_wall`,`on_ceil` - up should be normalized

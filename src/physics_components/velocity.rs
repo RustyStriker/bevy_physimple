@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use serde::{Serialize,Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Linear velocity component
 ///
@@ -8,7 +8,7 @@ use serde::{Serialize,Deserialize};
 pub struct Vel(pub Vec2);
 
 impl Vel {
-	pub const ZERO : Vel = Vel(Vec2::ZERO);
+    pub const ZERO : Vel = Vel(Vec2::ZERO);
 }
 
 /// Terminal velocity

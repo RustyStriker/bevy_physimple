@@ -94,33 +94,30 @@ impl Segment {
 
 #[cfg(test)]
 mod segment_tests {
-    use bevy::math::vec2;
     use super::*;
+    use bevy::math::vec2;
 
     const EPSILON : f32 = 0.0001; // f32::EPSILON is a tad too accurate for these tests
 
     #[test]
     fn no_collision() {
         let seg_a = Segment {
-            a: vec2(10.0,0.0),
-            b: vec2(-10.0,0.0),
-            n: vec2(0.0,1.0),
+            a : vec2(10.0, 0.0),
+            b : vec2(-10.0, 0.0),
+            n : vec2(0.0, 1.0),
         };
 
         let seg_b = Segment {
-            a: vec2(10.0,5.0),
-            b: vec2(-10.0,5.0),
-            n: vec2(0.0,-1.0),
+            a : vec2(10.0, 5.0),
+            b : vec2(-10.0, 5.0),
+            n : vec2(0.0, -1.0),
         };
 
         let a_b = seg_a.collide(seg_b);
         let b_a = seg_b.collide(seg_a);
 
         // Make sure both are equal
-        assert_eq!(
-            a_b,
-            b_a
-        );
+        assert_eq!(a_b, b_a);
         let amount = a_b.unwrap();
         assert!((amount - 5.0).abs() < EPSILON);
     }
@@ -128,15 +125,15 @@ mod segment_tests {
     #[test]
     fn collision_test_1() {
         let a = Segment {
-            a: vec2(10.0,0.0),
-            b: vec2(-10.0,0.0),
-            n: vec2(0.0,1.0),
+            a : vec2(10.0, 0.0),
+            b : vec2(-10.0, 0.0),
+            n : vec2(0.0, 1.0),
         };
 
         let b = Segment {
-            a: vec2(3.0,-1.0),
-            b: vec2(-3.0,1.0),
-            n: vec2(-3.0,-1.0).normalize(),
+            a : vec2(3.0, -1.0),
+            b : vec2(-3.0, 1.0),
+            n : vec2(-3.0, -1.0).normalize(),
         };
 
         let a_b = a.collide(b);
@@ -146,20 +143,20 @@ mod segment_tests {
         assert_eq!(a_b.is_some(), b_a.is_some());
 
         assert!((a_b.unwrap() + 1.0).abs() < EPSILON); // a_b ~ -1.0
-        // the b_a value is ~5.69 (calculated from the function) so i dont see a point in putting it here
+                                                       // the b_a value is ~5.69 (calculated from the function) so i dont see a point in putting it here
     }
     #[test]
     fn collision_test_2() {
         let a = Segment {
-            a: vec2(3.0,0.0),
-            b: vec2(-1.0,0.0),
-            n: vec2(0.0,1.0),
+            a : vec2(3.0, 0.0),
+            b : vec2(-1.0, 0.0),
+            n : vec2(0.0, 1.0),
         };
 
         let b = Segment {
-            a: vec2(6.0,-2.0),
-            b: vec2(-3.0,1.0),
-            n: vec2(-3.0,-1.0).normalize(),
+            a : vec2(6.0, -2.0),
+            b : vec2(-3.0, 1.0),
+            n : vec2(-3.0, -1.0).normalize(),
         };
 
         let a_b = a.collide(b);
@@ -174,22 +171,22 @@ mod segment_tests {
     #[test]
     fn point_collisions() {
         let s = Segment {
-            a: vec2(1.0,0.0),
-            b: vec2(-1.0,0.0),
-            n: vec2(0.0,1.0),
+            a : vec2(1.0, 0.0),
+            b : vec2(-1.0, 0.0),
+            n : vec2(0.0, 1.0),
         };
 
         let ps = [
-            (vec2(0.0,1.0), (1.0, 0.0)), 
-            (vec2(1.0,1.0), (1.0,0.0)),
-            (vec2(2.0,1.0), (1.0,-1.0)),
-            (vec2(0.0,-1.0), (-1.0, 0.0)), 
+            (vec2(0.0, 1.0), (1.0, 0.0)),
+            (vec2(1.0, 1.0), (1.0, 0.0)),
+            (vec2(2.0, 1.0), (1.0, -1.0)),
+            (vec2(0.0, -1.0), (-1.0, 0.0)),
         ];
 
         for (p, e) in ps {
             let r = s.collide_point(p);
 
-            println!("r {:?} e {:?}",r,e);
+            println!("r {:?} e {:?}", r, e);
 
             // Compare first result(on N)
             assert!((e.0 - r.0).abs() < EPSILON);
@@ -197,5 +194,4 @@ mod segment_tests {
             assert!((e.1 - r.1).abs() < EPSILON);
         }
     }
-    
 }

@@ -1,8 +1,14 @@
 use bevy::prelude::*;
 
 pub trait VecOp<T> {
-    fn project(self, normal : T) -> T;
-    fn slide(self, normal : T) -> T;
+    fn project(
+        self,
+        normal : T,
+    ) -> T;
+    fn slide(
+        self,
+        normal : T,
+    ) -> T;
 }
 
 impl VecOp<Vec2> for Vec2 {

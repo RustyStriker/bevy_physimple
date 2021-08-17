@@ -68,10 +68,9 @@ pub fn narrow_phase_system(
 
             let mut normal = Vec2::ZERO;
             let mut remainder = Vec2::ZERO;
-            let mut coll_index = -1;
+            let mut coll_entity : Option<Entity> = None;
 
-            // TODO get rid of this `i` variable, it can be worked around
-            for (i, se) in broad.area.iter().enumerate() {
+            for se in broad.area.iter() {
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
 
                 let s_obv = match obvs.get(*se) {
@@ -99,6 +98,7 @@ pub fn narrow_phase_system(
                     };
                     let s_shape = s_shape.shape();
 
+                    // we should probably do it using the actual shape, since it might not work properly for with bounding volume
                     let coll_pos = Transform2D {
                         translation : kin_pos.translation + cmove * coll_position,
                         ..kin_pos
@@ -132,7 +132,7 @@ pub fn narrow_phase_system(
                         let moved = new_pos - kin_pos.translation;
                         remainder = movement - moved;
 
-                        coll_index = i as i32;
+                        coll_entity = Some(*se);
                     }
                 }
             } // out of the surroindings for loop
@@ -186,9 +186,7 @@ pub fn narrow_phase_system(
                 }
             }
 
-            if normal != Vec2::ZERO {
-                let se = broad.area[coll_index as usize];
-
+            if let Some(se) = coll_entity {
                 // Supposedly to get the staticbody bounceness data
                 // let staticbody = match statics.get(se) {
                 //     Ok(s) => s,
@@ -243,85 +241,6 @@ pub fn narrow_phase_system(
             trans_mode.set_position(&mut t, kin_pos.translation);
         }
     } // out of kin_obb for loop
-
-    // Loop over the kinematic bodies and check for collisions
-    /*
-    for (i, &(e, s, aabb, mut t)) in kin_data.iter().enumerate() {
-        for &(e2, s2, aabb2, t2) in kin_data.iter().skip(i + 1) {
-            let k = match kinematics.get_component::<KinematicBody2D>(e) {
-                Ok(k) => k,
-                Err(_) => continue,
-            };
-            let k2 = match kinematics.get_component::<KinematicBody2D>(e2) {
-                Ok(k) => k,
-                Err(_) => continue,
-            };
-
-            // Skip this iteration there is no shared layer/mask thingy
-            if (k.layer & k2.mask) | (k.mask & k2.layer) == 0 {
-                continue;
-            }
-
-            if get_aabb_collision(aabb, aabb2) {
-                let dis = s.collide_with_shape(t, s2, t2);
-                let dis2 = s2.collide_with_shape(t2, s, t);
-
-                // if we use dis2 we need to reverse the direction
-                let dis = if dis.is_some() {
-                    dis
-                }
-                else if let Some(d) = dis2 {
-                    Some(-d)
-                }
-                else {
-                    None
-                };
-
-                if let Some(dis) = dis {
-                    let normal = dis.normalize();
-
-                    // should i solve the penetration somewhere else?
-                    collision_writer.send(CollisionEvent {
-                        entity_a : e,
-                        entity_b : e2,
-                        is_b_static : false,
-                        normal,
-                    });
-
-                    // Do calculations
-                    let sum_recip = (k.mass + k2.mass).recip();
-                    let r = k.linvel * k.mass;
-                    let r2 = k2.linvel * k2.mass;
-                    let rv = r2 * sum_recip - r * sum_recip;
-
-                    let impulse = rv.project(normal);
-
-                    // Apply the stuff
-                    if let Ok(mut k) = kinematics.get_component_mut::<KinematicBody2D>(e) {
-                        // Undo the collision
-                        t.translation += dis;
-                        if k.linvel.signum() != dis.signum() {
-                            k.linvel = k.linvel.slide(normal);
-                        }
-                        k.linvel += impulse;
-                        check_on_stuff(&mut k, normal, up_dir, 0.7);
-                    }
-                    if let Ok(mut k) = kinematics.get_component_mut::<KinematicBody2D>(e2) {
-                        if k.linvel.signum() != -dis.signum() {
-                            k.linvel = k.linvel.slide(normal);
-                        }
-                        k.linvel -= impulse;
-                        check_on_stuff(&mut k, normal, up_dir, 0.7);
-                    }
-                }
-            }
-        }
-        // update the entity's translation
-        if let Ok(mut tr) = transforms.get_component_mut::<Transform>(e) {
-            trans_mode.set_position(&mut tr, t.translation);
-        }
-    }
-    */
 }
 
 fn raycast_obv(
@@ -376,7 +295,7 @@ fn raycast_obv(
                 min
             }
         }
-        BoundingShape::Circle(_c) => -1.0,
+        BoundingShape::Circle(_c) => -1.0, // TODO i fucking missed that one here
     }
 }
 

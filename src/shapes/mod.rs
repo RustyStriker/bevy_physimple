@@ -47,6 +47,16 @@ pub trait Shape {
         shape : &dyn Shape,
         shape_trans : Transform2D,
     ) -> Option<Vec2>;
+
+    /// Returns collision with the ray
+    ///
+    /// ray = (ray_normal, ray_length)
+    fn collide_ray(
+        &self,
+        transform : Transform2D,
+        ray : (Vec2, f32),
+        ray_origin : Vec2,
+    ) -> Option<f32>;
 }
 
 /// This is a temporary struct until bevy gets it own `Transform2D` struct

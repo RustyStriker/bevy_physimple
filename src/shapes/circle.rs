@@ -115,6 +115,10 @@ impl Shape for Circle {
             f32::INFINITY
         }
     }
+
+    fn collide_ray(&self, transform : Transform2D, ray : (Vec2, f32), ray_origin : Vec2) -> Option<f32> {
+        todo!();
+    }
 }
 
 #[cfg(test)]

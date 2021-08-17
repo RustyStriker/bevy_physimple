@@ -52,8 +52,8 @@ fn setup(
                 offset : Vec2::ZERO,
                 shape : BoundingShape::Aabb(Aabb::size(Vec2::splat(28.0))),
             },
-            // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
-            shape : CollisionShape::Circle(Circle::new(14.0)),
+            shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+            // shape : CollisionShape::Circle(Circle::new(14.0)),
             ..Default::default()
         })
         .insert(CharacterController::default())
@@ -81,14 +81,18 @@ fn setup(
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::new(30.0, 300.0)),
             material : black.clone(),
-            transform : Transform::from_xyz(450.0, 0.0, 0.0),
+            transform : {
+                let mut t = Transform::from_xyz(450.0, 0.0, 0.0);
+                t.rotation = Quat::from_rotation_z(-0.25 * 3.14);
+                t
+            },
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
             shape : CollisionShape::Square(Square::size(Vec2::new(30.0, 300.0))),
             obv : Obv {
                 offset : Vec2::ZERO,
-                shape : BoundingShape::Aabb(Aabb::size(Vec2::new(30.0, 300.0))),
+                shape : BoundingShape::Aabb(Aabb::size(Vec2::new(300.0, 300.0))),
             },
             coll_layer : CollisionLayer::default(),
         });

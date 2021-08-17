@@ -49,6 +49,44 @@ impl Square {
         self.rotation_offset = offset;
         self
     }
+
+    pub fn get_edges(&self, transform : Transform2D) -> [Segment; 4] {
+        let rot = Mat2::from_angle(transform.rotation);
+        let extents = rot * (self.extents * transform.scale);
+        let extents_con = rot * (self.extents * transform.scale * Vec2::new(1.0, -1.0));
+
+        let center = transform.translation + self.offset;
+
+        let v = [
+            center + extents,
+            center + extents_con,
+            center - extents,
+            center - extents_con,
+        ];
+
+        [
+            Segment {
+                a : v[0],
+                b : v[1],
+                n : rot * Vec2::new(1.0, 0.0),
+            },
+            Segment {
+                a : v[1],
+                b : v[2],
+                n : rot * Vec2::new(0.0, -1.0),
+            },
+            Segment {
+                a : v[2],
+                b : v[3],
+                n : rot * Vec2::new(-1.0, 0.0),
+            },
+            Segment {
+                a : v[3],
+                b : v[0],
+                n : rot * Vec2::new(0.0, 1.0),
+            },
+        ]
+    }
 }
 impl Default for Square {
     /// Default square with `extents = Vec2::splat(1.0)`
@@ -126,41 +164,7 @@ impl Shape for Square {
         segment : super::Segment,
         transform : Transform2D,
     ) -> f32 {
-        let rot = Mat2::from_angle(transform.rotation);
-        let extents = rot * (self.extents * transform.scale);
-        let extents_con = rot * (self.extents * transform.scale * Vec2::new(1.0, -1.0));
-
-        let center = transform.translation + self.offset;
-
-        let v = [
-            center + extents,
-            center + extents_con,
-            center - extents,
-            center - extents_con,
-        ];
-
-        let segments = [
-            Segment {
-                a : v[0],
-                b : v[1],
-                n : rot * Vec2::new(1.0, 0.0),
-            },
-            Segment {
-                a : v[1],
-                b : v[2],
-                n : rot * Vec2::new(0.0, -1.0),
-            },
-            Segment {
-                a : v[2],
-                b : v[3],
-                n : rot * Vec2::new(-1.0, 0.0),
-            },
-            Segment {
-                a : v[3],
-                b : v[0],
-                n : rot * Vec2::new(0.0, 1.0),
-            },
-        ];
+        let segments = self.get_edges(transform);
 
         let mut res = f32::INFINITY; // I should probably replace this later on
 
@@ -183,42 +187,9 @@ impl Shape for Square {
         shape : &dyn Shape,
         shape_trans : Transform2D,
     ) -> Option<Vec2> {
-        let rot = Mat2::from_angle(transform.rotation);
-        let extents = rot * (self.extents * transform.scale);
-        let extents_con = rot * (self.extents * transform.scale * Vec2::new(1.0, -1.0));
+        let segments = self.get_edges(transform);
 
         let center = transform.translation + self.offset;
-
-        let v = [
-            center + extents,
-            center + extents_con,
-            center - extents,
-            center - extents_con,
-        ];
-
-        let segments = [
-            Segment {
-                a : v[0],
-                b : v[1],
-                n : rot * Vec2::new(1.0, 0.0),
-            },
-            Segment {
-                a : v[1],
-                b : v[2],
-                n : rot * Vec2::new(0.0, -1.0),
-            },
-            Segment {
-                a : v[2],
-                b : v[3],
-                n : rot * Vec2::new(-1.0, 0.0),
-            },
-            Segment {
-                a : v[3],
-                b : v[0],
-                n : rot * Vec2::new(0.0, 1.0),
-            },
-        ];
-
         let (dis, _) = shape.collide_vertex(center, shape_trans);
 
         let mut res = f32::INFINITY; // I should probably replace this later on
@@ -241,10 +212,38 @@ impl Shape for Square {
             None
         }
     }
+
+    fn collide_ray(&self, transform : Transform2D, ray : (Vec2, f32), ray_origin : Vec2) -> Option<f32> {
+        debug_assert!(ray.0.is_normalized());
+
+        let segments = self.get_edges(transform);
+
+        let mut res = f32::INFINITY;
+
+        for s in segments {
+            // only proceed if the ray and the normal are facing each other
+            if s.n.dot(ray.0) < 0.0 {
+                if let Some(f) = s.collide_ray(ray, ray_origin) {
+                    if f < res {
+                        res = f;
+                    }
+                }
+            }
+        }
+
+        if res < ray.1 {
+            Some(res)
+        }
+        else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
 mod square_tests {
+    use crate::prelude::RayCast2D;
+
     use super::*;
     use std::f32::consts::PI;
     // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
@@ -448,5 +447,52 @@ mod square_tests {
         assert_eq!(big_r.is_some(), r_big.is_some());
 
         assert!((big_r.unwrap() - Vec2::new(0.0, 10.0_f32 * 2.0_f32.sqrt())).length() < EPSILON);
+    }
+
+    #[test]
+    fn collision_ray() {
+        let s = Square {
+            offset: Vec2::ZERO,
+            rotation_offset: 0.0,
+            extents: Vec2::splat(10.0),
+        };
+
+        let ts = Transform2D {
+            translation: Vec2::ZERO,
+            rotation: 0.0,
+            scale: Vec2::splat(1.0),
+        };
+
+        // TEST 1 - simple collision
+        let r1 = Vec2::new(10.0,0.0);
+        let t1 = Vec2::new(-16.0,-5.0);
+
+        let c1 = s.collide_ray(ts, (r1.normalize(), r1.length()), t1);
+        assert!(c1.is_some());
+        // should be 6.0
+        assert!((c1.unwrap() - 6.0).abs() < EPSILON);
+
+        // TEST 2 - no collision
+        let r2 = Vec2::new(1.0,1.0);
+        let t2 = Vec2::new(100.0,100.0);
+
+        let c2 = s.collide_ray(ts, (r2.normalize(), r2.length()), t2);
+
+        assert!(c2.is_none());
+
+        // TEST 3 - rotations :D (im scared)
+        // gonna use r1
+        let t3 = Vec2::new(-15.0,0.0);
+
+        let ts = Transform2D {
+            rotation: 0.25 * PI,
+            ..ts
+        };
+
+        let c3 = s.collide_ray(ts, (r1.normalize(), r1.length()), t3);
+
+        assert!(c3.is_some());
+        // should be 15 - 10*sqrt(2) ~ 0.857
+        assert!((c3.unwrap() - (15.0 - 10.0 * 2.0_f32.sqrt())).abs() < EPSILON);
     }
 }

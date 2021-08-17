@@ -2,16 +2,16 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Raycasts work in
-#[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
 pub struct RayCast2D {
     /// Offset from the Transform object
     pub offset : Vec2,
 
-    /// The Direction the ray shoots and the length
-    pub cast : Vec2,
+    /// The Direction the ray shoots
+    pub cast_dir : Vec2, // it is easier to break them once and multiply than break them from the start each time
 
-    /// Mask of the ray, will check only for objects by `self.mask & object.layer > 0`
-    pub mask : u8,
+    /// The length/magnitude of the ray
+    pub length : f32,
 
     /// Whether to try and collide with static objects as well(defaults to true)
     pub collide_with_static : bool,
@@ -36,8 +36,8 @@ impl RayCast2D {
     pub fn new(cast : Vec2) -> Self {
         RayCast2D {
             offset : Vec2::ZERO,
-            cast,
-            mask : 1,
+            cast_dir : cast.normalize(),
+            length : cast.length(),
             collide_with_static : true,
             collision : None,
         }
@@ -47,14 +47,6 @@ impl RayCast2D {
         offset : Vec2,
     ) -> Self {
         self.offset = offset;
-        self
-    }
-    /// Mask of the ray, will check only for objects by `self.mask & object.layer > 0`
-    pub fn with_mask(
-        mut self,
-        mask : u8,
-    ) -> Self {
-        self.mask = mask;
         self
     }
     /// Whether to try and collide with static objects as well(defaults to true)

@@ -1,4 +1,6 @@
-use bevy::prelude::{Reflect, Vec2};
+use bevy::{math::Mat2, prelude::{Reflect, Vec2}};
+
+use super::{RayCast2D, Transform2D};
 
 /// Simple struct to represent a segment from a to b
 #[derive(Clone, Copy, Reflect, Debug)]
@@ -33,7 +35,6 @@ impl Segment {
         let op_max = oap.max(obp);
 
         if op_min <= np_max && op_max >= np_min {
-            // im taking other to be flushed against self and not only solve the collision :(
             // we can define other by `other = A + t(B-A)`
             // or using n and np
             // `other = ((1-t)n.dot(A) + t*n.dot(B)) + ((1-t)np.dot(A) + t*np.dot(B))
@@ -90,10 +91,54 @@ impl Segment {
 
         (self.n.dot(point - self.a), np_part)
     }
+
+    /// Returns where on the ray(represented as f32) 
+    pub fn collide_ray(
+        self,
+        ray : (Vec2, f32),
+        ray_origin : Vec2,
+    ) -> Option<f32> {
+        debug_assert!(ray.0.is_normalized());
+
+        let n = ray.0;
+        let np = n.perp();
+
+        let anp = np.dot(self.a);
+        let bnp = np.dot(self.b);
+
+        let rnp = np.dot(ray_origin);
+
+        let np_min = anp.min(bnp);
+        let np_max = anp.max(bnp);
+
+        // we want to see that rnp is between the minimum and maximum of anp and bnp
+        if np_min <= rnp && np_max >= rnp {
+            // we need to calculate the part of the segment which corresponds to rnp on the np axis
+            // thus  we copy the part of code from the `collide` method, because it is useful
+            let t = (rnp - anp) / (bnp - anp);
+
+            let y = (1.0 - t) * n.dot(self.a) + t * n.dot(self.b);
+            let y = y - n.dot(ray_origin);
+
+            // TODO optimize later, no need to doulbe calculate a lot of stuff
+
+            if y <= ray.1 && y >= 0.0{
+                Some(y)
+            }
+            else {
+                None
+            }
+        }
+        else {
+            None
+        }
+    }
 }
 
 #[cfg(test)]
 mod segment_tests {
+    use std::f32::consts::PI;
+
     use super::*;
     use bevy::math::vec2;
 
@@ -193,5 +238,43 @@ mod segment_tests {
             // Compare second result(on NP)
             assert!((e.1 - r.1).abs() < EPSILON);
         }
+    }
+
+    #[test]
+    fn collision_ray() {
+        let s = Segment {
+            a: Vec2::new(10.0,0.0),
+            b: Vec2::new(-10.0,0.0),
+            n: Vec2::new(0.0,1.0),
+        };
+
+        // TEST 1
+        let r1 = Vec2::new(0.0,-10.0);
+        let t1 = Vec2::new(4.0, 6.0);
+
+        let c1 = s.collide_ray((r1.normalize(),r1.length()), t1);
+
+        // make sure we get a collision
+        assert!(c1.is_some());
+        // we should get 6.0
+        assert!((c1.unwrap() - 6.0).abs() < EPSILON);
+
+        // TEST 2
+        let t2 = Vec2::new(11.0,6.0);
+
+        let c2 = s.collide_ray((r1.normalize(),r1.length()), t2);
+
+        // should not collide, so c2 should be None
+        assert!(c2.is_none());
+
+        // TEST 3 :D - i might get calcs wrong on my side - I GOT IT RIGHT!
+        let r3 = Mat2::from_angle(PI * 0.25) * Vec2::new(-10.0,0.0);
+        let t3 = Vec2::new(0.0,5.0);
+
+        let c3 = s.collide_ray((r3.normalize(),r3.length()), t3);
+
+        assert!(c3.is_some());
+        // shold be 5 * sqrt(2)
+        assert!((c3.unwrap() - 5.0 * 2.0_f32.sqrt()).abs() < EPSILON);
     }
 }

@@ -1,3 +1,5 @@
+use std::f32::EPSILON;
+
 use crate::{
     bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent,
     prelude::VecOp, shapes::*,
@@ -142,24 +144,11 @@ pub fn narrow_phase_system(
             for se in broad.sensors.iter() {
                 // this was pretty mostly copied from above
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
-
-                let s_obv = match obvs.get(*se) {
-                    Ok(o) => o,
-                    Err(_) => {
-                        continue;
-                    }
-                };
-
-                let s_transform = match global_transforms.get(*se) {
-                    Ok(t) => Transform2D::from((t, trans_mode)),
-                    Err(_) => continue,
-                };
-
-                let coll_position =
-                    raycast_obv(kin_pos.translation, cmove, s_obv, s_transform.translation);
-                let coll_position = coll_position.min(1.0).max(0.0); // Lock coll_position between [0,1]
-
-                // TODO maybe do put some sort of simpler collision assurance here?
+                let cmove_len = cmove.length();
+                if cmove_len < EPSILON {
+                    break;
+                }
+                let cmove_ray = (cmove.normalize(), cmove_len);
 
                 // Get the obb shape thingy
                 let s_shape = match shapes.get(*se) {
@@ -167,6 +156,17 @@ pub fn narrow_phase_system(
                     Err(_) => continue,
                 };
                 let s_shape = s_shape.shape();
+
+                let s_transform = match global_transforms.get(*se) {
+                    Ok(t) => Transform2D::from((t, trans_mode)),
+                    Err(_) => continue,
+                };
+
+                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_pos.translation);
+                let coll_position = coll_position.unwrap_or(cmove_len);
+
+                // TODO maybe do put some sort of simpler collision assurance here?
+
 
                 let coll_pos = Transform2D {
                     translation : kin_pos.translation + cmove * coll_position,

@@ -1,5 +1,3 @@
-use std::f32::EPSILON;
-
 use crate::{
     bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent,
     prelude::VecOp, shapes::*,
@@ -8,16 +6,12 @@ use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_system(
-    // Shape queries
     shapes : Query<&CollisionShape>,
-    obvs : Query<&Obv>,
-    // The different bodies
     mut kinematics : Query<&mut KinematicBody2D>,
     mut vels : Query<&mut Vel>,
     global_transforms : Query<&GlobalTransform>,
     mut transforms : Query<&mut Transform>,
     mut sensors : Query<&mut Sensor2D>,
-    // Simple collision data
     mut broad_data : EventReader<BroadData>,
     // Writer to throw collision events
     mut collision_writer : EventWriter<CollisionEvent>,
@@ -74,81 +68,7 @@ pub fn narrow_phase_system(
 
             for se in broad.area.iter() {
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
-
-                let s_obv = match obvs.get(*se) {
-                    Ok(o) => o,
-                    Err(_) => {
-                        continue;
-                    }
-                };
-
-                let s_transform = match global_transforms.get(*se) {
-                    Ok(t) => Transform2D::from((t, trans_mode)),
-                    Err(_) => continue,
-                };
-
-                let coll_position =
-                    raycast_obv(kin_pos.translation, cmove, s_obv, s_transform.translation);
-                let coll_position = coll_position.min(1.0); // Lock coll_position between [0,1]
-
-                if (coll_position + 1.0).abs() >= f32::EPSILON {
-                    // coll_position != -1
-                    // Get the obb shape thingy
-                    let s_shape = match shapes.get(*se) {
-                        Ok(s) => s,
-                        Err(_) => continue,
-                    };
-                    let s_shape = s_shape.shape();
-
-                    // we should probably do it using the actual shape, since it might not work properly for with bounding volume
-                    let coll_pos = Transform2D {
-                        translation : kin_pos.translation + cmove * coll_position,
-                        ..kin_pos
-                    };
-
-                    let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
-                    let dis2 = s_shape.collide(s_transform, shape_kin, coll_pos);
-
-                    // if we use dis2 we need to reverse the direction
-                    let dis = if let Some(d1) = dis {
-                        if let Some(d2) = dis2 {
-                            if d1.length_squared() < d2.length_squared() {
-                                Some(d1)
-                            }
-                            else {
-                                Some(-d2)
-                            }
-                        }
-                        else {
-                            dis
-                        }
-                    }
-                    else {
-                        dis2.map(|d| -d)
-                    };
-
-                    if let Some(dis) = dis {
-                        let new_pos = coll_pos.translation + dis;
-                        normal = dis.normalize();
-
-                        let moved = new_pos - kin_pos.translation;
-                        remainder = movement - moved;
-
-                        coll_entity = Some(*se);
-                    }
-                }
-            } // out of the surroindings for loop
-
-            // We gonna check here for sensors, as we dont want to include it in our "main loop"
-            // and we want to check only when we know exactly how much we go further to avoid ghost triggers
-            for se in broad.sensors.iter() {
-                // this was pretty mostly copied from above
-                let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
-                let cmove_len = cmove.length();
-                if cmove_len < EPSILON {
-                    break;
-                }
-                let cmove_ray = (cmove.normalize(), cmove_len);
+                let cmove_ray = (cmove.normalize(), cmove.length());
 
                 // Get the obb shape thingy
                 let s_shape = match shapes.get(*se) {
@@ -163,13 +83,73 @@ pub fn narrow_phase_system(
                 };
 
                 let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_pos.translation);
-                let coll_position = coll_position.unwrap_or(cmove_len);
+                let coll_position = coll_position.unwrap_or(cmove_ray.1);
+
+                let coll_pos = Transform2D {
+                    translation : kin_pos.translation + cmove_ray.0 * coll_position,
+                    ..kin_pos
+                };
+
+                let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
+                let dis2 = s_shape.collide(s_transform, shape_kin, coll_pos);
+
+                // if we use dis2 we need to reverse the direction
+                let dis = if let Some(d1) = dis {
+                    if let Some(d2) = dis2 {
+                        if d1.length_squared() < d2.length_squared() {
+                            Some(d1)
+                        }
+                        else {
+                            Some(-d2)
+                        }
+                    }
+                    else {
+                        dis
+                    }
+                }
+                else {
+                    dis2.map(|d| -d)
+                };
+
+                if let Some(dis) = dis {
+                    let new_pos = coll_pos.translation + dis;
+                    normal = dis.normalize();
+
+                    let moved = new_pos - kin_pos.translation;
+                    remainder = movement - moved;
+
+                    coll_entity = Some(*se);
+                }
+                
+            } // out of the surroindings for loop
+            // We gonna check here for sensors, as we dont want to include it in our "main loop"
+            // and we want to check only when we know exactly how much we go further to avoid ghost triggers
+            for se in broad.sensors.iter() { // SENSOR LOOP!!!!
+                // this was pretty mostly copied from above
+                let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
+                let cmove_ray = (cmove.normalize(), cmove.length());
+
+                // Get the obb shape thingy
+                let s_shape = match shapes.get(*se) {
+                    Ok(s) => s,
+                    Err(_) => continue,
+                };
+                let s_shape = s_shape.shape();
+
+                let s_transform = match global_transforms.get(*se) {
+                    Ok(t) => Transform2D::from((t, trans_mode)),
+                    Err(_) => continue,
+                };
+
+                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_pos.translation);
+                let coll_position = coll_position.unwrap_or(cmove_ray.1);
 
                 // TODO maybe do put some sort of simpler collision assurance here?
 
 
                 let coll_pos = Transform2D {
-                    translation : kin_pos.translation + cmove * coll_position,
+                    // i know this is wrong but for some reason the "correct" way doesnt function properly(the cmove part should be cmove_ray.0)
+                    translation : kin_pos.translation + cmove * coll_position, 
                     ..kin_pos
                 };
 
@@ -180,7 +160,9 @@ pub fn narrow_phase_system(
                 if dis.is_some() || dis2.is_some() {
                     // we indeed collide
                     if let Ok(mut sensor) = sensors.get_mut(*se) {
-                        sensor.overlapping_bodies.push(entity_kin);
+                        if !sensor.overlapping_bodies.contains(&entity_kin) {
+                            sensor.overlapping_bodies.push(entity_kin);
+                        }
                     }
                     // TODO maybe also fire an event?
                 }
@@ -241,62 +223,6 @@ pub fn narrow_phase_system(
             trans_mode.set_position(&mut t, kin_pos.translation);
         }
     } // out of kin_obb for loop
-}
-
-fn raycast_obv(
-    ray_from : Vec2,
-    ray_cast : Vec2,
-    obv : &Obv,
-    obv_pos : Vec2,
-) -> f32 {
-    let obv_pos = obv_pos + obv.offset;
-    match &obv.shape {
-        BoundingShape::Aabb(aabb) => {
-            let aabb_min = obv_pos - aabb.extents;
-            let aabb_max = obv_pos + aabb.extents;
-
-            // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
-            // it will never collide(thus division by 0.0)
-            let xmin = if ray_cast.x != 0.0 {
-                (aabb_min.x - ray_from.x) / ray_cast.x
-            }
-            else {
-                f32::NAN
-            };
-            let xmax = if ray_cast.x != 0.0 {
-                (aabb_max.x - ray_from.x) / ray_cast.x
-            }
-            else {
-                f32::NAN
-            };
-            let ymin = if ray_cast.y != 0.0 {
-                (aabb_min.y - ray_from.y) / ray_cast.y
-            }
-            else {
-                f32::NAN
-            };
-            let ymax = if ray_cast.y != 0.0 {
-                (aabb_max.y - ray_from.y) / ray_cast.y
-            }
-            else {
-                f32::NAN
-            };
-
-            let min = (xmin.min(xmax)).max(ymin.min(ymax));
-            let max = (xmin.max(xmax)).min(ymin.max(ymax));
-
-            if max < 0.0 {
-                -1.0
-            }
-            else if min > max || min < 0.0 {
-                max
-            }
-            else {
-                min
-            }
-        }
-        BoundingShape::Circle(_c) => -1.0, // TODO i fucking missed that one here
-    }
 }
 
 /// Checks for `on_floor`,`on_wall`,`on_ceil` - up should be normalized

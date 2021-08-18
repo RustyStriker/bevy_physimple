@@ -214,8 +214,6 @@ impl Shape for Square {
     }
 
     fn collide_ray(&self, transform : Transform2D, ray : (Vec2, f32), ray_origin : Vec2) -> Option<f32> {
-        debug_assert!(ray.0.is_normalized());
-
         let segments = self.get_edges(transform);
 
         let mut res = f32::INFINITY;
@@ -242,8 +240,6 @@ impl Shape for Square {
 
 #[cfg(test)]
 mod square_tests {
-    use crate::prelude::RayCast2D;
-
     use super::*;
     use std::f32::consts::PI;
     // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having

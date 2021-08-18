@@ -1,6 +1,4 @@
-use bevy::{math::Mat2, prelude::{Reflect, Vec2}};
-
-use super::{RayCast2D, Transform2D};
+use bevy::prelude::*;
 
 /// Simple struct to represent a segment from a to b
 #[derive(Clone, Copy, Reflect, Debug)]
@@ -140,7 +138,7 @@ mod segment_tests {
     use std::f32::consts::PI;
 
     use super::*;
-    use bevy::math::vec2;
+    use bevy::math::{Mat2, vec2};
 
     const EPSILON : f32 = 0.0001; // f32::EPSILON is a tad too accurate for these tests
 

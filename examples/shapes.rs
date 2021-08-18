@@ -79,20 +79,37 @@ fn setup(
     // side wall
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(30.0, 300.0)),
+            sprite : Sprite::new(Vec2::new(40.0, 300.0)),
             material : black.clone(),
             transform : {
                 let mut t = Transform::from_xyz(450.0, 0.0, 0.0);
-                t.rotation = Quat::from_rotation_z(-0.25 * 3.14);
+                t.rotation = Quat::from_rotation_z(-0.1 * 3.14);
                 t
             },
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
-            shape : CollisionShape::Square(Square::size(Vec2::new(30.0, 300.0))),
+            shape : CollisionShape::Square(Square::size(Vec2::new(40.0, 300.0))),
             obv : Obv {
                 offset : Vec2::ZERO,
                 shape : BoundingShape::Aabb(Aabb::size(Vec2::new(300.0, 300.0))),
+            },
+            coll_layer : CollisionLayer::default(),
+        });
+
+    // smaller other side wall
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::new(30.0, 90.0)),
+            material : black.clone(),
+            transform : Transform::from_xyz(-150.0, -160.0, 0.0),
+            ..Default::default()
+        })
+        .insert_bundle(StaticBundle {
+            shape : CollisionShape::Square(Square::size(Vec2::new(30.0,90.0))),
+            obv : Obv {
+                offset : Vec2::ZERO,
+                shape : BoundingShape::Aabb(Aabb::size(Vec2::new(30.0,90.0)))
             },
             coll_layer : CollisionLayer::default(),
         });

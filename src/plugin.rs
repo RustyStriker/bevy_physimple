@@ -37,12 +37,8 @@ pub mod stage {
     pub const PHYSICS_STEP : &str = "phy_physics_step";
     /// update joint constraints based on current data
     pub const JOINT_STEP : &str = "phy_joint_step";
-
-    pub const CAPTURE_STEP : &str = "phy_capture_step";
-    /// Check for collisions between objects, emitting events with AABBCollisionEvent(should be replaced later tho)
-    pub const COLLISION_DETECTION : &str = "phy_collision_detection";
-    /// Solve each collision and apply forces based on collision
-    pub const PHYSICS_SOLVE : &str = "phy_solve";
+    /// One big stage which hosts the collision detection + solve systems
+    pub const COLLISION_DETECTION : &str = "phy_collision";
     /// Check for raycasts and if they detect any object in their path.
     pub const RAYCAST_DETECTION : &str = "phy_raycast_detection";
 }
@@ -67,21 +63,11 @@ impl Plugin for Physics2dPlugin {
         )
         .add_stage_after(
             stage::PHYSICS_STEP,
-            stage::CAPTURE_STEP,
-            SystemStage::parallel(),
-        )
-        .add_stage_after(
-            stage::CAPTURE_STEP,
             stage::COLLISION_DETECTION,
             SystemStage::single_threaded(),
         )
         .add_stage_after(
             stage::COLLISION_DETECTION,
-            stage::PHYSICS_SOLVE,
-            SystemStage::single_threaded(),
-        )
-        .add_stage_after(
-            stage::PHYSICS_SOLVE,
             stage::RAYCAST_DETECTION,
             SystemStage::single_threaded(),
         );
@@ -94,11 +80,11 @@ impl Plugin for Physics2dPlugin {
         crate::settings::insert_physics_resources(app);
 
         // Add the systems themselves for each step
-        app.add_system_to_stage(stage::CAPTURE_STEP, broad::broad_phase_1.system())
-            .add_system_to_stage(stage::CAPTURE_STEP, sensor_clean.system())
-            .add_system_to_stage(
+        app.add_system_to_stage(
                 stage::COLLISION_DETECTION,
-                narrow::narrow_phase_system.system(),
+                broad::broad_phase_1.system()
+                .chain(sensor_clean.system())
+                .chain(narrow::narrow_phase_system.system())
             );
 
         app.add_system_set_to_stage(

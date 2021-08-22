@@ -1,26 +1,5 @@
 //! All the different components which describe a physical body
 
-/*
-    # Components needed:
-        [x] Velocity
-        [x] Angular Velocity
-        [x] Terminal (angualr) Velocity
-        [x] Mass
-        [x] Bounding volume(currently should be circle/box)
-        [x] Collision Mask
-        [x] Collision Layers(Maybe should be the same with mask)
-        [ ] bounce
-        [ ] stiffness
-        [x] Friction
-
-    still TODODODODODO:
-        [ ] Update all systems to work with new components
-        [ ] implement quality of life functions for new component
-        [ ] create builders/bundles for the PhysicsBodies :D
-*/
-
-pub mod angular_velocity;
-pub mod physical_properties;
 pub mod velocity;
 
 use bevy::prelude::Reflect;

@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
+// TODO make the bounding shapes self contained? maybe remove the `Obv` struct?
+
 /// Object Bounding Volume
 #[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
 pub struct Obv {

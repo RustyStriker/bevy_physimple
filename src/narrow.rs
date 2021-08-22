@@ -1,13 +1,10 @@
-use crate::{
-    bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent,
-    prelude::VecOp, shapes::*,
-};
+use crate::{bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent, prelude::VecOp, shapes::*, transform_mode::TransformMode};
 use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_system(
+    trans_mode : Res<TransformMode>,
     shapes : Query<&CollisionShape>,
-    mut kinematics : Query<&mut KinematicBody2D>,
     mut vels : Query<&mut Vel>,
     global_transforms : Query<&GlobalTransform>,
     mut transforms : Query<&mut Transform>,
@@ -24,34 +21,22 @@ pub fn narrow_phase_system(
     // We need to transfer it into a Vec(or other iterable stuff) because the EventReader.iter is a 1 time consuming thingy
     let broad_data = broad_data.iter().collect::<Vec<_>>();
 
-    let trans_mode = crate::settings::TransformMode::XY;
-    let up_dir = Vec2::Y;
+    let trans_mode = *trans_mode;
 
     for broad in broad_data.iter() {
         let entity_kin = broad.entity;
 
-        let mut kin = match kinematics.get_component_mut::<KinematicBody2D>(entity_kin) {
-            Ok(k) => k,
-            Err(_) => {
-                eprintln!(
-                    "Entity {} is missing a kinematic body(how did you get here? >_>)",
-                    entity_kin.id()
-                );
-                continue;
-            }
-        };
-
         // TODO normal error messages would be better i guess?
-        let mut kin_pos = match global_transforms.get_component::<GlobalTransform>(entity_kin) {
+        let mut kin_trans = match global_transforms.get_component::<GlobalTransform>(entity_kin) {
             Ok(t) => Transform2D::from((t, trans_mode)),
             Err(_) => continue,
         };
 
-        let shape_kin = match shapes.get(entity_kin) {
+        let kin_shape = match shapes.get(entity_kin) {
             Ok(s) => s,
             Err(_) => continue, // Add debug stuff
         };
-        let shape_kin = shape_kin.shape();
+        let shape_kin = kin_shape.shape();
 
         let mut iter_amount = 5; // Maximum number of collision detection - should probably be configureable
         let mut movement = broad.inst_vel; // Current movement to check for
@@ -82,12 +67,12 @@ pub fn narrow_phase_system(
                     Err(_) => continue,
                 };
 
-                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_pos.translation);
+                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation);
                 let coll_position = coll_position.unwrap_or(cmove_ray.1);
 
                 let coll_pos = Transform2D {
-                    translation : kin_pos.translation + cmove_ray.0 * coll_position,
-                    ..kin_pos
+                    translation : kin_trans.translation + cmove_ray.0 * coll_position,
+                    ..kin_trans
                 };
 
                 let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
@@ -115,7 +100,7 @@ pub fn narrow_phase_system(
                     let new_pos = coll_pos.translation + dis;
                     normal = dis.normalize();
 
-                    let moved = new_pos - kin_pos.translation;
+                    let moved = new_pos - kin_trans.translation;
                     remainder = movement - moved;
 
                     coll_entity = Some(*se);
@@ -141,16 +126,15 @@ pub fn narrow_phase_system(
                     Err(_) => continue,
                 };
 
-                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_pos.translation);
+                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation);
                 let coll_position = coll_position.unwrap_or(cmove_ray.1);
 
                 // TODO maybe do put some sort of simpler collision assurance here?
 
 
                 let coll_pos = Transform2D {
-                    // i know this is wrong but for some reason the "correct" way doesnt function properly(the cmove part should be cmove_ray.0)
-                    translation : kin_pos.translation + cmove * coll_position, 
-                    ..kin_pos
+                    translation : kin_trans.translation + cmove_ray.0 * coll_position, 
+                    ..kin_trans
                 };
 
                 let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
@@ -160,8 +144,8 @@ pub fn narrow_phase_system(
                 if dis.is_some() || dis2.is_some() {
                     // we indeed collide
                     if let Ok(mut sensor) = sensors.get_mut(*se) {
-                        if !sensor.overlapping_bodies.contains(&entity_kin) {
-                            sensor.overlapping_bodies.push(entity_kin);
+                        if !sensor.bodies.contains(&entity_kin) {
+                            sensor.bodies.push(entity_kin);
                         }
                     }
                     // TODO maybe also fire an event?
@@ -190,7 +174,7 @@ pub fn narrow_phase_system(
 
                 vel.0 = move_slide; // Redo bounciness + stiffness
                                     // - move_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
-                kin_pos.translation += movement - remainder;
+                kin_trans.translation += movement - remainder;
 
                 let rem_proj = remainder.project(normal);
                 let rem_slide = remainder - rem_proj;
@@ -199,8 +183,6 @@ pub fn narrow_phase_system(
                 movement = rem_slide; // same thing as 147
                                       // - rem_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
 
-                // Do the on_* stuff
-                check_on_stuff(&mut kin, normal, up_dir, 0.7);
 
                 // Throw an event
                 collision_writer.send(CollisionEvent {
@@ -212,7 +194,7 @@ pub fn narrow_phase_system(
             }
             else {
                 // There was no collisions here so we can break
-                kin_pos.translation += movement; // need to move whatever left to move with
+                kin_trans.translation += movement; // need to move whatever left to move with
                 break;
             }
         } // out of loop(line 94)
@@ -220,27 +202,7 @@ pub fn narrow_phase_system(
         // Set the end position of kin and its new movement
 
         if let Ok(mut t) = transforms.get_component_mut::<Transform>(entity_kin) {
-            trans_mode.set_position(&mut t, kin_pos.translation);
+            trans_mode.set_position(&mut t, kin_trans.translation);
         }
     } // out of kin_obb for loop
-}
-
-/// Checks for `on_floor`,`on_wall`,`on_ceil` - up should be normalized
-fn check_on_stuff(
-    body : &mut KinematicBody2D,
-    normal : Vec2,
-    up : Vec2,
-    floor_angle : f32,
-) {
-    let dot = up.dot(normal);
-
-    if dot >= floor_angle {
-        body.on_floor = Some(normal);
-    }
-    if dot.abs() < floor_angle {
-        body.on_wall = Some(normal);
-    }
-    if dot <= -floor_angle {
-        body.on_ceil = Some(normal);
-    }
 }

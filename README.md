@@ -21,7 +21,7 @@ and eventually i want people to be able to use this crate as a simple collisions
 TODO, for now you can check the examples
 just run
 `cargo run --bevy/dynamic --example shapes --release`
-to see it in action(other examples are not updated to use shapes and will not work currently)
+(more examples will come once i stop the huge refactor...)
 
 Do note that each physics component needs a `GlobalTransform` with it now,
 and `KinematicBody2D` needs a `Transform` in order to actually move and be used.
@@ -34,6 +34,7 @@ and `KinematicBody2D` needs a `Transform` in order to actually move and be used.
 
 ## A todo list
 
-- [ ] Rewrite shape overlap - current
+- [x] Rewrite shape overlap
 - [ ] Implement the different shapes
 - [ ] Update the examples, and better showcase stuff
+- [ ] Actual docs

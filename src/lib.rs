@@ -4,7 +4,7 @@ pub mod common;
 mod narrow;
 pub mod physics_components;
 pub mod plugin;
-pub mod settings;
+pub mod transform_mode;
 pub mod shapes;
 
 pub mod prelude {
@@ -12,7 +12,6 @@ pub mod prelude {
     //! simulation.
     pub use crate::common::*;
     pub use crate::plugin::Physics2dPlugin;
-    // TODO Maybe restrict it a bit more?
     pub use crate::bodies::*;
     pub use crate::shapes::*;
 }

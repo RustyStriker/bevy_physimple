@@ -1,7 +1,7 @@
 use crate::{
     bodies::*,
-    physics_components::{angular_velocity::AngVel, velocity::Vel},
-    settings::TransformMode,
+    physics_components::velocity::Vel,
+    transform_mode::TransformMode,
     shapes::*,
 };
 use bevy::prelude::*;
@@ -29,17 +29,19 @@ pub fn broad_phase_1(
     trans_mode : Res<TransformMode>,
     kinematics : Query<
         (Entity, &Obv, Option<&Vel>, &GlobalTransform),
-        Or<(With<Vel>, With<AngVel>)>,
+        With<Vel>,
     >,
     statics : Query<
         (Entity, &Obv, &GlobalTransform),
-        (Without<Vel>, Without<AngVel>, Without<Sensor2D>),
+        (Without<Vel>, Without<Sensor2D>),
     >,
     sensors : Query<(Entity, &Obv, &GlobalTransform), With<Sensor2D>>,
     mut broad_writer : EventWriter<BroadData>,
 ) {
     // TODO Optimize it later, when all is done and the earth is gone
     // probably get space partition or quad trees up and running
+
+    // TODO check for layer/mask!!!
 
     let delta = time.delta_seconds();
 

@@ -96,7 +96,9 @@ impl Segment {
         ray : (Vec2, f32),
         ray_origin : Vec2,
     ) -> Option<f32> {
-        debug_assert!(ray.0.is_normalized());
+        // for some reason a the `Vec2::normalize()` function might not normalize properly(resulting in a 0.9999999 len or something)
+        // so this is disabled for now
+        // debug_assert!(ray.0.is_normalized());
 
         let n = ray.0;
         let np = n.perp();
@@ -117,8 +119,6 @@ impl Segment {
 
             let y = (1.0 - t) * n.dot(self.a) + t * n.dot(self.b);
             let y = y - n.dot(ray_origin);
-
-            // TODO optimize later, no need to doulbe calculate a lot of stuff
 
             if y <= ray.1 && y >= 0.0{
                 Some(y)

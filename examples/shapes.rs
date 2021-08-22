@@ -220,7 +220,7 @@ fn character_system(
             jump(&controller, &mut vel);
         }
 
-        // This is for the testing purpose of the continous collision thingy
+        // This is for the testing purpose of the continuous collision thingy
         if input.just_pressed(KeyCode::S) && !controller.on_floor {
             vel.0 = Vec2::new(0.0, -50000000.0);
         }

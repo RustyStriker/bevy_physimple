@@ -1,13 +1,21 @@
-use crate::{bodies::*, broad::ConBroadData, physics_components::velocity::Vel, plugin::CollisionEvent, prelude::VecOp, shapes::*, transform_mode::TransformMode};
+use crate::{
+    bodies::*, 
+    broad::ConBroadData, 
+    physics_components::{
+        Transform2D, 
+        velocity::Vel
+    }, 
+    plugin::CollisionEvent, 
+    prelude::VecOp, 
+    shapes::*,
+};
 use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_system(
-    trans_mode : Res<TransformMode>,
     shapes : Query<&CollisionShape>,
     mut vels : Query<&mut Vel>,
-    global_transforms : Query<&GlobalTransform>,
-    mut transforms : Query<&mut Transform>,
+    mut transforms : Query<&mut Transform2D>,
     mut sensors : Query<&mut Sensor2D>,
     mut broad_data : EventReader<ConBroadData>,
     // Writer to throw collision events
@@ -21,13 +29,14 @@ pub fn narrow_phase_system(
     // We need to transfer it into a Vec(or other iterable stuff) because the EventReader.iter is a 1 time consuming thingy
     let broad_data = broad_data.iter().collect::<Vec<_>>();
 
-    let trans_mode = *trans_mode;
-
     for &broad in broad_data.iter() {
         let entity_kin = broad.entity;
 
         // TODO normal error messages would be better i guess?
-        let mut kin_trans = broad.transform;
+        let mut kin_trans = match transforms.get_component::<Transform2D>(entity_kin) {
+            Ok(t) => t.clone(),
+            Err(_) => continue,
+        };
 
         let kin_shape = match shapes.get(entity_kin) {
             Ok(s) => s,
@@ -59,21 +68,22 @@ pub fn narrow_phase_system(
                 };
                 let s_shape = s_shape.shape();
 
-                let s_transform = match global_transforms.get(*se) {
-                    Ok(t) => Transform2D::from((t, trans_mode)),
+                let s_transform = match transforms.get_component::<Transform2D>(*se) {
+                    Ok(t) => t,
                     Err(_) => continue,
                 };
 
-                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation);
+                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation());
                 let coll_position = coll_position.unwrap_or(cmove_ray.1);
 
-                let coll_pos = Transform2D {
-                    translation : kin_trans.translation + cmove_ray.0 * coll_position,
-                    ..kin_trans
-                };
+                let coll_pos = Transform2D::new(
+                    kin_trans.translation() + cmove_ray.0 * coll_position,
+                    kin_trans.rotation(),
+                    kin_trans.scale()
+                );
 
-                let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
-                let dis2 = s_shape.collide(s_transform, shape_kin, coll_pos);
+                let dis = shape_kin.collide(&coll_pos, s_shape, s_transform);
+                let dis2 = s_shape.collide(s_transform, shape_kin, &coll_pos);
 
                 // if we use dis2 we need to reverse the direction
                 let dis = if let Some(d1) = dis {
@@ -94,10 +104,10 @@ pub fn narrow_phase_system(
                 };
 
                 if let Some(dis) = dis {
-                    let new_pos = coll_pos.translation + dis;
+                    let new_pos = coll_pos.translation() + dis;
                     normal = dis.normalize();
 
-                    let moved = new_pos - kin_trans.translation;
+                    let moved = new_pos - kin_trans.translation();
                     remainder = movement - moved;
 
                     coll_entity = Some(*se);
@@ -118,24 +128,22 @@ pub fn narrow_phase_system(
                 };
                 let s_shape = s_shape.shape();
 
-                let s_transform = match global_transforms.get(*se) {
-                    Ok(t) => Transform2D::from((t, trans_mode)),
+                let s_transform = match transforms.get_component::<Transform2D>(*se) {
+                    Ok(t) => t,
                     Err(_) => continue,
                 };
 
-                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation);
+                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation());
                 let coll_position = coll_position.unwrap_or(cmove_ray.1);
 
-                // TODO maybe do put some sort of simpler collision assurance here?
+                let coll_pos = Transform2D::new(
+                    kin_trans.translation() + cmove_ray.0 * coll_position,
+                    kin_trans.rotation(),
+                    kin_trans.scale()
+                );
 
-
-                let coll_pos = Transform2D {
-                    translation : kin_trans.translation + cmove_ray.0 * coll_position, 
-                    ..kin_trans
-                };
-
-                let dis = shape_kin.collide(coll_pos, s_shape, s_transform);
-                let dis2 = s_shape.collide(s_transform, shape_kin, coll_pos);
+                let dis = shape_kin.collide(&coll_pos, s_shape, s_transform);
+                let dis2 = s_shape.collide(s_transform, shape_kin, &coll_pos);
 
                 // we dont really care how far we are penetrating, only that we indeed are penetrating
                 if dis.is_some() || dis2.is_some() {
@@ -171,7 +179,7 @@ pub fn narrow_phase_system(
 
                 vel.0 = move_slide; // Redo bounciness + stiffness
                                     // - move_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
-                kin_trans.translation += movement - remainder;
+                kin_trans.add_translation(movement - remainder);
 
                 let rem_proj = remainder.project(normal);
                 let rem_slide = remainder - rem_proj;
@@ -191,15 +199,17 @@ pub fn narrow_phase_system(
             }
             else {
                 // There was no collisions here so we can break
-                kin_trans.translation += movement; // need to move whatever left to move with
+                kin_trans.add_translation(movement); // need to move whatever left to move with
                 break;
             }
         } // out of loop(line 94)
 
         // Set the end position of kin and its new movement
 
-        if let Ok(mut t) = transforms.get_component_mut::<Transform>(entity_kin) {
-            trans_mode.set_position(&mut t, kin_trans.translation);
+        // TODO make sure to make a sync Transform2D -> Transform system
+        // We cloned the body's Transform2D to avoid mutability issues, so now we reapply it
+        if let Ok(mut t) = transforms.get_mut(entity_kin) {
+            *t = kin_trans;
         }
     } // out of kin_obb for loop
 }

@@ -36,27 +36,27 @@ impl Default for Circle {
 impl Shape for Circle {
     fn to_aabb(
         &self,
-        transform : Transform2D,
+        transform : &Transform2D,
     ) -> Aabb {
         // rotate the scale
-        let basis = Mat2::from_angle(transform.rotation);
-        let scale = basis * transform.scale;
+        let basis = Mat2::from_angle(transform.rotation());
+        let scale = basis * transform.scale();
 
         Aabb {
             extents : scale * self.radius,
-            position : transform.translation + self.offset,
+            position : transform.translation() + self.offset,
         }
     }
 
     fn collide_vertex(
         &self,
         vertex : Vec2,
-        transform : Transform2D,
+        transform : &Transform2D,
     ) -> (Vec2, bool) {
-        let vertex = vertex - (transform.translation + self.offset);
+        let vertex = vertex - (transform.translation() + self.offset);
 
         // Shrink down the vertex based on scale
-        let vertex = vertex * transform.scale.recip();
+        let vertex = vertex * transform.scale().recip();
 
         let distance = vertex.length();
 
@@ -67,13 +67,13 @@ impl Shape for Circle {
 
     fn collide(
         &self,
-        transform : Transform2D,
+        transform : &Transform2D,
         shape : &dyn Shape,
-        shape_trans : Transform2D,
+        shape_trans : &Transform2D,
     ) -> Option<Vec2> {
-        let center = transform.translation + self.offset;
+        let center = transform.translation() + self.offset;
 
-        let (dis, is_pen) = shape.collide_vertex(center, shape_trans);
+        let (dis, is_pen) = shape.collide_vertex(center, &shape_trans);
 
         if is_pen {
             let normal = dis.normalize();
@@ -85,7 +85,7 @@ impl Shape for Circle {
             let dis_len = dis.length();
 
             if dis_len < f32::EPSILON {
-                return Some(center - shape_trans.translation);
+                return Some(center - shape_trans.translation());
             }
 
             // calculate the distance to the shape
@@ -103,9 +103,9 @@ impl Shape for Circle {
     fn collide_segment(
         &self,
         segment : super::Segment,
-        transform : Transform2D,
+        transform : &Transform2D,
     ) -> f32 {
-        let (n, p) = segment.collide_point(transform.translation + self.offset);
+        let (n, p) = segment.collide_point(transform.translation() + self.offset);
 
         // check we are actually close enough to the circle
         if (n.powi(2) + p.powi(2)) < self.radius.powi(2) {
@@ -117,7 +117,7 @@ impl Shape for Circle {
         }
     }
 
-    fn collide_ray(&self, transform : Transform2D, ray : (Vec2, f32), ray_origin : Vec2) -> Option<f32> {
+    fn collide_ray(&self, transform : &Transform2D, ray : (Vec2, f32), ray_origin : Vec2) -> Option<f32> {
         todo!();
     }
 }
@@ -138,22 +138,22 @@ mod circle_tests {
             radius : 10.0,
         };
 
-        let tc = Transform2D {
-            translation : Vec2::ZERO,
-            rotation : 0.0,
-            scale : Vec2::splat(1.0),
-        };
+        let tc = Transform2D::new(
+            Vec2::ZERO,
+            0.0,
+            Vec2::splat(1.0),
+        );
 
         let v1 = Vec2::new(10.0, 10.0);
 
-        let c1 = c.collide_vertex(v1, tc);
+        let c1 = c.collide_vertex(v1, &tc);
         assert!(!c1.1); // Check it is outside
         println!("{:?}", c1.0);
         // the result should be -(10 - 5 * sqrt(2))
         assert!((c1.0 - Vec2::splat(-10.0 + 5.0 * 2.0_f32.sqrt())).length() < EPSILON);
 
         let v2 = Vec2::new(0.0, -5.0);
-        let c2 = c.collide_vertex(v2, tc);
+        let c2 = c.collide_vertex(v2, &tc);
 
         assert!(c2.1); // make sure its inside
 
@@ -167,11 +167,11 @@ mod circle_tests {
             radius : 10.0,
         };
 
-        let tc = Transform2D {
-            translation : Vec2::ZERO,
-            rotation : 0.0,
-            scale : Vec2::splat(1.0),
-        };
+        let tc = Transform2D::new(
+            Vec2::ZERO,
+            0.0,
+            Vec2::splat(1.0),
+        );
 
         let s1 = Segment {
             a : Vec2::new(5.0, 5.0),
@@ -179,7 +179,7 @@ mod circle_tests {
             n : Vec2::new(0.0, -1.0),
         };
 
-        let c1 = c.collide_segment(s1, tc);
+        let c1 = c.collide_segment(s1, &tc);
         println!("{}", c1);
 
         assert!((c1 - (5.0 * 3.0_f32.sqrt() - 5.0)).abs() < EPSILON);

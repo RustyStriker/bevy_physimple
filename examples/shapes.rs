@@ -219,6 +219,12 @@ fn character_system(
             // friction            
             vel.0.x = vel.0.x * (1.0 - (0.9 * time.delta_seconds()));
         }
+
+        // terminal velocity
+        const TERMINAL_X : f32 = 500.0;
+        if vel.0.x.abs() > TERMINAL_X {
+            vel.0.x = vel.0.x.signum() * TERMINAL_X;
+        }
         
     }
 }

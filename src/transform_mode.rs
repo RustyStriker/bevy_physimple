@@ -26,12 +26,21 @@ impl TransformMode {
         &self,
         transform : &GlobalTransform,
     ) -> f32 {
-        let t = transform.rotation;
+        let q = transform.rotation;
 
         match self {
-            TransformMode::XY => t.z,
-            TransformMode::XZ => t.y,
-            TransformMode::YZ => t.x,
+            TransformMode::XY => (2.0 * (q.w * q.z + q.x * q.y))
+            .atan2(1.0 - 2.0 * (q.y * q.y + q.z * q.z)),
+            TransformMode::XZ => {
+                let sinp = 2.0 * (q.w * q.y - q.z * q.x);
+                if sinp.abs() >= 1.0 {
+                    0.5 * std::f32::consts::PI.copysign(sinp)
+                } else {
+                    sinp.asin()
+                }
+            },
+            TransformMode::YZ => (2.0 * (q.w * q.x + q.y * q.z))
+                .atan2(1.0 - 2.0 * (q.x * q.x + q.y * q.y)),
         }
     }
     /// Returns the scale from a given `&GlobalTransform` and `TransformMode`
@@ -65,12 +74,21 @@ impl TransformMode {
         &self,
         transform : &Transform,
     ) -> f32 {
-        let t = transform.rotation;
+        let q = transform.rotation;
 
         match self {
-            TransformMode::XY => t.z,
-            TransformMode::XZ => t.y,
-            TransformMode::YZ => t.x,
+            TransformMode::XY => (2.0 * (q.w * q.z + q.x * q.y))
+            .atan2(1.0 - 2.0 * (q.y * q.y + q.z * q.z)),
+            TransformMode::XZ => {
+                let sinp = 2.0 * (q.w * q.y - q.z * q.x);
+                if sinp.abs() >= 1.0 {
+                    0.5 * std::f32::consts::PI.copysign(sinp)
+                } else {
+                    sinp.asin()
+                }
+            },
+            TransformMode::YZ => (2.0 * (q.w * q.x + q.y * q.z))
+                .atan2(1.0 - 2.0 * (q.x * q.x + q.y * q.y)),
         }
     }
     /// Returns the scale from a given `&Transform` and `TransformMode`

@@ -3,6 +3,7 @@
 //! Defining The Plugins and some other important stuff, like user facing events
 
 use crate::bodies::*;
+use crate::physics_components::Transform2D;
 use crate::transform_mode::TransformMode;
 use crate::{broad, narrow};
 use bevy::prelude::*;
@@ -75,11 +76,14 @@ impl Plugin for Physics2dPlugin {
         // Add the systems themselves for each step
         app.add_system_to_stage(
             stage::COLLISION_DETECTION,
-            broad::broad_phase_1
-                .system()
+            Transform2D::sync_from_global_transform.system()
+                .chain(broad::broad_phase_1.system())
                 .chain(sensor_clean.system())
-                .chain(narrow::narrow_phase_system.system()),
+                .chain(narrow::narrow_phase_system.system())
+                .chain(Transform2D::sync_to_transform.system()),
         );
+
+        app.add_system(Transform2D::auto_insert_system.system());
     }
 }
 

@@ -66,7 +66,7 @@ impl Plugin for Physics2dPlugin {
         );
 
         // Add the event type
-        app.add_event::<broad::BroadData>();
+        app.add_event::<broad::ConBroadData>();
         app.add_event::<CollisionEvent>();
 
         // insert the resources

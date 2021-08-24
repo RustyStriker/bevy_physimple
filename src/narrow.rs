@@ -1,4 +1,4 @@
-use crate::{bodies::*, broad::BroadData, physics_components::velocity::Vel, plugin::CollisionEvent, prelude::VecOp, shapes::*, transform_mode::TransformMode};
+use crate::{bodies::*, broad::ConBroadData, physics_components::velocity::Vel, plugin::CollisionEvent, prelude::VecOp, shapes::*, transform_mode::TransformMode};
 use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
@@ -9,7 +9,7 @@ pub fn narrow_phase_system(
     global_transforms : Query<&GlobalTransform>,
     mut transforms : Query<&mut Transform>,
     mut sensors : Query<&mut Sensor2D>,
-    mut broad_data : EventReader<BroadData>,
+    mut broad_data : EventReader<ConBroadData>,
     // Writer to throw collision events
     mut collision_writer : EventWriter<CollisionEvent>,
 ) {
@@ -23,14 +23,11 @@ pub fn narrow_phase_system(
 
     let trans_mode = *trans_mode;
 
-    for broad in broad_data.iter() {
+    for &broad in broad_data.iter() {
         let entity_kin = broad.entity;
 
         // TODO normal error messages would be better i guess?
-        let mut kin_trans = match global_transforms.get_component::<GlobalTransform>(entity_kin) {
-            Ok(t) => Transform2D::from((t, trans_mode)),
-            Err(_) => continue,
-        };
+        let mut kin_trans = broad.transform;
 
         let kin_shape = match shapes.get(entity_kin) {
             Ok(s) => s,
@@ -51,7 +48,7 @@ pub fn narrow_phase_system(
             let mut remainder = Vec2::ZERO;
             let mut coll_entity : Option<Entity> = None;
 
-            for se in broad.area.iter() {
+            for (se, _) in broad.area.iter() {
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
                 let cmove_ray = (cmove.normalize(), cmove.length());
 
@@ -109,7 +106,7 @@ pub fn narrow_phase_system(
             } // out of the surroindings for loop
             // We gonna check here for sensors, as we dont want to include it in our "main loop"
             // and we want to check only when we know exactly how much we go further to avoid ghost triggers
-            for se in broad.sensors.iter() { // SENSOR LOOP!!!!
+            for (se, _) in broad.sensors.iter() { // SENSOR LOOP!!!!
                 // this was pretty mostly copied from above
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
                 let cmove_ray = (cmove.normalize(), cmove.length());

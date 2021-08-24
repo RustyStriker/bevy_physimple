@@ -7,30 +7,30 @@ use crate::{
 use bevy::prelude::*;
 
 /// Kinematic body's entity(with vels) with its surrounding static bodies(without vels)
-pub struct BroadData {
+///
+/// Continuous movement broad data
+pub struct ConBroadData {
     /// Kinematic entity
-    pub(crate) entity : Entity,
-    pub(crate) inst_vel : Vec2,
+    pub entity : Entity,
+    /// Entity's aabb
+    pub aabb : Aabb,
+    pub inst_vel : Vec2,
+    /// Entity's 2d  Transform
+    pub transform : Transform2D,
     /// Static bodies in the area(who wants to chat)
-    pub(crate) area : Vec<Entity>,
+    pub area : Vec<(Entity, Aabb)>,
     /// Sensors in the area(dont trip the alarm!)
-    pub(crate) sensors : Vec<Entity>,
+    pub sensors : Vec<(Entity, Aabb)>,
 }
-/// Kinematic body pairs, which might collide during broad phase calculation
-pub struct KinematicCollisionCouple {
-    pub(crate) a : Entity,
-    pub(crate) b : Entity,
-}
-// TODO make broad_phase_2 for kinematic collision couples
 
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
 pub fn broad_phase_1(
     time : Res<Time>,
     trans_mode : Res<TransformMode>,
-    kinematics : Query<(Entity, &CollisionShape, Option<&Vel>, &GlobalTransform),With<Vel>>,
+    kinematics : Query<(Entity, &CollisionShape, &Vel, &GlobalTransform)>,
     statics : Query<(Entity, &CollisionShape, &GlobalTransform),(Without<Vel>, Without<Sensor2D>)>,
     sensors : Query<(Entity, &CollisionShape, &GlobalTransform), With<Sensor2D>>,
-    mut broad_writer : EventWriter<BroadData>,
+    mut broad_writer : EventWriter<ConBroadData>,
 ) {
     // TODO Optimize it later, when all is done and the earth is gone
     // probably get space partition or quad trees up and running
@@ -40,15 +40,17 @@ pub fn broad_phase_1(
     let delta = time.delta_seconds();
 
     for (e, cs,  vel, gt) in kinematics.iter() {
-        let inst_vel = vel.unwrap_or(&Vel::ZERO).0 * delta;
+        let inst_vel = vel.0 * delta;
 
-        let aabb = cs.shape().to_aabb((gt, *trans_mode).into());
+        let trans = (gt, *trans_mode).into();
+
+        let aabb = cs.shape().to_aabb(trans);
 
         let circle_center = aabb.position;
         let circle_radius_sqrd = (inst_vel + aabb.extents).length_squared();
 
         // Get all staticbodies which might collide with use
-        let mut st_en : Vec<Entity> = Vec::new();
+        let mut st_en : Vec<(Entity, Aabb)> = Vec::new();
         for (se, scs, sgt) in statics.iter() {
             let saabb = scs.shape().to_aabb((*trans_mode, sgt).into());
 
@@ -57,11 +59,11 @@ pub fn broad_phase_1(
                 circle_radius_sqrd,
                 &saabb,
             ) {
-                st_en.push(se);
+                st_en.push((se, saabb));
             }
         }
         // same for sensors(we do the extra calculations for sensors which does not move)
-        let mut se_en : Vec<Entity> = Vec::new();
+        let mut se_en : Vec<(Entity, Aabb)> = Vec::new();
         for (se, scs, sgt) in sensors.iter() {
             let saabb = scs.shape().to_aabb((*trans_mode, sgt).into());
 
@@ -71,12 +73,14 @@ pub fn broad_phase_1(
                 circle_radius_sqrd,
                 &saabb,
             ) {
-                se_en.push(se);
+                se_en.push((se, saabb));
             }
         }
         // wrap it up to an event
-        broad_writer.send(BroadData {
+        broad_writer.send(ConBroadData {
             entity : e,
+            aabb, 
+            transform : trans,
             inst_vel,
             area : st_en,
             sensors : se_en,

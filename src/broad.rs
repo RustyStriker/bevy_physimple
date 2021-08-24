@@ -27,15 +27,9 @@ pub struct KinematicCollisionCouple {
 pub fn broad_phase_1(
     time : Res<Time>,
     trans_mode : Res<TransformMode>,
-    kinematics : Query<
-        (Entity, &Obv, Option<&Vel>, &GlobalTransform),
-        With<Vel>,
-    >,
-    statics : Query<
-        (Entity, &Obv, &GlobalTransform),
-        (Without<Vel>, Without<Sensor2D>),
-    >,
-    sensors : Query<(Entity, &Obv, &GlobalTransform), With<Sensor2D>>,
+    kinematics : Query<(Entity, &CollisionShape, Option<&Vel>, &GlobalTransform),With<Vel>>,
+    statics : Query<(Entity, &CollisionShape, &GlobalTransform),(Without<Vel>, Without<Sensor2D>)>,
+    sensors : Query<(Entity, &CollisionShape, &GlobalTransform), With<Sensor2D>>,
     mut broad_writer : EventWriter<BroadData>,
 ) {
     // TODO Optimize it later, when all is done and the earth is gone
@@ -45,32 +39,37 @@ pub fn broad_phase_1(
 
     let delta = time.delta_seconds();
 
-    for (e, obv, vel, gt) in kinematics.iter() {
+    for (e, cs,  vel, gt) in kinematics.iter() {
         let inst_vel = vel.unwrap_or(&Vel::ZERO).0 * delta;
 
-        let circle_center = trans_mode.get_global_position(gt) + obv.offset;
-        let circle_radius_sqrd = (inst_vel + get_obv_extents(obv)).length_squared();
+        let aabb = cs.shape().to_aabb((gt, *trans_mode).into());
+
+        let circle_center = aabb.position;
+        let circle_radius_sqrd = (inst_vel + aabb.extents).length_squared();
 
         // Get all staticbodies which might collide with use
         let mut st_en : Vec<Entity> = Vec::new();
-        for (se, sv, sgt) in statics.iter() {
-            if obv_circle(
+        for (se, scs, sgt) in statics.iter() {
+            let saabb = scs.shape().to_aabb((*trans_mode, sgt).into());
+
+            if aabb_circle(
                 circle_center,
                 circle_radius_sqrd,
-                sv,
-                trans_mode.get_global_position(sgt),
+                &saabb,
             ) {
                 st_en.push(se);
             }
         }
         // same for sensors(we do the extra calculations for sensors which does not move)
         let mut se_en : Vec<Entity> = Vec::new();
-        for (se, sv, sgt) in sensors.iter() {
-            if obv_circle(
+        for (se, scs, sgt) in sensors.iter() {
+            let saabb = scs.shape().to_aabb((*trans_mode, sgt).into());
+
+
+            if aabb_circle(
                 circle_center,
                 circle_radius_sqrd,
-                sv,
-                trans_mode.get_global_position(sgt),
+                &saabb,
             ) {
                 se_en.push(se);
             }
@@ -85,35 +84,15 @@ pub fn broad_phase_1(
     }
 }
 
-fn obv_circle(
+fn aabb_circle(
     center : Vec2,
     radius_sqrd : f32,
-    obv : &Obv,
-    obv_pos : Vec2,
+    aabb : &Aabb,
 ) -> bool {
-    let obv_pos = obv_pos + obv.offset;
+    let min = aabb.position - aabb.extents;
+    let max = aabb.position + aabb.extents;
 
-    match &obv.shape {
-        BoundingShape::Aabb(b) => {
-            let min = obv_pos - b.extents;
-            let max = obv_pos + b.extents;
+    let distance = min.max(center.min(max)) - center;
 
-            let distance = min.max(center.min(max)) - center;
-
-            distance.length_squared() < radius_sqrd
-        }
-        BoundingShape::Circle(c) => {
-            let distance = center - obv_pos;
-
-            // This is a crude way of doing it based on the formula `(a-b)^2 <= a^2 + b^2`
-            distance.length_squared() < c.radius.powi(2) + radius_sqrd
-        }
-    }
-}
-
-fn get_obv_extents(obv : &Obv) -> Vec2 {
-    match &obv.shape {
-        BoundingShape::Aabb(a) => a.extents,
-        BoundingShape::Circle(c) => Vec2::splat(c.radius),
-    }
+    distance.length_squared() < radius_sqrd
 }

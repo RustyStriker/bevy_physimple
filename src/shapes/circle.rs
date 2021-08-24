@@ -44,6 +44,7 @@ impl Shape for Circle {
 
         Aabb {
             extents : scale * self.radius,
+            position : transform.translation + self.offset,
         }
     }
 

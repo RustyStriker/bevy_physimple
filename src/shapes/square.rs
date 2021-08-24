@@ -106,7 +106,10 @@ impl Shape for Square {
         let ex_con = (rot * (self.extents * Vec2::new(1.0, -1.0) * transform.scale)).abs();
         let extents = ex.max(ex_con);
 
-        Aabb { extents }
+        Aabb { 
+            extents,
+            position : transform.translation + self.offset,
+        }
     }
 
     fn collide_vertex(

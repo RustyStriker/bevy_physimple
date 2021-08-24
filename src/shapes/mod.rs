@@ -2,13 +2,13 @@ use crate::transform_mode::TransformMode;
 use bevy::prelude::*;
 
 mod circle;
-mod obv;
+mod aabb;
 mod raycast;
 mod segment;
 mod square;
 
 pub use circle::*;
-pub use obv::*;
+pub use aabb::*;
 pub use raycast::*;
 pub use segment::Segment;
 pub use square::*;
@@ -102,6 +102,11 @@ impl From<(&GlobalTransform, TransformMode)> for Transform2D {
                 scale : Vec2::new(s.y, s.z),
             },
         }
+    }
+}
+impl From<(TransformMode, &GlobalTransform)> for Transform2D {
+    fn from(v: (TransformMode, &GlobalTransform)) -> Self {
+        (v.1,v.0).into()
     }
 }
 

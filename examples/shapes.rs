@@ -58,10 +58,6 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
-            obv : Obv {
-                offset : Vec2::ZERO,
-                shape : BoundingShape::Aabb(Aabb::size(Vec2::splat(28.0))),
-            },
             shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
             // shape : CollisionShape::Circle(Circle::new(14.0)),
             ..Default::default()
@@ -81,10 +77,6 @@ fn setup(
             shape : CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
             coll_layer : CollisionLayer::default(),
         })
-        .insert(Obv {
-            offset : Vec2::ZERO,
-            shape : BoundingShape::Aabb(Aabb::size(Vec2::new(600.0, 30.0))),
-        })
         ;
 
     // side wall
@@ -103,10 +95,6 @@ fn setup(
             shape : CollisionShape::Square(Square::size(Vec2::new(40.0, 300.0))),
             coll_layer : CollisionLayer::default(),
         })
-        .insert(Obv {
-            offset : Vec2::ZERO,
-            shape : BoundingShape::Aabb(Aabb::size(Vec2::new(300.0, 300.0))),
-        })
         ;
 
     // smaller other side wall
@@ -121,10 +109,6 @@ fn setup(
             shape : CollisionShape::Square(Square::size(Vec2::new(30.0,90.0))),
             coll_layer : CollisionLayer::default(),
         })
-        .insert(Obv {
-            offset : Vec2::ZERO,
-            shape : BoundingShape::Aabb(Aabb::size(Vec2::new(30.0,90.0)))
-        })
         ;
 
     // Spawn the sensor
@@ -135,10 +119,6 @@ fn setup(
             material : another_color.clone(),
             transform : Transform::from_xyz(30.0, -180.0, 0.0),
             ..Default::default()
-        })
-        .insert(Obv {
-            offset : Vec2::ZERO,
-            shape : BoundingShape::Aabb(Aabb::size(Vec2::splat(CUBE_SIZE))),
         })
         .insert(CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))))
         .insert(Sensor2D::new());
@@ -161,7 +141,7 @@ fn controller_on_stuff(
     mut query : Query<(Entity, &mut CharacterController)>,
     mut colls : EventReader<CollisionEvent>,
 ) {
-    let (e, mut c) = query.single_mut().expect("should be only 1");
+    let (e, mut c) = query.single_mut().expect("should be only one player :shrug:");
 
     // clear the current data on c
     c.on_floor = false;
@@ -237,7 +217,7 @@ fn character_system(
         }
         else {
             // friction            
-            vel.0.x = vel.0.x * 0.5;
+            vel.0.x = vel.0.x * (1.0 - (0.9 * time.delta_seconds()));
         }
         
     }

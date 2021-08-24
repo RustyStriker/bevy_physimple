@@ -7,10 +7,16 @@ pub use transform2d::Transform2D;
 use bevy::prelude::Reflect;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Copy, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct CollisionLayer {
     pub mask : u8,
     pub layer : u8,
+}
+
+impl Default for CollisionLayer {
+    fn default() -> Self {
+        Self { mask: 1, layer: 1 }
+    }
 }
 impl CollisionLayer {
     pub fn new(
@@ -19,6 +25,7 @@ impl CollisionLayer {
     ) -> Self {
         Self { mask, layer }
     }
+    /// Checks if 2 `CollisionLayer`s should collide with each other
     pub fn overlap(
         &self,
         other : &CollisionLayer,
@@ -26,3 +33,4 @@ impl CollisionLayer {
         (self.mask & other.layer) | (self.layer & other.mask) != 0
     }
 }
+

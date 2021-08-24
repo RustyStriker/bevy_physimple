@@ -1,4 +1,4 @@
-use crate::{bodies::*, physics_components::{Transform2D, velocity::Vel}, shapes::*, transform_mode::TransformMode};
+use crate::{bodies::*, physics_components::{CollisionLayer, Transform2D, velocity::Vel}, shapes::*};
 use bevy::prelude::*;
 
 /// Kinematic body's entity(with vels) with its surrounding static bodies(without vels)
@@ -19,19 +19,17 @@ pub struct ConBroadData {
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
 pub fn broad_phase_1(
     time : Res<Time>,
-    kinematics : Query<(Entity, &CollisionShape, &Vel, &Transform2D)>,
-    statics : Query<(Entity, &CollisionShape, &Transform2D),(Without<Vel>, Without<Sensor2D>)>,
-    sensors : Query<(Entity, &CollisionShape, &Transform2D), With<Sensor2D>>,
+    kinematics : Query<(Entity, &CollisionShape, &Vel, &Transform2D, &CollisionLayer)>,
+    statics : Query<(Entity, &CollisionShape, &Transform2D, &CollisionLayer),(With<StaticBody>, Without<Vel>, Without<Sensor>)>,
+    sensors : Query<(Entity, &CollisionShape, &Transform2D, &CollisionLayer), With<Sensor>>,
     mut broad_writer : EventWriter<ConBroadData>,
 ) {
     // TODO Optimize it later, when all is done and the earth is gone
     // probably get space partition or quad trees up and running
 
-    // TODO check for layer/mask!!!
-
     let delta = time.delta_seconds();
 
-    for (e, cs,  vel, t) in kinematics.iter() {
+    for (e, cs,  vel, t, layer) in kinematics.iter() {
         let inst_vel = vel.0 * delta;
 
         let aabb = cs.shape().to_aabb(&t);
@@ -41,10 +39,10 @@ pub fn broad_phase_1(
 
         // Get all staticbodies which might collide with use
         let mut st_en : Vec<(Entity, Aabb)> = Vec::new();
-        for (se, scs, st) in statics.iter() {
-            let saabb = scs.shape().to_aabb(&t);
+        for (se, scs, st, sl) in statics.iter() {
+            let saabb = scs.shape().to_aabb(&st);
 
-            if aabb_circle(
+            if sl.overlap(layer) && aabb_circle(
                 circle_center,
                 circle_radius_sqrd,
                 &saabb,
@@ -54,11 +52,11 @@ pub fn broad_phase_1(
         }
         // same for sensors(we do the extra calculations for sensors which does not move)
         let mut se_en : Vec<(Entity, Aabb)> = Vec::new();
-        for (se, scs, st) in sensors.iter() {
+        for (se, scs, st, sl) in sensors.iter() {
             let saabb = scs.shape().to_aabb(&st);
 
 
-            if aabb_circle(
+            if sl.overlap(layer) && aabb_circle(
                 circle_center,
                 circle_radius_sqrd,
                 &saabb,

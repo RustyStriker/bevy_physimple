@@ -16,7 +16,7 @@ pub fn narrow_phase_system(
     shapes : Query<&CollisionShape>,
     mut vels : Query<&mut Vel>,
     mut transforms : Query<&mut Transform2D>,
-    mut sensors : Query<&mut Sensor2D>,
+    mut sensors : Query<&mut Sensor>,
     mut broad_data : EventReader<ConBroadData>,
     // Writer to throw collision events
     mut collision_writer : EventWriter<CollisionEvent>,
@@ -204,9 +204,6 @@ pub fn narrow_phase_system(
             }
         } // out of loop(line 94)
 
-        // Set the end position of kin and its new movement
-
-        // TODO make sure to make a sync Transform2D -> Transform system
         // We cloned the body's Transform2D to avoid mutability issues, so now we reapply it
         if let Ok(mut t) = transforms.get_mut(entity_kin) {
             *t = kin_trans;

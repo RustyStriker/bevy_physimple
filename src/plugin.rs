@@ -87,7 +87,7 @@ impl Plugin for Physics2dPlugin {
     }
 }
 
-fn sensor_clean(mut query: Query<&mut Sensor2D>) {
+fn sensor_clean(mut query: Query<&mut Sensor>) {
     query
         .iter_mut()
         .for_each(|mut s| s.bodies.clear());

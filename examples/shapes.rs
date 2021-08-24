@@ -74,6 +74,7 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
+            marker : StaticBody,
             shape : CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
             coll_layer : CollisionLayer::default(),
         })
@@ -92,6 +93,7 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
+            marker : StaticBody,
             shape : CollisionShape::Square(Square::size(Vec2::new(40.0, 300.0))),
             coll_layer : CollisionLayer::default(),
         })
@@ -106,6 +108,7 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
+            marker : StaticBody,
             shape : CollisionShape::Square(Square::size(Vec2::new(30.0,90.0))),
             coll_layer : CollisionLayer::default(),
         })
@@ -120,8 +123,11 @@ fn setup(
             transform : Transform::from_xyz(30.0, -180.0, 0.0),
             ..Default::default()
         })
-        .insert(CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))))
-        .insert(Sensor2D::new());
+        .insert_bundle(SensorBundle {
+            sensor: Sensor::new(),
+            shape: CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))),
+            coll_layer: CollisionLayer::default(),
+        });
 }
 
 fn gravity_system(
@@ -202,7 +208,7 @@ fn character_system(
 
         // This is for the testing purpose of the continuous collision thingy
         if input.just_pressed(KeyCode::S) && !controller.on_floor {
-            vel.0 = Vec2::new(0.0, -50000000.0);
+            vel.0 = Vec2::new(0.0, -5000.0);
         }
 
         // It might look like we need to multiply by delta_time but the apply_force function does it for us(in the physics step)
@@ -215,9 +221,15 @@ fn character_system(
             vel.0 += acc * time.delta_seconds();
             // body.apply_angular_impulse(-1.0);
         }
-        else {
-            // friction            
-            vel.0.x = vel.0.x * (1.0 - (0.9 * time.delta_seconds()));
+        else if controller.on_floor {
+            // friction
+            let fric = 350.0;
+            if vel.0.x.abs() < fric {
+                vel.0.x = 0.0;
+            }
+            else {
+                vel.0.x -= vel.0.x.signum() * fric * time.delta_seconds();
+            }
         }
 
         // terminal velocity
@@ -232,7 +244,7 @@ fn character_system(
 fn change_sensor_color(
     time : Res<Time>,
     mut materials : ResMut<Assets<ColorMaterial>>,
-    q : Query<(&Sensor2D, &Handle<ColorMaterial>)>,
+    q : Query<(&Sensor, &Handle<ColorMaterial>)>,
 ) {
     for (s, h) in q.iter() {
         if let Some(mut m) = materials.get_mut(h) {

@@ -7,13 +7,14 @@ use crate::physics_components::Transform2D;
 use crate::transform_mode::TransformMode;
 use crate::{broad, narrow};
 use bevy::prelude::*;
+use crate::normal_coll::*;
 
 /// Physics plugin for 2D physics
 pub struct Physics2dPlugin;
 
 /// General collision event that happens between 2 bodies.
 pub struct CollisionEvent {
-    /// First entity
+    /// First entity, will always be a non-staticbody entity
     pub entity_a: Entity,
     /// Second entity
     pub entity_b: Entity,
@@ -69,6 +70,10 @@ impl Plugin for Physics2dPlugin {
         // Add the event type
         app.add_event::<broad::ConBroadData>();
         app.add_event::<CollisionEvent>();
+        // Collision pairs
+        app.add_event::<CollPairKin>();
+        app.add_event::<CollPairStatic>();
+        app.add_event::<CollPairSensor>();
 
         // insert the resources
         app.insert_resource(TransformMode::XY);
@@ -80,6 +85,8 @@ impl Plugin for Physics2dPlugin {
                 .chain(broad::broad_phase_1.system())
                 .chain(sensor_clean.system())
                 .chain(narrow::narrow_phase_system.system())
+                .chain(broad_phase_2.system())
+                .chain(narrow_phase_2.system())
                 .chain(Transform2D::sync_to_transform.system()),
         );
 

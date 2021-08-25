@@ -22,4 +22,15 @@ impl Aabb {
             position,
         }
     }
+
+    pub fn min_max(&self) -> (Vec2,Vec2) {
+        (self.position - self.extents, self.position + self.extents)
+    }
+
+    pub fn collides(&self, other : &Aabb) -> bool {
+        let (min1, max1) = self.min_max();
+        let (min2, max2) = other.min_max();
+
+        min1 < max2 && min2 < max1
+    }
 }

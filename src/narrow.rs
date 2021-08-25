@@ -3,7 +3,7 @@ use crate::{
     broad::ConBroadData, 
     physics_components::{
         Transform2D, 
-        velocity::Vel
+        Vel
     }, 
     plugin::CollisionEvent, 
     prelude::VecOp, 

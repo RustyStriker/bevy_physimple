@@ -2,7 +2,7 @@ use bevy::{
     // diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
 };
-use bevy_physimple::{physics_components::{velocity::Vel, CollisionLayer}, plugin::CollisionEvent, prelude::*};
+use bevy_physimple::prelude::*;
 
 #[derive(Default)]
 pub struct CharacterController {
@@ -115,19 +115,34 @@ fn setup(
         ;
 
     // Spawn the sensor
-    const CUBE_SIZE : f32 = 40.0;
+    const SENSOR_SIZE : f32 = 40.0;
     commands
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+            sprite : Sprite::new(Vec2::splat(SENSOR_SIZE)),
             material : another_color.clone(),
             transform : Transform::from_xyz(30.0, -180.0, 0.0),
             ..Default::default()
         })
         .insert_bundle(SensorBundle {
             sensor: Sensor::new(),
-            shape: CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))),
+            shape: CollisionShape::Square(Square::size(Vec2::splat(SENSOR_SIZE))),
             coll_layer: CollisionLayer::default(),
         });
+
+    // Spawn another cube which we will try to push or something
+    const CUBE_SIZE : f32 = 35.0;
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
+            material : another_color.clone(),
+            transform : Transform::from_xyz(100.0,0.0,0.0),
+            ..Default::default()
+        })
+        .insert_bundle(KinematicBundle {
+            shape: CollisionShape::Square(Square::size(Vec2::splat(CUBE_SIZE))),
+            ..Default::default()
+        })
+        ;
 }
 
 fn gravity_system(
@@ -221,15 +236,8 @@ fn character_system(
             vel.0 += acc * time.delta_seconds();
             // body.apply_angular_impulse(-1.0);
         }
-        else if controller.on_floor {
-            // friction
-            let fric = 350.0;
-            if vel.0.x.abs() < fric {
-                vel.0.x = 0.0;
-            }
-            else {
-                vel.0.x -= vel.0.x.signum() * fric * time.delta_seconds();
-            }
+        else {
+            vel.0.x *= 1.0 - (0.8 * time.delta_seconds());
         }
 
         // terminal velocity

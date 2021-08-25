@@ -1,4 +1,4 @@
-use crate::{bodies::*, physics_components::{CollisionLayer, Transform2D, velocity::Vel}, shapes::*};
+use crate::{bodies::*, physics_components::{CollisionLayer, Transform2D, Vel}, shapes::*};
 use bevy::prelude::*;
 
 /// Kinematic body's entity(with vels) with its surrounding static bodies(without vels)

@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use crate::{
     physics_components::{
-        velocity::Vel,
+        Vel,
         CollisionLayer,
     },
     prelude::{CollisionShape, Square},

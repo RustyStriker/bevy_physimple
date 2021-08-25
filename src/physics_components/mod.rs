@@ -1,8 +1,9 @@
 //! All the different components which describe a physical body
 
-pub mod velocity;
+mod velocity;
 mod transform2d;
 pub use transform2d::Transform2D;
+pub use velocity::Vel;
 
 use bevy::prelude::Reflect;
 use serde::{Deserialize, Serialize};

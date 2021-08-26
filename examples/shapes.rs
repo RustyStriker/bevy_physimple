@@ -169,14 +169,14 @@ fn controller_on_stuff(
     c.on_wall = None;
 
     for coll in colls.iter() {
-        if coll.entity_a == e {
+        if coll.entity_a == e || coll.entity_b == e {
             let n = coll.normal.dot(Vec2::Y);
 
             if n > 0.7 {
                 c.on_floor = true;
             }
             else if n.abs() <= 0.7 {
-                c.on_wall = Some(coll.normal);
+                c.on_wall = Some(if coll.entity_b == e { -coll.normal } else { coll.normal });
             }
         }
     }

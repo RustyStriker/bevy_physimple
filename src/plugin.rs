@@ -1,6 +1,8 @@
 //! # Main plugin
 //!
-//! Defining The Plugins and some other important stuff, like user facing events
+//! `App.add_plugin(Physics2DPlugin)`
+//!
+//! Contains the plugin and stages
 
 use crate::bodies::*;
 use crate::physics_components::Transform2D;
@@ -24,7 +26,7 @@ pub struct CollisionEvent {
     pub normal: Vec2,
 }
 
-/// labels for the physics stages
+/// labels for the physics stages(boi i am excited stageless and also am scared of it)
 pub mod stage {
     pub use bevy::prelude::CoreStage;
 
@@ -68,14 +70,15 @@ impl Plugin for Physics2dPlugin {
         );
 
         // Add the event type
-        app.add_event::<broad::ConBroadData>();
-        app.add_event::<CollisionEvent>();
-        // Collision pairs
+        app.add_event::<broad::ConBroadData>(); // internal event for passing data
+        app.add_event::<CollisionEvent>(); // Collision event to also be viewed outside
+        // Collision pairs - should be absolute if the coll_graph thing turns to be working
         app.add_event::<CollPairKin>();
         app.add_event::<CollPairStatic>();
         app.add_event::<CollPairSensor>();
 
         // insert the resources
+        // if `app.world().is_resource_added::<T>()` could work properly, it would be great >:(
         app.insert_resource(TransformMode::XY);
 
         // Add the systems themselves for each step
@@ -85,8 +88,7 @@ impl Plugin for Physics2dPlugin {
                 .chain(broad::broad_phase_1.system())
                 .chain(sensor_clean.system())
                 .chain(narrow::narrow_phase_system.system())
-                .chain(broad_phase_2.system())
-                .chain(narrow_phase_2.system())
+                // .chain(crate::coll_graph::kin_static_system.system())
                 .chain(Transform2D::sync_to_transform.system()),
         );
 

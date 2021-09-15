@@ -1,6 +1,12 @@
+//! # Hello!
+//! This is my lib, check out the getting start on the repo(GETTING_STARTED.md)
+
 mod broad;
 mod narrow;
 mod normal_coll;
+
+mod coll_graph;
+
 pub mod bodies;
 pub mod common;
 pub mod physics_components;

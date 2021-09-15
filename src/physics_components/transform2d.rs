@@ -2,7 +2,21 @@ use bevy::prelude::*;
 
 use crate::transform_mode::TransformMode;
 
-/// This is a temporary struct until bevy gets it own `Transform2D` struct
+/**
+    # Transform2D
+    This component is the "projection" of the `Transform` component to 2D.
+    
+    ## IMPORTANT
+    If you are modifying the position(or rotation) of a certain component during the physics step you need to use
+    `Transform2D` instead, as the physics systems use it and assume it to be the source of truth,
+    thus changing `Transform` directly might cause ghost collision or missing collisions!
+    
+    ### End of important
+
+    The physics server syncs from `GlobalTransform into this component at the start of the physics step, keeps track of changes made and
+    then syncs the changes to `Transform`, this allows us to work with 1 component type so we dont have to do some funky stuff
+    (will probably stay like that for at least until the `Global/Transform` system is remade in bevy)
+*/
 #[derive(Clone, Debug, Reflect, Default)]
 pub struct Transform2D {
     translation: Vec2,
@@ -32,25 +46,30 @@ impl Transform2D {
         self.scale
     }
     // Adders
+    /// Adds to the translation
     pub fn add_translation(&mut self, amount : Vec2) {
         self.translation += amount;
         self.translation_buffer += amount;
     }
+    /// Adds to the rotation
     pub fn add_rotation(&mut self, amount : f32) {
         self.rotation += amount;
         self.rotation += amount;
     }
     // Setters
+    /// Fully sets the translation
     pub fn set_translation(&mut self, new : Vec2) {
         let original = self.translation - self.translation_buffer;
         self.translation = new;
         self.translation_buffer = new - original;
     }
+    /// Fully sets the rotation
     pub fn set_rotation(&mut self, new : f32) {
         let original = self.rotation - self.rotation_buffer;
         self.rotation = new;
         self.rotation_buffer = new - original;
     }
+    /// Applies the buffers to a `Transform` component.
     pub fn apply_buffers(&self, transform : &mut Transform, trans_mode : TransformMode) {
         let (tb, rb) = (self.translation_buffer, self.rotation_buffer);
 
@@ -64,6 +83,8 @@ impl Transform2D {
     // systems
 
 	/// Syncs from `GlobalTransform` to `Transform2D`
+    ///
+    /// Should occur at the start of a physics step
 	pub fn sync_from_global_transform(
 		trans_mode : Res<TransformMode>,
 		mut query : Query<(&mut Transform2D, &GlobalTransform)>,
@@ -73,6 +94,8 @@ impl Transform2D {
 		}
 	}
 	/// Syncs from `Transform2D` to `Transform`
+    ///
+    /// Should occur at the end of a physics step
 	pub fn sync_to_transform(
 		trans_mode : Res<TransformMode>,
 		mut q : Query<(&Transform2D, &mut Transform)>,

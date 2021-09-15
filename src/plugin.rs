@@ -78,7 +78,7 @@ impl Plugin for Physics2dPlugin {
         app.add_event::<CollPairSensor>();
 
         // insert the resources
-        // if `app.world().is_resource_added::<T>()` could work properly, it would be great >:(
+        // if `app.world().is_resource_added::<T>()` could work properly, it would be great >:( - pr awaiting
         app.insert_resource(TransformMode::XY);
 
         // Add the systems themselves for each step

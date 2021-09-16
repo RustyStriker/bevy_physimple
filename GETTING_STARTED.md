@@ -16,12 +16,12 @@ The plugin contains the following components and bundles(with a brief explanatio
 
 You may also use the following events:
 
-- CollisionEvent
+- `CollisionEvent`
 - more will probably come in the future(assuming i indeed keep updating this lib)
 
 And of course, the following resource:
 
-- TransformMode: Allows you to pick which 2D plane you want to "project" your physics on
+- `TransformMode`: Allows you to pick which 2D plane you want to "project" your physics on
 
 This lib takes care of:
 
@@ -34,7 +34,7 @@ What you need to take care of:
 
 - Gravity
 - Applying movement(except for `With<Vel>` entities)
-- Actually reacting to the collision events(tho it might change)
+- Actually reacting to the collision events(solving is done automatically)
 
 Now I know you might be asking youself:
 
@@ -82,15 +82,15 @@ fn startup(
             material : materials.add(Color::BLACK.into()),
             transform : Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
-        })
+        }) // The sprite bundle already inserts the `Global/Transform` components
         .insert_bundle(StaticBundle {
-            marker : StaticBody,
+            marker : StaticBody, // This is an empty struct
             shape : CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
             coll_layer : CollisionLayer::default(),
         })
         ;
     
-    // And we gonna spawn a simple cube
+    // And we gonna spawn a simple cube using continuous collision
     coms
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(35.0)),
@@ -102,6 +102,18 @@ fn startup(
             ..Default::default()
         })
         ;
+    // Spawn another cube without contuous collision
+    coms
+        .spawn_bundle(SpriteBundle {
+            sprite : Sprite::new(Vec2::splat(35.0)),
+            material : another_color.clone(),
+            ..Default::default()
+        })
+        .insert(CollisionShape::Square(Square::size(Vec2::splat(35.0)))) // The collision shape
+        .insert(CollisionLayer::default()) // And collision layers
+        ;
+    // make sure not to have `Sensor/StaticBody` as it will turn this body
+    // into a Sensor/Staticbody instead.
 }
 ```
 

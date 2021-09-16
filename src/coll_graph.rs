@@ -11,6 +11,7 @@ pub struct CollisionGraph {
 	collides : Vec<Entity>,
 }
 
+/// `Without<Vel>` Kinematics vs statics solving and `With<Vel>` vs static reading
 pub fn kin_static_system(
 	mut graphs : ResMut<GraphMap>,
 	shapes : Query<&CollisionShape>,
@@ -99,7 +100,7 @@ pub fn kin_static_system(
 		}
 	}
 }
-
+/// Checks for kin v kin broad collision
 pub fn populate_graph_system(
 	mut coll_order : ResMut<CollisionOrder>,
 	mut graphs : ResMut<GraphMap>,
@@ -164,7 +165,7 @@ pub fn populate_graph_system(
 		}
 	}
 }
-
+/// Moves everything so as little penetrations will happen
 pub fn solve_graph_system(
 	mut graphs : ResMut<GraphMap>,
 	coll_order : Res<CollisionOrder>,
@@ -183,7 +184,7 @@ pub fn solve_graph_system(
 	
 }
 
-/// Returns the movement `curr_e` could make
+/// Returns the movement `curr_e` couldn't make
 fn solver(
 	graph : &mut HashMap<Entity, CollisionGraph>,
 	shapes : &Query<&CollisionShape>,

@@ -11,7 +11,7 @@ The plugin contains the following components and bundles(with a brief explanatio
 - `SensorBundle`(bundle): Contains the needed components for a Sensor
 - `Sensor`: Marker component, but also holds information about the colliding bodies in a Vec(might be changed in favour of events/hash sets)
 - `CollisionLayer`: Which collision layer and mask the body occupies(a collision can occur only if `a.mask & b.layer | a.layer & b.mask != 0`)
-- `Vel`: Used for Continuous collision kinematic bodies, requires more computational power, so not a good idea for small particles(but good for bullets)
+- `Vel`: Used for Continuous collision kinematic bodies, requires more computational power, so not a good idea for small visual particles(like debris), yet good for stuff like bullets
 - `Transform2D`: Used internally, if you are modifying the position/rotation of an object during a physics step, its better to modify this component instead.
 
 You may also use the following events:

@@ -237,7 +237,7 @@ fn character_system(
             // body.apply_angular_impulse(-1.0);
         }
         else {
-            vel.0.x *= 1.0 - (0.8 * time.delta_seconds());
+            vel.0.x *= 1.0 - (10.0 * time.delta_seconds());
         }
 
         // terminal velocity

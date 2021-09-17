@@ -9,7 +9,7 @@ use crate::physics_components::Transform2D;
 use crate::transform_mode::TransformMode;
 use crate::{broad, narrow};
 use bevy::prelude::*;
-use crate::normal_coll::*;
+use crate::normal_coll;
 
 /// Physics plugin for 2D physics
 pub struct Physics2dPlugin;
@@ -72,10 +72,10 @@ impl Plugin for Physics2dPlugin {
         // Add the event type
         app.add_event::<broad::ConBroadData>(); // internal event for passing data
         app.add_event::<CollisionEvent>(); // Collision event to also be viewed outside
-        // Collision pairs - should be absolute if the coll_graph thing turns to be working
-        app.add_event::<CollPairKin>();
-        app.add_event::<CollPairStatic>();
-        app.add_event::<CollPairSensor>();
+        // Collision pairs - broad_phase_2 -> narrow_phase_2
+        app.add_event::<normal_coll::CollPairKin>();
+        app.add_event::<normal_coll::CollPairStatic>();
+        app.add_event::<normal_coll::CollPairSensor>();
 
         // insert the resources
         // if `app.world().is_resource_added::<T>()` could work properly, it would be great >:( - pr awaiting
@@ -85,10 +85,11 @@ impl Plugin for Physics2dPlugin {
         app.add_system_to_stage(
             stage::COLLISION_DETECTION,
             Transform2D::sync_from_global_transform.system()
-                .chain(broad::broad_phase_1.system())
                 .chain(sensor_clean.system())
+                .chain(broad::broad_phase_1.system())
                 .chain(narrow::narrow_phase_system.system())
-                // .chain(crate::coll_graph::kin_static_system.system())
+                .chain(normal_coll::broad_phase_2.system())
+                .chain(normal_coll::narrow_phase_2.system())
                 .chain(Transform2D::sync_to_transform.system()),
         );
 

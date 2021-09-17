@@ -274,5 +274,4 @@ pub fn narrow_phase_2(
 			}
 		}
 	}
-
 }

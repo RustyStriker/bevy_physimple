@@ -14,17 +14,19 @@ and eventually i want people to be able to use this crate as a simple collisions
 
 ## What is currently working?
 
-- The Sqaure collision shape, tho it acts weird due to bad overlap detection code.
+- Square and Circle collision shapes
+- Sensors and Staticbodies
+- Continuous collision
+
+## What doesnt work/What is currently buggy?
+
+- Overlap detection sometimes acts weird(apperant in Sensor vs Kinematic when the kinematic isn't moving)
+- You can push objects through walls, if the wall is too thin the object might tunnle through it
+- Probably some more stuff, please tell me when something isn't working properly(and isn't written here)
 
 ## Quickstart
 
-TODO, for now you can check the examples
-just run
-`cargo run --bevy/dynamic --example shapes --release`
-(more examples will come once i stop the huge refactor...)
-
-Do note that each physics component needs a `GlobalTransform` with it now,
-and `KinematicBody2D` needs a `Transform` in order to actually move and be used.
+Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP like the rest of this lib).
 
 ## bevy - physimple versions
 

@@ -40,7 +40,11 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
 - [x] Rewrite shape overlap
 - [ ] Implement the different shapes
   - [ ] Capsule
-  - [ ] Generic shape(dynamic object)
+  - [x] Generic shape(dynamic object)
 - [ ] Update the examples, and better showcase stuff
+  - [ ] General showcase
+  - [x] Convex shapes
+  - [ ] Rays
+  - [ ] Complex area based thing
 - [ ] Basic joints
 - [ ] Actual docs

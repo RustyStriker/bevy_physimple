@@ -90,6 +90,7 @@ impl Plugin for Physics2dPlugin {
                 .chain(narrow::narrow_phase_system.system())
                 .chain(normal_coll::broad_phase_2.system())
                 .chain(normal_coll::narrow_phase_2.system())
+                .chain(normal_coll::ray_phase.system())
                 .chain(Transform2D::sync_to_transform.system()),
         );
 

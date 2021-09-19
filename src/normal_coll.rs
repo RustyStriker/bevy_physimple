@@ -248,3 +248,100 @@ pub fn narrow_phase_2(
 		}
 	}
 }
+
+pub fn ray_phase(
+	trans: Query<&Transform2D>,
+	layers: Query<&CollisionLayer>,
+	mut rays: Query<(Entity, &mut RayCast)>,
+	kins: Query<(Entity, &CollisionShape),(Without<StaticBody>, Without<Sensor>)>,
+	stts: Query<(Entity, &CollisionShape),With<StaticBody>>,
+) {
+	for (re, mut r) in rays.iter_mut() {
+		let rl = match layers.get(re) {
+			Ok(l) => l,
+			Err(_) => continue,
+		};
+
+		let rt = match trans.get(re) {
+			Ok(t) => t,
+			Err(_) => continue,
+		};
+
+		r.collision = None;
+
+		let mut shortest = f32::INFINITY;
+		let mut short_entity = None;
+		let mut stt = false;
+
+		// Collide over kins
+		for (ke, ks) in kins.iter() {
+			// Exclude ourselves
+			if ke.id() == re.id() {
+				continue;
+			}
+
+			let kl = match layers.get(ke) {
+				Ok(l) => l,
+				Err(_) => continue,
+			};
+			let kt = match trans.get(ke) {
+				Ok(t) => t,
+				Err(_) => continue,
+			};
+
+			if rl.overlap(kl) {
+				// TODO add aabb testing or something else first
+
+				let c = ks.ray(kt, rt.translation() + r.offset, r.cast);
+
+				if let Some(c) = c {
+					if c > 0.0 && c < 1.0 && c < shortest {
+						shortest = c;
+						short_entity = Some(ke);
+					}
+				}
+			}
+		}
+		// Collide for stts only if requested
+		if r.collide_with_static {
+			for (se, ss) in stts.iter() {
+				// Exclude ourselves
+				if se.id() == re.id() {
+					continue;
+				}
+	
+				let sl = match layers.get(se) {
+					Ok(l) => l,
+					Err(_) => continue,
+				};
+				let st = match trans.get(se) {
+					Ok(t) => t,
+					Err(_) => continue,
+				};
+	
+				if rl.overlap(sl) {
+					// TODO add aabb testing or something else first
+	
+					let c = ss.ray(st, rt.translation() + r.offset, r.cast);
+	
+					if let Some(c) = c {
+						if c > 0.0 && c < 1.0 && c < shortest {
+							shortest = c;
+							short_entity = Some(se);
+							stt = true;
+						}
+					}
+				}
+			}
+		}
+		// wrap it up and change the collision
+		if let Some(e) = short_entity {
+			r.collision = Some(RayCastCollision {
+				collision_point: shortest * r.cast + rt.translation(),
+				entity: e,
+				is_static: stt,
+			});
+		}
+		// no need for else since we clean it in the beginning
+	}
+}

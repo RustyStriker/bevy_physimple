@@ -107,7 +107,7 @@ impl Transform2D {
     /// Automatically inserts a Transform2D component for each new CollisionShape
     pub fn auto_insert_system(
         mut coms : Commands,
-        q : Query<Entity, Added<crate::prelude::CollisionShape>>,
+        q : Query<Entity, Or<(Added<crate::prelude::CollisionShape>, Added<crate::prelude::RayCast>)>>,
     ) {
         for e in q.iter() {
             coms.entity(e).insert(Transform2D::default());

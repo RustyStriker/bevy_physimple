@@ -1,13 +1,21 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Raycasts work in
+use crate::prelude::CollisionLayer;
+
+#[derive(Bundle)]
+pub struct RayCastBundle {
+    ray: RayCast,
+    collision_layer: CollisionLayer,
+}
+
+/// TODO raycast explanation...
 #[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
-pub struct RayCast2D {
+pub struct RayCast {
     /// Offset from the Transform object
     pub offset : Vec2,
 
-    /// The Direction the ray shoots
+    /// The position relative to the ray's origin
     pub cast : Vec2,
 
     /// Whether to try and collide with static objects as well(defaults to true)
@@ -19,19 +27,22 @@ pub struct RayCast2D {
 
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct RayCastCollision {
+    /// Position in global space
     pub collision_point : Vec2,
+    /// Entity it collides with
     pub entity : Entity,
+    /// Whether the entity is a statcibody or not
     pub is_static : bool,
 }
 
-impl RayCast2D {
+impl RayCast {
     /// Creates a new raycast object
     ///
     /// offset from the transform of the raycast entity
     ///
     /// cast - the direction(and length) the ray shoots
     pub fn new(cast : Vec2) -> Self {
-        RayCast2D {
+        RayCast {
             offset : Vec2::ZERO,
             cast : cast,
             collide_with_static : true,

@@ -58,8 +58,8 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
-            shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
-            // shape : CollisionShape::Circle(Circle::new(14.0)),
+            // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+            shape : CollisionShape::Circle(Circle::new(14.0)),
             ..Default::default()
         })
         .insert(CharacterController::default())

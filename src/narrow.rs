@@ -30,19 +30,18 @@ pub fn narrow_phase_system(
     let broad_data = broad_data.iter().collect::<Vec<_>>();
 
     for &broad in broad_data.iter() {
-        let entity_kin = broad.entity;
+        let k_entity = broad.entity;
 
         // TODO normal error messages would be better i guess?
-        let mut kin_trans = match transforms.get_component::<Transform2D>(entity_kin) {
+        let mut k_trans = match transforms.get_component::<Transform2D>(k_entity) {
             Ok(t) => t.clone(),
             Err(_) => continue,
         };
 
-        let kin_shape = match shapes.get(entity_kin) {
+        let k_shape = match shapes.get(k_entity) {
             Ok(s) => s,
             Err(_) => continue, // Add debug stuff
         };
-        let shape_kin = kin_shape.shape();
 
         let mut iter_amount = 5; // Maximum number of collision detection - should probably be configureable
         let mut movement = broad.inst_vel; // Current movement to check for
@@ -57,60 +56,40 @@ pub fn narrow_phase_system(
             let mut remainder = Vec2::ZERO;
             let mut coll_entity : Option<Entity> = None;
 
-            for (se, _) in broad.area.iter() {
+            for (s_entity, _) in broad.area.iter() {
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
-                let cmove_ray = (cmove.normalize(), cmove.length());
 
                 // Get the obb shape thingy
-                let s_shape = match shapes.get(*se) {
+                let s_shape = match shapes.get(*s_entity) {
                     Ok(s) => s,
                     Err(_) => continue,
                 };
-                let s_shape = s_shape.shape();
 
-                let s_transform = match transforms.get_component::<Transform2D>(*se) {
+                let s_trans = match transforms.get_component::<Transform2D>(*s_entity) {
                     Ok(t) => t,
                     Err(_) => continue,
                 };
 
-                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation());
-                let coll_position = coll_position.unwrap_or(cmove_ray.1);
+                // TODO SAT vs ray!
+                let coll_position = s_shape.ray(s_trans, k_trans.translation(), cmove);
+                let coll_position = coll_position.unwrap_or(1.0);
 
                 let coll_pos = Transform2D::new(
-                    kin_trans.translation() + cmove_ray.0 * coll_position,
-                    kin_trans.rotation(),
-                    kin_trans.scale()
+                    k_trans.translation() + cmove * coll_position,
+                    k_trans.rotation(),
+                    k_trans.scale()
                 );
 
-                let dis = shape_kin.collide(&coll_pos, s_shape, s_transform);
-                let dis2 = s_shape.collide(s_transform, shape_kin, &coll_pos);
-
-                // if we use dis2 we need to reverse the direction
-                let dis = if let Some(d1) = dis {
-                    if let Some(d2) = dis2 {
-                        if d1.length_squared() < d2.length_squared() {
-                            Some(d1)
-                        }
-                        else {
-                            Some(-d2)
-                        }
-                    }
-                    else {
-                        dis
-                    }
-                }
-                else {
-                    dis2.map(|d| -d)
-                };
+                let dis = collide(k_shape, &coll_pos, s_shape, s_trans);
 
                 if let Some(dis) = dis {
                     let new_pos = coll_pos.translation() + dis;
                     normal = dis.normalize();
 
-                    let moved = new_pos - kin_trans.translation();
+                    let moved = new_pos - k_trans.translation();
                     remainder = movement - moved;
 
-                    coll_entity = Some(*se);
+                    coll_entity = Some(*s_entity);
                 }
                 
             } // out of the surroindings for loop
@@ -119,38 +98,36 @@ pub fn narrow_phase_system(
             for (se, _) in broad.sensors.iter() { // SENSOR LOOP!!!!
                 // this was pretty mostly copied from above
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
-                let cmove_ray = (cmove.normalize(), cmove.length());
+                // let cmove_ray = (cmove.normalize(), cmove.length());
 
                 // Get the obb shape thingy
                 let s_shape = match shapes.get(*se) {
                     Ok(s) => s,
                     Err(_) => continue,
                 };
-                let s_shape = s_shape.shape();
 
-                let s_transform = match transforms.get_component::<Transform2D>(*se) {
+                let s_trans = match transforms.get_component::<Transform2D>(*se) {
                     Ok(t) => t,
                     Err(_) => continue,
                 };
 
-                let coll_position = s_shape.collide_ray(s_transform, cmove_ray, kin_trans.translation());
-                let coll_position = coll_position.unwrap_or(cmove_ray.1);
+                let coll_position = s_shape.ray(s_trans, k_trans.translation(), cmove);
+                let coll_position = coll_position.unwrap_or(1.0);
 
                 let coll_pos = Transform2D::new(
-                    kin_trans.translation() + cmove_ray.0 * coll_position,
-                    kin_trans.rotation(),
-                    kin_trans.scale()
+                    k_trans.translation() + cmove * coll_position,
+                    k_trans.rotation(),
+                    k_trans.scale()
                 );
 
-                let dis = shape_kin.collide(&coll_pos, s_shape, s_transform);
-                let dis2 = s_shape.collide(s_transform, shape_kin, &coll_pos);
+                let dis = collide(k_shape, &coll_pos, s_shape, s_trans);
 
                 // we dont really care how far we are penetrating, only that we indeed are penetrating
-                if dis.is_some() || dis2.is_some() {
+                if dis.is_some() {
                     // we indeed collide
                     if let Ok(mut sensor) = sensors.get_mut(*se) {
-                        if !sensor.bodies.contains(&entity_kin) {
-                            sensor.bodies.push(entity_kin);
+                        if !sensor.bodies.contains(&k_entity) {
+                            sensor.bodies.push(k_entity);
                         }
                     }
                     // TODO maybe also fire an event?
@@ -179,7 +156,7 @@ pub fn narrow_phase_system(
 
                 vel.0 = move_slide; // Redo bounciness + stiffness
                                     // - move_proj * staticbody.bounciness.max(kin.bounciness) * kin.stiffness;
-                kin_trans.add_translation(movement - remainder);
+                k_trans.add_translation(movement - remainder);
 
                 let rem_proj = remainder.project(normal);
                 let rem_slide = remainder - rem_proj;
@@ -191,7 +168,7 @@ pub fn narrow_phase_system(
 
                 // Throw an event
                 collision_writer.send(CollisionEvent {
-                    entity_a : entity_kin,
+                    entity_a : k_entity,
                     entity_b : se,
                     is_b_static : true, // we only collide with static bodies here
                     normal,
@@ -199,14 +176,14 @@ pub fn narrow_phase_system(
             }
             else {
                 // There was no collisions here so we can break
-                kin_trans.add_translation(movement); // need to move whatever left to move with
+                k_trans.add_translation(movement); // need to move whatever left to move with
                 break;
             }
         } // out of loop(line 94)
 
         // We cloned the body's Transform2D to avoid mutability issues, so now we reapply it
-        if let Ok(mut t) = transforms.get_mut(entity_kin) {
-            *t = kin_trans;
+        if let Ok(mut t) = transforms.get_mut(k_entity) {
+            *t = k_trans;
         }
     } // out of kin_obb for loop
 }

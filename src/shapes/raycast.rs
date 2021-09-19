@@ -8,10 +8,7 @@ pub struct RayCast2D {
     pub offset : Vec2,
 
     /// The Direction the ray shoots
-    pub cast_dir : Vec2, // it is easier to break them once and multiply than break them from the start each time
-
-    /// The length/magnitude of the ray
-    pub length : f32,
+    pub cast : Vec2,
 
     /// Whether to try and collide with static objects as well(defaults to true)
     pub collide_with_static : bool,
@@ -36,8 +33,7 @@ impl RayCast2D {
     pub fn new(cast : Vec2) -> Self {
         RayCast2D {
             offset : Vec2::ZERO,
-            cast_dir : cast.normalize(),
-            length : cast.length(),
+            cast : cast,
             collide_with_static : true,
             collision : None,
         }

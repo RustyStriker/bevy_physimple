@@ -25,14 +25,14 @@ pub fn broad_phase_2(
 	// Kinematic_con x kinematic_con
 	for (i, (e1, t1, l1)) in kins_con.iter().enumerate() {
 		let aabb1 = match shapes.get(e1) {
-			Ok(s) => s.shape().to_aabb(t1),
+			Ok(s) => s.aabb(t1),
 			Err(_) => continue,
 		};
 
 		for (e2, t2, l2) in kins_con.iter().skip(i + 1) {
 			if l1.overlap(l2) {
 				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.shape().to_aabb(t2),
+					Ok(s) => s.aabb(t2),
 					Err(_) => continue,
 				};
 
@@ -46,7 +46,7 @@ pub fn broad_phase_2(
 	// Kinematic x _
 	for (i, (e1, t1, l1)) in kins.iter().enumerate() {
 		let aabb1 = match shapes.get(e1) {
-			Ok(s) => s.shape().to_aabb(t1),
+			Ok(s) => s.aabb(t1),
 			Err(_) => continue,
 		};
 
@@ -54,7 +54,7 @@ pub fn broad_phase_2(
 		for (e2, t2, l2) in kins.iter().skip(i + 1) {
 			if l1.overlap(l2) {
 				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.shape().to_aabb(t2),
+					Ok(s) => s.aabb(t2),
 					Err(_) => continue,
 				};
 
@@ -68,7 +68,7 @@ pub fn broad_phase_2(
 		for (e2, t2, l2) in kins_con.iter() {
 			if l1.overlap(l2) {
 				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.shape().to_aabb(t2),
+					Ok(s) => s.aabb(t2),
 					Err(_) => continue,
 				};
 
@@ -82,7 +82,7 @@ pub fn broad_phase_2(
 		for (e2, t2, l2) in statics.iter() {
 			if l1.overlap(l2) {
 				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.shape().to_aabb(t2),
+					Ok(s) => s.aabb(t2),
 					Err(_) => continue,
 				};
 
@@ -96,7 +96,7 @@ pub fn broad_phase_2(
 		for (e2, t2, l2) in sensors.iter() {
 			if l1.overlap(l2) {
 				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.shape().to_aabb(t2),
+					Ok(s) => s.aabb(t2),
 					Err(_) => continue,
 				};
 
@@ -125,7 +125,7 @@ pub fn narrow_phase_2(
 	// Solve kinematic pairs
 	for CollPairKin(e1, e2) in pair_kin.iter() {
 		let s1 = match shapes.get(*e1) {
-			Ok(s) => s.shape(),
+			Ok(s) => s,
 			Err(_) => continue,
 		};
 
@@ -135,7 +135,7 @@ pub fn narrow_phase_2(
 		};
 		
 		let s2 = match shapes.get(*e2) {
-			Ok(s) => s.shape(),
+			Ok(s) => s,
 			Err(_) => continue,
 		};
 
@@ -144,22 +144,9 @@ pub fn narrow_phase_2(
 			Err(_) => continue,
 		};
 
-		let p1 = s1.collide(t1, s2, t2);
-		let p2 = s2.collide(t2, s1, t1);
+		let p = collide(s1,t1,s2,t2);
 
-		if let Some(pen) = match (p1, p2) {
-			(Some(p1), Some(p2)) => {
-				if p1.length_squared() < p2.length_squared() {
-					Some(p1)
-				}
-				else {
-					Some(-p2)
-				}
-			},
-			(Some(p1), None) => Some(p1),
-			(None, Some(p2)) => Some(-p2),
-			(None, None) => None, // pretty much ignore
-		} {
+		if let Some(pen) = p {
 			let normal = pen.normalize();
 
 			coll_writer.send(CollisionEvent { 
@@ -193,7 +180,7 @@ pub fn narrow_phase_2(
 	// Solve static pairs
 	for CollPairStatic(ek, es) in pair_static.iter() {
 		let sk = match shapes.get(*ek) {
-			Ok(s) => s.shape(),
+			Ok(s) => s,
 			Err(_) => continue,
 		};
 
@@ -203,7 +190,7 @@ pub fn narrow_phase_2(
 		};
 
 		let ss = match shapes.get(*es) {
-			Ok(s) => s.shape(),
+			Ok(s) => s,
 			Err(_) => continue,
 		};
 
@@ -212,22 +199,9 @@ pub fn narrow_phase_2(
 			Err(_) => continue,
 		};
 
-		let pen1 = sk.collide(tk, ss, ts);
-		let pen2 = ss.collide(ts, sk, tk);
+		let p = collide(sk,tk,ss,ts);
 
-		if let Some(pen) = match (pen1, pen2) {
-			(Some(p1), Some(p2)) => {
-				if p1.length_squared() < p2.length_squared() {
-					Some(p1)
-				}
-				else {
-					Some(-p2)
-				}
-			},
-			(Some(p1), None) => Some(p1),
-			(None, Some(p2)) => Some(-p2),
-			(None, None) => None, // pretty much ignore
-		} {
+		if let Some(pen) = p {
 			coll_writer.send(CollisionEvent{
 				entity_a: *ek,
 				entity_b: *es,
@@ -244,7 +218,7 @@ pub fn narrow_phase_2(
 	// "Solve" sensor pairs
 	for CollPairSensor(ek, es) in pair_sensor.iter() {
 		let sk = match shapes.get(*ek) {
-			Ok(s) => s.shape(),
+			Ok(s) => s,
 			Err(_) => continue,
 		};
 
@@ -254,7 +228,7 @@ pub fn narrow_phase_2(
 		};
 
 		let ss = match shapes.get(*es) {
-			Ok(s) => s.shape(),
+			Ok(s) => s,
 			Err(_) => continue,
 		};
 
@@ -263,10 +237,9 @@ pub fn narrow_phase_2(
 			Err(_) => continue,
 		};
 
-		let pen1 = sk.collide(tk, ss, ts);
-		let pen2 = ss.collide(ts, sk, tk);
+		let p = collide(sk,tk,ss,ts);
 
-		if pen1.is_some() || pen2.is_some() {
+		if p.is_some() {
 			if let Ok(mut sen) = sensors.get_mut(*es) {
 				if !sen.bodies.contains(ek) {
 					sen.bodies.push(*ek);

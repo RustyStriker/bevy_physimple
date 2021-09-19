@@ -20,6 +20,7 @@ and eventually i want people to be able to use this crate as a simple collisions
 
 ## What doesnt work/What is currently buggy?
 
+- Raycasts with circles
 - Overlap detection sometimes acts weird(apperant in Sensor vs Kinematic when the kinematic isn't moving)
 - You can push objects through walls, if the wall is too thin the object might tunnle through it
 - Probably some more stuff, please tell me when something isn't working properly(and isn't written here)

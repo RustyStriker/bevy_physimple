@@ -1,5 +1,5 @@
 use crate::physics_components::Transform2D;
-use bevy::prelude::*;
+use bevy::{ecs::component::Component, prelude::*};
 
 mod aabb;
 mod circle;
@@ -164,12 +164,14 @@ fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, 
 pub enum CollisionShape {
     Square(Square),
     Circle(Circle),
+    Convex(Box<dyn SAT + Send + Sync>),
 }
 impl CollisionShape {
     pub fn sat(&self) -> Option<&dyn SAT> {
         match self {
             CollisionShape::Square(s) => Some(s),
-            CollisionShape::Circle(_) => None 
+            CollisionShape::Circle(_) => None,
+            CollisionShape::Convex(s) => Some(s.as_ref())
         }
     }
 

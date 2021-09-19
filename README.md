@@ -35,9 +35,12 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
 |------|-----------------|
 | 0.5  | 0.1.0 - current |
 
-## A todo list
+## 0.2.0 Todo list
 
 - [x] Rewrite shape overlap
 - [ ] Implement the different shapes
+  - [ ] Capsule
+  - [ ] Generic shape(dynamic object)
 - [ ] Update the examples, and better showcase stuff
+- [ ] Basic joints
 - [ ] Actual docs

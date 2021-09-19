@@ -288,13 +288,13 @@ pub fn ray_phase(
 				Ok(t) => t,
 				Err(_) => continue,
 			};
-
 			if rl.overlap(kl) {
 				// TODO add aabb testing or something else first
-
+				
 				let c = ks.ray(kt, rt.translation() + r.offset, r.cast);
-
+				
 				if let Some(c) = c {
+					println!("aaaa {} ", c);
 					if c > 0.0 && c < 1.0 && c < shortest {
 						shortest = c;
 						short_entity = Some(ke);

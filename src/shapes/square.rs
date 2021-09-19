@@ -114,35 +114,29 @@ impl super::SAT for Square {
     }
 
     fn ray(&self, trans : &Transform2D, ro : Vec2, rc :  Vec2) -> Option<f32> {
-        let rot = Mat2::from_angle(trans.rotation());
+        let rot = Mat2::from_angle(-trans.rotation());
 
         // IDEA: rotate the ray (the opposite direction) and then you can do simple ray vs aabb collision
         let t = rot * trans.translation();
 
-        let ro = rot * (ro - t);
-        let rc = rot * (rc - t);
+        let ro = rot * ro;
+        let rc = rot * rc;
 
-        let smin = -self.extents;
-        let smax = self.extents;
+        let smin = t - self.extents;
+        let smax = t + self.extents;
 
         // if one of the cast components is 0.0, make sure we are in the bounds of that axle
         // Why?
         //      We do this explicit check because the raycast formula i used doesnt handle cases where one of the components is 0
         //       as it would lead to division by 0(thus errors) and the `else NAN` part will make it completly ignore the collision
         //       on that axle
-        if rc.x == 0.0 {
-            let rmin = ro.x.min(ro.x + rc.x);
-            let rmax = ro.x.max(ro.x + rc.x);
-
-            if !(smin.x <= rmax && smax.x >= rmin) {
+        if rc.x.abs() < f32::EPSILON {
+            if !(smin.x <= ro.x && smax.x >= ro.x) {
                 return None; // if it doesnt collide on the X axle terminate it early
             }
         }
-        if rc.y == 0.0 {
-            let ray_min = ro.y.min(ro.y + rc.y);
-            let ray_max = ro.y.max(ro.y + rc.y);
-
-            if !(smin.y <= ray_max && smax.y >= ray_min) {
+        if rc.y.abs() < f32::EPSILON {
+            if !(smin.y <= ro.y && smax.y >= ro.y) {
                 return None; // if it doesnt collide on the X axle terminate it early
             }
         }
@@ -157,13 +151,18 @@ impl super::SAT for Square {
         let min = (xmin.min(xmax)).max(ymin.min(ymax));
         let max = (xmin.max(xmax)).min(ymin.max(ymax));
 
-        if max < 0.0 || min > max {
+        if max < 0.0 || min > max || min > 1.0 {
+            // either the shape is entirely behind us
+            //      or we are not colliding at all
+            //      or the shape is too far away
             None
         }
         else if min < 0.0 {
+            // we are inside the shape
             Some(max)
         }
         else {
+            // normal collision(gosh that was hard)
             Some(min)
         }
     }

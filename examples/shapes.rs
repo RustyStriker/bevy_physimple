@@ -31,6 +31,7 @@ fn main() {
         .add_system(character_system.system())
         .add_system(change_sensor_color.system())
         .add_system(gravity_system.system())
+        .add_system(ray_head.system())
         ;
     builder.run();
 }
@@ -58,8 +59,8 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
-            // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
-            shape : CollisionShape::Circle(Circle::new(14.0)),
+            shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+            // shape : CollisionShape::Circle(Circle::new(14.0)),
             ..Default::default()
         })
         .insert(CharacterController::default())
@@ -143,6 +144,27 @@ fn setup(
             ..Default::default()
         })
         ;
+
+    // a ray for the sake of testing
+    commands
+        .spawn_bundle(SpriteBundle {
+            sprite: Sprite::new(Vec2::splat(10.0)),
+            material: materials.add(Color::FUCHSIA.into()),
+            transform: Transform::from_xyz(-100.0,-170.0,1.0),
+            ..Default::default()
+        })
+        .insert_bundle(RayCastBundle {
+            ray: RayCast::new(Vec2::new(100.0,0.0)),
+            collision_layer: CollisionLayer::default(),
+        })
+        .with_children(|p| {
+            // this will be the head
+            p.spawn_bundle(SpriteBundle {
+                sprite: Sprite::new(Vec2::splat(10.0)),
+                material: materials.add(Color::CRIMSON.into()),
+                ..Default::default()
+            });
+        });
 }
 
 fn gravity_system(
@@ -262,6 +284,20 @@ fn change_sensor_color(
             else {
                 dbg!(time.seconds_since_startup());
                 Color::rgba(0.0, 0.5, 1.0, 0.5)
+            }
+        }
+    }
+}
+
+fn ray_head(
+    mut ts : Query<&mut Transform, Without<RayCast>>,
+    q : Query<(&RayCast, &Children, &Transform)>,
+) {
+    for (r,c, rt) in q.iter() {
+        if let Some(c) = c.first() {
+            if let Ok(mut t) = ts.get_mut(*c) {
+                let pos = Vec2::new(rt.translation.x, rt.translation.y);
+                t.translation = r.collision.map(|a| a.collision_point - pos).unwrap_or(r.cast).extend(0.0);
             }
         }
     }

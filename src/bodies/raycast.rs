@@ -5,8 +5,8 @@ use crate::prelude::CollisionLayer;
 
 #[derive(Bundle)]
 pub struct RayCastBundle {
-    ray: RayCast,
-    collision_layer: CollisionLayer,
+    pub ray: RayCast,
+    pub collision_layer: CollisionLayer,
 }
 
 /// TODO raycast explanation...
@@ -22,7 +22,7 @@ pub struct RayCast {
     pub collide_with_static : bool,
 
     #[serde(skip_serializing, skip_deserializing)]
-    pub(crate) collision : Option<RayCastCollision>,
+    pub collision : Option<RayCastCollision>,
 }
 
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]

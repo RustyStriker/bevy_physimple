@@ -42,9 +42,35 @@ impl Circle {
         }
     }
 
-    pub fn ray(&self, _t : &Transform2D, _ro : Vec2, _rc : Vec2) -> Option<f32> {
-        // TODO ray for circles
-        None
+    pub fn ray(&self, t : &Transform2D, ro : Vec2, rc : Vec2) -> Option<f32> {
+        let n = rc.normalize();
+        let p = n.perp();
+
+        let c = t.translation() + self.offset;
+
+        let cn = n.dot(c);
+        let cp = p.dot(c);
+        
+        let rp = p.dot(ro);
+        let rn = n.dot(ro);
+
+        if (rp - cp).abs() < self.radius {
+            let d = (self.radius.powi(2) - (rp - cp).powi(2)).sqrt();
+            // Why?
+            //  We are checking for the edge with the min value(along the n axis) usually,
+            //  if it is negative we need to check for the edge with the max value, thus this weird if
+            let d = if cn - d - rn < 0.0 { cn + d } else { cn - d };
+
+            if n.dot(rc) + rn > d && d > rn {
+                Some(1.0 + d / n.dot(rc)) // we want a value between [0.0 - 1.0], and we got a full blown value here
+            }
+            else {
+                None // Ray isnt long enough or the circle is behind the ray 
+            }
+        }
+        else {
+            None // No collision can happen because the ray is too far away on the perp axis
+        }
     }
 }
 impl Default for Circle {

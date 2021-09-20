@@ -59,8 +59,8 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
-            shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
-            // shape : CollisionShape::Circle(Circle::new(14.0)),
+            // shape: CollisionShape::Square(Square::size(Vec2::splat(28.0))),
+            shape : CollisionShape::Circle(Circle::new(14.0)),
             ..Default::default()
         })
         .insert(CharacterController::default())
@@ -282,7 +282,6 @@ fn change_sensor_color(
                 Color::GOLD
             }
             else {
-                dbg!(time.seconds_since_startup());
                 Color::rgba(0.0, 0.5, 1.0, 0.5)
             }
         }

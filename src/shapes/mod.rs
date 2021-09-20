@@ -1,13 +1,15 @@
 use crate::physics_components::Transform2D;
-use bevy::{ecs::component::Component, prelude::*};
+use bevy::{math::Mat2, prelude::*};
 
 mod aabb;
 mod circle;
 mod square;
+mod capsule;
 
 pub use aabb::*;
 pub use circle::*;
 pub use square::*;
+pub use capsule::*;
 
 pub trait SAT {
     /// Gets the Axis Aligned Bounding Box of the shape
@@ -99,6 +101,10 @@ fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Trans
             let v = a.get_closest_vertex(ta, tb.translation() + c.offset);
             (tb.translation() + c.offset - v).normalize()
         },
+        CollisionShape::Capsule(c) => {
+            let v = a.get_closest_vertex(ta, tb.translation() + c.offset);
+            c.sat_normal(tb, v)
+        }
         _ => panic!("Shouldn't happen, if this occur to you please report it as a bug(and how you got here)")
     };
 
@@ -115,6 +121,7 @@ fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Trans
 
                 (center - c.radius, center + c.radius)
             },
+            CollisionShape::Capsule(c) => c.project(tb, n),
             _ => panic!("If you paniced here, something is REALLY wrong")
         };
 
@@ -157,13 +164,54 @@ fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, 
                 None
             }
         },
+        (Circle(a), Capsule(b)) => collide_circle_capsule(a, ta, b, tb),
+        (Capsule(a), Circle(b)) => collide_circle_capsule(b, tb, a, ta).map(|v| -v),
+        (Capsule(a), Capsule(b)) => {
+            None // FIXME
+        },
         _ => panic!("Something is missing, please report it on github(with the shapes used)"),
+    }
+}
+
+fn collide_circle_capsule(a : &Circle, ta : &Transform2D, b : &Capsule, tb : &Transform2D) -> Option<Vec2> {
+    let brot = Mat2::from_angle(tb.rotation());
+    
+    // get the distance of the circle's center to the capsule's center line
+    let (ba, bb) = b.center_line(tb);
+
+    let acenter = ta.translation() + a.offset;
+
+    let n = brot * Vec2::X;
+    let p = brot * Vec2::Y;
+
+    let bn = n.dot(ba); // n.dot(ba) should be equal n.dot(bb) should be equal n.dot(capsule_center)
+    let bap = p.dot(ba);
+    let bbp = p.dot(bb);
+    
+    let an = n.dot(acenter);
+    let ap = p.dot(acenter);
+    
+    let bpmin = bap.min(bbp);
+    let bpmax = bap.max(bbp);
+
+    let dp = if ap > bpmax { ap - bpmax } else if ap < bpmin { ap - bpmin } else { 0.0 };
+
+    let dis = n * (an - bn) + p * dp;
+
+    let dis_n = dis.normalize();
+    let dis_l = dis.dot(dis_n);
+
+    if dis_l < (a.radius + b.radius) {
+        Some(dis_n * (a.radius + b.radius - dis_l))
+    } else {
+        None
     }
 }
 
 pub enum CollisionShape {
     Square(Square),
     Circle(Circle),
+    Capsule(Capsule),
     Convex(Box<dyn SAT + Send + Sync>),
 }
 impl CollisionShape {
@@ -171,6 +219,7 @@ impl CollisionShape {
         match self {
             CollisionShape::Square(s) => Some(s),
             CollisionShape::Circle(_) => None,
+            CollisionShape::Capsule(_) => None,
             CollisionShape::Convex(s) => Some(s.as_ref())
         }
     }
@@ -182,6 +231,7 @@ impl CollisionShape {
         else {
             match self {
                 CollisionShape::Circle(c) => c.aabb(t),
+                CollisionShape::Capsule(c) => c.aabb(t),
                 _ => panic!("Something is missing, please report on github(with the shape used)"),
             }
         }
@@ -194,9 +244,15 @@ impl CollisionShape {
         else {
             match self {
                 CollisionShape::Circle(c) => c.ray(trans, ray_origin, ray_cast),
+                CollisionShape::Capsule(c) => c.ray(trans, ray_origin, ray_cast),
                 _ => panic!("Something is missing, please report on github(with the shape used)"),
             }
         }
+    }
+}
+impl Default for CollisionShape {
+    fn default() -> Self {
+        CollisionShape::Square(Square::default())
     }
 }
 

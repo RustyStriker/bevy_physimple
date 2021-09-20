@@ -39,7 +39,8 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
 
 - [x] Rewrite shape overlap
 - [ ] Implement the different shapes
-  - [ ] Capsule
+  - [ ] Capsule - Rays
+  - [ ] Circle - Rays
   - [x] Generic shape(dynamic object)
 - [ ] Update the examples, and better showcase stuff
   - [ ] General showcase

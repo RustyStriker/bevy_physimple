@@ -3,14 +3,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{physics_components::CollisionLayer, prelude::CollisionShape};
 
-// TODO make a SensorBundle...
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct SensorBundle {
     pub sensor : Sensor,
     pub shape : CollisionShape,
     pub coll_layer : CollisionLayer,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct Sensor {

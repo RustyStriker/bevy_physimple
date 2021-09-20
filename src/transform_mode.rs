@@ -124,7 +124,7 @@ impl TransformMode {
         transform : &mut Transform,
         rot : f32,
     ) {
-        // TODO make it persist the other axis rotations, i dont understand quaternions
+        // This doesnt persist along other axes, but making it persist requires quite the overhead(and might not be useful at all)
         transform.rotation = match self {
             TransformMode::XY => Quat::from_rotation_z(rot),
             TransformMode::XZ => Quat::from_rotation_y(rot),

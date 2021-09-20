@@ -4,22 +4,13 @@ use crate::{
         Vel,
         CollisionLayer,
     },
-    prelude::{CollisionShape, Square},
+    prelude::CollisionShape,
 };
 
 /// Kinematic bodys are practically everything with the `Vel` struct
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct KinematicBundle {
     pub vel : Vel,
     pub shape : CollisionShape,
     pub collision_layer : CollisionLayer,
-}
-impl Default for KinematicBundle {
-    fn default() -> Self {
-        Self {
-            vel : Vel::ZERO,
-            shape : CollisionShape::Square(Square::size(Vec2::splat(1.0))),
-            collision_layer : CollisionLayer::new(1, 1),
-        }
-    }
 }

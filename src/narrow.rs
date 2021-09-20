@@ -70,7 +70,6 @@ pub fn narrow_phase_system(
                     Err(_) => continue,
                 };
 
-                // TODO SAT vs ray!
                 let coll_position = s_shape.ray(s_trans, k_trans.translation(), cmove);
                 let coll_position = coll_position.unwrap_or(1.0);
 

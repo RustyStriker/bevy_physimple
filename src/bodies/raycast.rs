@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::prelude::CollisionLayer;
 
-#[derive(Bundle)]
+#[derive(Bundle, Default)]
 pub struct RayCastBundle {
     pub ray: RayCast,
     pub collision_layer: CollisionLayer,
@@ -23,6 +23,11 @@ pub struct RayCast {
 
     #[serde(skip_serializing, skip_deserializing)]
     pub collision : Option<RayCastCollision>,
+}
+impl Default for RayCast {
+    fn default() -> Self {
+        Self::new(Vec2::new(0.0,-100.0))
+    }
 }
 
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]

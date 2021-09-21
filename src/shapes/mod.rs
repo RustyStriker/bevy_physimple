@@ -167,7 +167,57 @@ fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, 
         (Circle(a), Capsule(b)) => collide_circle_capsule(a, ta, b, tb),
         (Capsule(a), Circle(b)) => collide_circle_capsule(b, tb, a, ta).map(|v| -v),
         (Capsule(a), Capsule(b)) => {
-            None // FIXME
+            let arot = Mat2::from_angle(ta.rotation());
+            let brot = Mat2::from_angle(tb.rotation());
+
+            // When you make 2 capsules obey SAT rules :D(they are still not fully SAT tho)
+
+            let n1 = arot * Vec2::X;
+            let n2 = brot * Vec2::X;
+
+            // get the closer vertex of b(relative to a)
+            let n3 = {
+                let b1 = brot * Vec2::new(0.0,  b.half_height) + tb.translation() + b.offset;
+                let b2 = brot * Vec2::new(0.0, -b.half_height) + tb.translation() + b.offset;
+
+                let v = ta.translation() + a.offset;
+
+                let d1 = b1 - v;
+                let d2 = b2 - v;
+
+                if d1.length_squared() < d2.length_squared() {
+                    d1.normalize_or_zero()
+                }
+                else {
+                    d2.normalize_or_zero()
+                }
+            };
+
+            let mut minimal_dis = f32::INFINITY;
+            let mut minimal_n = Vec2::ZERO;
+
+            for n in [n1,n2,n3] {
+                let (mina, maxa) = a.project(ta, n);
+                let (minb, maxb) = b.project(tb, n);
+
+                if mina < maxb && minb < maxa {
+                    // collision on this axis - lets get the mtv
+                    let p1 = maxb - mina;
+                    let p2 = minb - maxa;
+
+                    let p = if p1.abs() < p2.abs() { p1 } else { p2 };
+
+                    if p.abs() < minimal_dis.abs() {
+                        minimal_dis = p;
+                        minimal_n = n;
+                    }
+                }
+                else {
+                    // if we find a non colliding axis, we know they dont collide :D
+                    return None;
+                }
+            }
+            Some(minimal_dis * minimal_n)
         },
         _ => panic!("Something is missing, please report it on github(with the shapes used)"),
     }

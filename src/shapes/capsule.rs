@@ -57,15 +57,25 @@ impl Capsule {
 
     pub fn sat_normal(&self, t : &Transform2D, vertex : Vec2) -> Vec2 {
         let (a, b) = self.center_line(t);
+        let n = a - b;
 
-        let a = a - vertex;
-        let b = b - vertex;
+        let an = n.dot(a);
+        let bn = n.dot(b);
+        let vn = n.dot(vertex);
 
-        if a.length_squared() < b.length_squared() {
-            a.normalize()
+        if vn > an.min(bn) && vn < an.max(bn) {
+            Mat2::from_angle(t.rotation()) * Vec2::X
         }
         else {
-            b.normalize()
+            let a = a - vertex;
+            let b = b - vertex;
+
+            if a.length_squared() < b.length_squared() {
+                a.normalize()
+            }
+            else {
+                b.normalize()
+            }
         }
     }
 

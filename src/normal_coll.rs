@@ -5,6 +5,7 @@ pub struct CollPairKin(Entity, Entity);
 pub struct CollPairStatic(Entity, Entity);
 pub struct CollPairSensor(Entity, Entity);
 
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn broad_phase_2(
 	shapes : Query<&CollisionShape>,
 	// bodies
@@ -108,7 +109,7 @@ pub fn broad_phase_2(
 	}
 
 }
-
+#[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_2(
 	// Data we need
 	shapes : Query<&CollisionShape>,
@@ -248,7 +249,7 @@ pub fn narrow_phase_2(
 		}
 	}
 }
-
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn ray_phase(
 	trans: Query<&Transform2D>,
 	layers: Query<&CollisionLayer>,

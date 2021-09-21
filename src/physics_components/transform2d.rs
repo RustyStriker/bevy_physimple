@@ -73,8 +73,8 @@ impl Transform2D {
     pub fn apply_buffers(&self, transform : &mut Transform, trans_mode : TransformMode) {
         let (tb, rb) = (self.translation_buffer, self.rotation_buffer);
 
-        let t = trans_mode.get_position(&transform);
-        let r = trans_mode.get_rotation(&transform);
+        let t = trans_mode.get_position(transform);
+        let r = trans_mode.get_rotation(transform);
 
         trans_mode.set_position(transform, t + tb);
         trans_mode.set_rotation(transform, r + rb);
@@ -105,6 +105,7 @@ impl Transform2D {
 		}
 	}
     /// Automatically inserts a Transform2D component for each new CollisionShape
+    #[allow(clippy::type_complexity)]
     pub fn auto_insert_system(
         mut coms : Commands,
         q : Query<Entity, Or<(Added<crate::prelude::CollisionShape>, Added<crate::prelude::RayCast>)>>,

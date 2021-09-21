@@ -272,7 +272,6 @@ fn character_system(
 }
 
 fn change_sensor_color(
-    time : Res<Time>,
     mut materials : ResMut<Assets<ColorMaterial>>,
     q : Query<(&Sensor, &Handle<ColorMaterial>)>,
 ) {

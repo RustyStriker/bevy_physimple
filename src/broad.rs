@@ -17,6 +17,7 @@ pub struct ConBroadData {
 }
 
 /// Simply pushes ObbData and ObbDataKinematic into the event system for every shape
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
 pub fn broad_phase_1(
     time : Res<Time>,
     kinematics : Query<(Entity, &CollisionShape, &Vel, &Transform2D, &CollisionLayer)>,
@@ -32,7 +33,7 @@ pub fn broad_phase_1(
     for (e, cs,  vel, t, layer) in kinematics.iter() {
         let inst_vel = vel.0 * delta;
 
-        let aabb = cs.aabb(&t);
+        let aabb = cs.aabb(t);
 
         let circle_center = aabb.position;
         let circle_radius_sqrd = (inst_vel + aabb.extents).length_squared();
@@ -40,7 +41,7 @@ pub fn broad_phase_1(
         // Get all staticbodies which might collide with use
         let mut st_en : Vec<(Entity, Aabb)> = Vec::new();
         for (se, scs, st, sl) in statics.iter() {
-            let saabb = scs.aabb(&st);
+            let saabb = scs.aabb(st);
 
             if sl.overlap(layer) && aabb_circle(
                 circle_center,
@@ -53,7 +54,7 @@ pub fn broad_phase_1(
         // same for sensors(we do the extra calculations for sensors which does not move)
         let mut se_en : Vec<(Entity, Aabb)> = Vec::new();
         for (se, scs, st, sl) in sensors.iter() {
-            let saabb = scs.aabb(&st);
+            let saabb = scs.aabb(st);
 
 
             if sl.overlap(layer) && aabb_circle(

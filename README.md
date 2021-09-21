@@ -38,12 +38,12 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
 ## 0.2.0 Todo list
 
 - [x] Rewrite shape overlap
-- [ ] Implement the different shapes
+- [x] Implement the different shapes
   - [x] Capsule - Rays
   - [x] Circle - Rays
   - [x] Generic shape(dynamic object)
 - [ ] Update the examples, and better showcase stuff
-  - [ ] n-body example
+  - [x] n-body example(somewhat n-body)
   - [ ] General showcase
   - [x] Convex shapes
   - [ ] Rays

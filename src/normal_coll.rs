@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{math::Mat2, prelude::*};
 use crate::{physics_components::Transform2D, prelude::*};
 
 pub struct CollPairKin(Entity, Entity);
@@ -267,6 +267,8 @@ pub fn ray_phase(
 			Err(_) => continue,
 		};
 
+		let r_cast = Mat2::from_angle(rt.rotation()) * r.cast;
+
 		r.collision = None;
 
 		let mut shortest = f32::INFINITY;
@@ -291,7 +293,7 @@ pub fn ray_phase(
 			if rl.overlap(kl) {
 				// TODO add aabb testing or something else first
 				
-				let c = ks.ray(kt, rt.translation() + r.offset, r.cast);
+				let c = ks.ray(kt, rt.translation() + r.offset, r_cast);
 				
 				if let Some(c) = c {
 					if c > 0.0 && c < 1.0 && c < shortest {
@@ -321,7 +323,7 @@ pub fn ray_phase(
 				if rl.overlap(sl) {
 					// TODO add aabb testing or something else first
 	
-					let c = ss.ray(st, rt.translation() + r.offset, r.cast);
+					let c = ss.ray(st, rt.translation() + r.offset, r_cast);
 	
 					if let Some(c) = c {
 						if c > 0.0 && c < 1.0 && c < shortest {
@@ -336,7 +338,7 @@ pub fn ray_phase(
 		// wrap it up and change the collision
 		if let Some(e) = short_entity {
 			r.collision = Some(RayCastCollision {
-				collision_point: shortest * r.cast + rt.translation(),
+				collision_point: shortest * r_cast + rt.translation(),
 				entity: e,
 				is_static: stt,
 			});

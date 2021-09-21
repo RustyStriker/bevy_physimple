@@ -20,7 +20,7 @@ and eventually i want people to be able to use this crate as a simple collisions
 
 ## What doesnt work/What is currently buggy?
 
-- Raycasts with circles
+- Scale doesnt affect the shapes(apart from maybe the circle)
 - Overlap detection sometimes acts weird(apperant in Sensor vs Kinematic when the kinematic isn't moving)
 - You can push objects through walls, if the wall is too thin the object might tunnle through it
 - Probably some more stuff, please tell me when something isn't working properly(and isn't written here)
@@ -47,5 +47,5 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
   - [x] Convex shapes
   - [ ] Rays
   - [ ] Complex area based thing
-- [ ] Basic joints
+- [ ] Rotate offsets(and go through everything making sure rotations are included)
 - [ ] Actual docs

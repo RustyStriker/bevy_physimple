@@ -74,10 +74,9 @@ impl Transform2D {
         let (tb, rb) = (self.translation_buffer, self.rotation_buffer);
 
         let t = trans_mode.get_position(transform);
-        let r = trans_mode.get_rotation(transform);
 
         trans_mode.set_position(transform, t + tb);
-        trans_mode.set_rotation(transform, r + rb);
+        trans_mode.add_rotation(transform, rb);
     }
 
     // systems

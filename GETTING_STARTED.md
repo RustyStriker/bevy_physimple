@@ -10,6 +10,8 @@ The plugin contains the following components and bundles(with a brief explanatio
 - `StaticBody`: Marker component, StaticBody V StaticBody/Sensor collisions cannot occur
 - `SensorBundle`(bundle): Contains the needed components for a Sensor
 - `Sensor`: Marker component, but also holds information about the colliding bodies in a Vec(might be changed in favour of events/hash sets)
+- `RayCastBundle`(bundle): Contains the needed components for a RayCast
+- `RayCast`: Gets the closest collision occuring on a given ray
 - `CollisionLayer`: Which collision layer and mask the body occupies(a collision can occur only if `a.mask & b.layer | a.layer & b.mask != 0`)
 - `Vel`: Used for Continuous collision kinematic bodies, requires more computational power, so not a good idea for small visual particles(like debris), yet good for stuff like bullets
 - `Transform2D`: Used internally, if you are modifying the position/rotation of an object during a physics step, its better to modify this component instead.
@@ -17,7 +19,7 @@ The plugin contains the following components and bundles(with a brief explanatio
 You may also use the following events:
 
 - `CollisionEvent`
-- more will probably come in the future(assuming i indeed keep updating this lib)
+- more will probably come in the future(feel free to suggest events)
 
 And of course, the following resource:
 
@@ -26,15 +28,16 @@ And of course, the following resource:
 This lib takes care of:
 
 - collision
+- solving said collision and providing some information about them
 - that is pretty much it
 
 while it also provides continuous collision, it is quite limited and works only for `With<Vel>` against entities marked with `StaticBody` or `Sensor`
 
 What you need to take care of:
 
-- Gravity
+- Gravity(If you want)
 - Applying movement(except for `With<Vel>` entities)
-- Actually reacting to the collision events(solving is done automatically)
+- Actually reacting to the collision events(solving is done automatically, and `With<Vel>` will slide the movement along the collision normal)
 
 Now I know you might be asking youself:
 
@@ -126,3 +129,13 @@ as I assumed you will only use them with a `SpriteBundle` or something else whic
 (You can create your own bundles quite easily, as they hold 3 components each)
 
 For a more "full" example, please check the only existing example currently named `shapes`
+
+### NOTE - 2
+
+If you are using non continuous collision kinematic bodies(`Without<Vel>`),
+and you apply gravity to them, you will need to read the `CollisionEvent`s
+and slide(or reflect/bounce/whatever) the movement along the collision normal
+to prevent the bodies from endlessly accelerating downwards,
+eventually causing them to be too fast for `Without<Vel>` to handle.
+
+Lastly, if you have any questions feel free to @ me on the bevy discord.

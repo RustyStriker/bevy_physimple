@@ -1,6 +1,14 @@
 use bevy::prelude::*;
 
-/// Which plane acts as the XY plane, rotation axis is the perpendicular axis
+/**
+    Allows you to choose which plane to "project" your physics one,
+    the axis perpendicular to the plane will be ignored for tranlsation
+    and be the axis of rotation
+
+    i.e. if we choose `TransformMode::XZ`,
+    then the Y position value will be discarded
+    and the Y rotation will be used
+*/
 #[derive(Debug, Clone, Copy)]
 pub enum TransformMode {
     XY,
@@ -131,4 +139,18 @@ impl TransformMode {
             TransformMode::YZ => Quat::from_rotation_x(rot),
         }
     }
+    /// Adds rotation based on `TransformMode` (doesnt erase previus rotation)
+    pub fn add_rotation(
+        &self,
+        transform : &mut Transform,
+        rot : f32,
+    ) {
+        let rot = match self {
+            TransformMode::XY => Quat::from_rotation_z(rot),
+            TransformMode::XZ => Quat::from_rotation_y(rot),
+            TransformMode::YZ => Quat::from_rotation_x(rot),
+        };
+        transform.rotate(rot);
+    }
+
 }

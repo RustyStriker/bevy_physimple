@@ -9,7 +9,18 @@ pub struct RayCastBundle {
     pub collision_layer: CollisionLayer,
 }
 
-/// TODO raycast explanation...
+/**
+    # RayCast
+
+    A raycast represents a line in space, from its origin(the `GlobalTransform`, with the raycast offset) to `cast`(relative to the origin).
+
+    It is used to check which object is the closest along the given ray.
+
+    ### Note - Multiple checks per frame
+
+    If you need to check for multiple rays per frame, you might find it useful to clone and modify the `ray_phase` system under `normal_coll.rs`
+    as currently there is no built in support for it.
+*/
 #[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
 pub struct RayCast {
     /// Offset from the Transform object
@@ -54,6 +65,7 @@ impl RayCast {
             collision : None,
         }
     }
+    /// Offsets the raycast by `offset` relative to the `Transform` component on the entity
     pub fn with_offset(
         mut self,
         offset : Vec2,

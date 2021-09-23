@@ -48,5 +48,5 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
   - [x] Convex shapes
   - [ ] Rays
   - [ ] Complex area based thing
-- [ ] Rotate offsets(and go through everything making sure rotations are included)
+- [x] Rotate offsets(and go through everything making sure rotations are included)
 - [ ] Actual docs

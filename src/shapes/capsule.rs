@@ -112,8 +112,8 @@ impl Capsule {
     pub fn center_line(&self, t : &Transform2D) -> (Vec2, Vec2) {
         let rot = Mat2::from_angle(t.rotation());
 
-        let a = rot * Vec2::new(0.0, self.half_height) + t.translation() + self.offset;
-        let b = rot * Vec2::new(0.0, -self.half_height) + t.translation() + self.offset;
+        let a = rot * Vec2::new(0.0, self.half_height) + t.translation() + rot * self.offset;
+        let b = rot * Vec2::new(0.0, -self.half_height) + t.translation() + rot * self.offset;
 
         (a, b)
     }

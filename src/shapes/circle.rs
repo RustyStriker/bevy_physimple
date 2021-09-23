@@ -32,13 +32,11 @@ impl Circle {
         &self,
         transform : &Transform2D,
     ) -> Aabb {
-        // rotate the scale
-        let basis = Mat2::from_angle(transform.rotation());
-        let scale = basis * transform.scale();
+        let rot = Mat2::from_angle(transform.rotation());
 
         Aabb {
-            extents : scale * self.radius,
-            position : transform.translation() + self.offset,
+            extents : Vec2::splat(self.radius),
+            position : transform.translation() + rot * self.offset,
         }
     }
 
@@ -46,7 +44,7 @@ impl Circle {
         let n = rc.normalize();
         let p = n.perp();
 
-        let c = t.translation() + self.offset;
+        let c = t.translation() + Mat2::from_angle(t.rotation()) * self.offset;
 
         let cn = n.dot(c);
         let cp = p.dot(c);

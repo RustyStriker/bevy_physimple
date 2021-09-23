@@ -51,7 +51,7 @@ fn setup(
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     // Spawn character
-    let _player_id = commands
+    commands
         .spawn_bundle(SpriteBundle {
             sprite : Sprite::new(Vec2::splat(28.0)),
             material : blue.clone(),
@@ -64,7 +64,20 @@ fn setup(
             ..Default::default()
         })
         .insert(CharacterController::default())
-        .id();
+        .insert(
+        RayCast::new(Vec2::new(100.0,0.0))
+            .with_offset(Vec2::splat(14.0))     // Gonna offset our ray
+            .with_static(true)       // Let it collide with static bodies
+        )
+        .with_children(|p| {
+            // We gonna push a little cube for the ray
+            p.spawn_bundle(SpriteBundle {
+                sprite: Sprite::new(Vec2::splat(10.0)),
+                material: materials.add(Color::MIDNIGHT_BLUE.into()),
+                ..Default::default()
+            });
+        })
+        ;
 
     // center floor
     commands
@@ -294,8 +307,12 @@ fn ray_head(
     for (r,c, rt) in q.iter() {
         if let Some(c) = c.first() {
             if let Ok(mut t) = ts.get_mut(*c) {
+                // We use the offset in the `unwrap_or` because we want to offset the position to be where the ray "ends"
+                // while in the `map`(and `pos` by extension) we want the position relative to the transform component
+                // since `a.collision_point` is in global space
+
                 let pos = Vec2::new(rt.translation.x, rt.translation.y);
-                t.translation = r.collision.map(|a| a.collision_point - pos).unwrap_or(r.cast).extend(0.0);
+                t.translation = r.collision.map(|a| a.collision_point - pos).unwrap_or(r.cast + r.offset).extend(0.0);
             }
         }
     }

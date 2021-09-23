@@ -268,7 +268,9 @@ pub fn ray_phase(
 			Err(_) => continue,
 		};
 
-		let r_cast = Mat2::from_angle(rt.rotation()) * r.cast;
+		let r_rot = Mat2::from_angle(rt.rotation());
+		let r_cast = r_rot * r.cast;
+		let r_origin = rt.translation() + r_rot * r.offset;
 
 		r.collision = None;
 
@@ -294,7 +296,7 @@ pub fn ray_phase(
 			if rl.overlap(kl) {
 				// TODO add aabb testing or something else first
 				
-				let c = ks.ray(kt, rt.translation() + r.offset, r_cast);
+				let c = ks.ray(kt, r_origin, r_cast);
 				
 				if let Some(c) = c {
 					if c > 0.0 && c < 1.0 && c < shortest {
@@ -324,7 +326,7 @@ pub fn ray_phase(
 				if rl.overlap(sl) {
 					// TODO add aabb testing or something else first
 	
-					let c = ss.ray(st, rt.translation() + r.offset, r_cast);
+					let c = ss.ray(st, r_origin, r_cast);
 	
 					if let Some(c) = c {
 						if c > 0.0 && c < 1.0 && c < shortest {
@@ -339,7 +341,7 @@ pub fn ray_phase(
 		// wrap it up and change the collision
 		if let Some(e) = short_entity {
 			r.collision = Some(RayCastCollision {
-				collision_point: shortest * r_cast + rt.translation(),
+				collision_point: shortest * r_cast + r_origin,
 				entity: e,
 				is_static: stt,
 			});

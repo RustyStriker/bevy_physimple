@@ -65,6 +65,7 @@ impl super::SAT for Square {
 
     fn project(&self, trans : &Transform2D, normal : Vec2) -> (f32,f32) {
         let rot = Mat2::from_angle(trans.rotation());
+        let offset = rot * self.offset;
 
         let verts = [
             Vec2::new(1.0,1.0),
@@ -77,7 +78,7 @@ impl super::SAT for Square {
         let mut max = f32::NEG_INFINITY;
 
         for v in verts {
-            let v = rot * (v * self.extents) + trans.translation();
+            let v = rot * (v * self.extents) + trans.translation() + offset;
             let proj = v.dot(normal);
 
             min = min.min(proj);
@@ -89,6 +90,7 @@ impl super::SAT for Square {
 
     fn get_closest_vertex(&self, trans : &Transform2D, vertex : Vec2) -> Vec2 {
         let rot = Mat2::from_angle(trans.rotation());
+        let offset = rot * self.offset;
     
         let verts = [
             Vec2::new(1.0,1.0),
@@ -101,7 +103,7 @@ impl super::SAT for Square {
         let mut closest = Vec2::ZERO;
 
         for v in verts {
-            let v = rot * (v * self.extents) + trans.translation();
+            let v = rot * (v * self.extents) + trans.translation() + offset;
         
             let l = (v - vertex).length_squared();
             if l < min_l {
@@ -117,7 +119,7 @@ impl super::SAT for Square {
         let rot = Mat2::from_angle(-trans.rotation());
 
         // IDEA: rotate the ray (the opposite direction) and then you can do simple ray vs aabb collision
-        let t = rot * trans.translation();
+        let t = rot * (trans.translation()) + self.offset; // offset should not be rotated here
 
         let ro = rot * ro;
         let rc = rot * rc;

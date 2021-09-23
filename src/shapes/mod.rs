@@ -96,13 +96,16 @@ fn sat_normal(a : &dyn SAT, ta : &Transform2D, b : &dyn SAT, tb : &Transform2D) 
 
 fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Transform2D) -> Option<Vec2> {
     let na = a.get_normals(ta);
+    let b_rot = Mat2::from_angle(tb.rotation());
     let nb = match b {
         CollisionShape::Circle(c) => {
-            let v = a.get_closest_vertex(ta, tb.translation() + c.offset);
-            (tb.translation() + c.offset - v).normalize()
+            let offset = b_rot * c.offset;
+            let v = a.get_closest_vertex(ta, tb.translation() + offset);
+            (tb.translation() + offset - v).normalize()
         },
         CollisionShape::Capsule(c) => {
-            let v = a.get_closest_vertex(ta, tb.translation() + c.offset);
+            let offset = b_rot * c.offset;
+            let v = a.get_closest_vertex(ta, tb.translation() + offset);
             c.sat_normal(tb, v)
         }
         _ => panic!("Shouldn't happen, if this occur to you please report it as a bug(and how you got here)")
@@ -116,7 +119,7 @@ fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Trans
         let (mina, maxa) = a.project(ta, n);
         let (minb, maxb) = match b {
             CollisionShape::Circle(c) => {
-                let center = tb.translation() + c.offset;
+                let center = tb.translation() + b_rot * c.offset;
                 let center = center.dot(n);
 
                 (center - c.radius, center + c.radius)
@@ -151,8 +154,8 @@ fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, 
     
     match (a, b) {
         (Circle(a), Circle(b)) => {
-            let ac = ta.translation() + a.offset;
-            let bc = tb.translation() + b.offset;
+            let ac = ta.translation() + Mat2::from_angle(ta.rotation()) * a.offset;
+            let bc = tb.translation() + Mat2::from_angle(tb.rotation()) * b.offset;
             let d = ac - bc;
             let d_len = d.length();
 
@@ -167,20 +170,20 @@ fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, 
         (Circle(a), Capsule(b)) => collide_circle_capsule(a, ta, b, tb),
         (Capsule(a), Circle(b)) => collide_circle_capsule(b, tb, a, ta).map(|v| -v),
         (Capsule(a), Capsule(b)) => {
-            let arot = Mat2::from_angle(ta.rotation());
-            let brot = Mat2::from_angle(tb.rotation());
+            let a_rot = Mat2::from_angle(ta.rotation());
+            let b_rot = Mat2::from_angle(tb.rotation());
 
             // When you make 2 capsules obey SAT rules :D(they are still not fully SAT tho)
 
-            let n1 = arot * Vec2::X;
-            let n2 = brot * Vec2::X;
+            let n1 = a_rot * Vec2::X;
+            let n2 = b_rot * Vec2::X;
 
             // get the closer vertex of b(relative to a)
             let n3 = {
-                let b1 = brot * Vec2::new(0.0,  b.half_height) + tb.translation() + b.offset;
-                let b2 = brot * Vec2::new(0.0, -b.half_height) + tb.translation() + b.offset;
+                let b1 = b_rot * Vec2::new(0.0,  b.half_height) + tb.translation() + b_rot * b.offset;
+                let b2 = b_rot * Vec2::new(0.0, -b.half_height) + tb.translation() + b_rot * b.offset;
 
-                let v = ta.translation() + a.offset;
+                let v = ta.translation() + a_rot * a.offset;
 
                 let d1 = b1 - v;
                 let d2 = b2 - v;
@@ -229,7 +232,7 @@ fn collide_circle_capsule(a : &Circle, ta : &Transform2D, b : &Capsule, tb : &Tr
     // get the distance of the circle's center to the capsule's center line
     let (ba, bb) = b.center_line(tb);
 
-    let acenter = ta.translation() + a.offset;
+    let acenter = ta.translation() + Mat2::from_angle(ta.rotation()) * a.offset;
 
     let n = brot * Vec2::X;
     let p = brot * Vec2::Y;

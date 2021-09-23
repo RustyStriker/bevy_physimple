@@ -32,11 +32,11 @@ impl Default for RayCast {
 
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct RayCastCollision {
-    /// Position in global space
+    /// The position in global space of the collision
     pub collision_point : Vec2,
-    /// Entity it collides with
+    /// The entity which the ray collides with
     pub entity : Entity,
-    /// Whether the entity is a statcibody or not
+    /// Whether the entity is a statcibody or not - will always be `false` if `Ray.collides_with_static` is false
     pub is_static : bool,
 }
 

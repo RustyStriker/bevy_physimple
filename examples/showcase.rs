@@ -209,7 +209,7 @@ fn setup(
             shape: CollisionShape::Square(Square::size(Vec2::new(100.0,200.0))),
             ..Default::default()
         })
-        .insert(Gravity(Vec2::new(0.0,-150.0)))
+        .insert(Gravity(Vec2::new(0.0,-500.0)))
         ;
     
     // Some text about rays(well, its just rays)

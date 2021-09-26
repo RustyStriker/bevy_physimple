@@ -44,9 +44,7 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
   - [x] Generic shape(dynamic object)
 - [ ] Update the examples, and better showcase stuff
   - [x] n-body example(somewhat n-body)
-  - [ ] General showcase
+  - [ ] General showcase(needs review)
   - [x] Convex shapes
-  - [ ] Rays
-  - [ ] Complex area based thing
 - [x] Rotate offsets(and go through everything making sure rotations are included)
 - [ ] Actual docs(this might never be enough)

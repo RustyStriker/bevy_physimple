@@ -49,18 +49,18 @@ impl Circle {
         let cn = n.dot(c);
         let cp = p.dot(c);
         
-        let rp = p.dot(ro);
         let rn = n.dot(ro);
+        let rp = p.dot(ro);
 
         if (rp - cp).abs() < self.radius {
             let d = (self.radius.powi(2) - (rp - cp).powi(2)).sqrt();
             // Why?
             //  We are checking for the edge with the min value(along the n axis) usually,
             //  if it is negative we need to check for the edge with the max value, thus this weird if
-            let d = if cn - d < rn { cn + d } else { cn - d };
+            let d = if cn - d < rn { cn + d } else { cn - d } - rn;
 
-            if n.dot(rc) + rn > d && d > rn {
-                Some(1.0 + d / n.dot(rc)) // we want a value between [0.0 - 1.0], and we got a full blown value here
+            if n.dot(rc) > d && d > 0.0 {
+                Some(d / n.dot(rc))
             }
             else {
                 None // Ray isnt long enough or the circle is behind the ray 

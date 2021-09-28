@@ -21,7 +21,7 @@ pub struct StaticBody;
 /// StaticBody for 2D physics(with supposedly infinite mass)
 #[derive(Bundle, Default)]
 pub struct StaticBundle {
-    pub marker : StaticBody,
-    pub shape : CollisionShape,
-    pub coll_layer : CollisionLayer,
+    pub marker: StaticBody,
+    pub shape: CollisionShape,
+    pub coll_layer: CollisionLayer,
 }

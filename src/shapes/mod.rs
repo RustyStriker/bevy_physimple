@@ -13,7 +13,7 @@ pub use capsule::*;
 
 pub trait SAT {
     /// Gets the Axis Aligned Bounding Box of the shape
-    fn aabb(&self, trans : &Transform2D) -> Aabb {
+    fn aabb(&self, trans: &Transform2D) -> Aabb {
         let (xmin, xmax) = self.project(trans, Vec2::X);
         let (ymin, ymax) = self.project(trans, Vec2::Y);
 
@@ -29,28 +29,28 @@ pub trait SAT {
     /// Gets the normals to use in the SAT algorithm(should simply be the normals of the edges)
     ///
     /// HINT: there is no need to give 2 parallel normals(as they produce the same results) 
-    fn get_normals(&self, trans : &Transform2D) -> Vec<Vec2>;
+    fn get_normals(&self, trans: &Transform2D) -> Vec<Vec2>;
 
     /// Gets the projection of the shape on the given normal
     ///
     /// (min, max)
-    fn project(&self, trans : &Transform2D, normal : Vec2) -> (f32,f32);
+    fn project(&self, trans: &Transform2D, normal: Vec2) -> (f32,f32);
 
     /// Gets the closest vertex to the given point, used for SAT vs Special shapes(Circle and Capsule)
-    fn get_closest_vertex(&self, trans : &Transform2D, vertex : Vec2) -> Vec2;
+    fn get_closest_vertex(&self, trans: &Transform2D, vertex: Vec2) -> Vec2;
 
     /// Gets the collision with a ray
     ///
     /// ray_origin: The tail of the ray
     ///
     /// ray_cast: The point(relative to ray_origin) the ray points to 
-    fn ray(&self, trans : &Transform2D, ray_origin : Vec2, ray_cast :  Vec2) -> Option<f32>;
+    fn ray(&self, trans: &Transform2D, ray_origin: Vec2, ray_cast:  Vec2) -> Option<f32>;
 }
 
 /// Collides 2 shapes and returns the MTV relative to a
 ///
 /// MTV - Minimal Tranlsation Vector
-pub fn collide(a : &CollisionShape, trans_a : &Transform2D, b : &CollisionShape, trans_b : &Transform2D) -> Option<Vec2> {
+pub fn collide(a: &CollisionShape, trans_a: &Transform2D, b: &CollisionShape, trans_b: &Transform2D) -> Option<Vec2> {
     let sat_a = a.sat();
     let sat_b = b.sat();
 
@@ -62,7 +62,7 @@ pub fn collide(a : &CollisionShape, trans_a : &Transform2D, b : &CollisionShape,
     }
 }
 
-fn sat_normal(a : &dyn SAT, ta : &Transform2D, b : &dyn SAT, tb : &Transform2D) -> Option<Vec2> {
+fn sat_normal(a: &dyn SAT, ta: &Transform2D, b: &dyn SAT, tb: &Transform2D) -> Option<Vec2> {
     let na = a.get_normals(ta);
     let nb = b.get_normals(tb);
 
@@ -94,7 +94,7 @@ fn sat_normal(a : &dyn SAT, ta : &Transform2D, b : &dyn SAT, tb : &Transform2D) 
     Some(minimal_dis * minimal_n)
 }
 
-fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Transform2D) -> Option<Vec2> {
+fn sat_special(a: &dyn SAT, ta: &Transform2D, b: &CollisionShape, tb: &Transform2D) -> Option<Vec2> {
     let na = a.get_normals(ta);
     let b_rot = Mat2::from_angle(tb.rotation());
     let nb = match b {
@@ -148,7 +148,7 @@ fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Trans
     Some(minimal_dis * minimal_n)
 }
 
-fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, tb : &Transform2D) -> Option<Vec2> {
+fn collide_special(a: &CollisionShape, ta: &Transform2D, b: &CollisionShape, tb: &Transform2D) -> Option<Vec2> {
     #[allow(clippy::enum_glob_use)]
     use CollisionShape::*;
     
@@ -226,7 +226,7 @@ fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, 
     }
 }
 
-fn collide_circle_capsule(a : &Circle, ta : &Transform2D, b : &Capsule, tb : &Transform2D) -> Option<Vec2> {
+fn collide_circle_capsule(a: &Circle, ta: &Transform2D, b: &Capsule, tb: &Transform2D) -> Option<Vec2> {
     let brot = Mat2::from_angle(tb.rotation());
     
     // get the distance of the circle's center to the capsule's center line
@@ -288,7 +288,7 @@ impl CollisionShape {
         }
     }
 
-    pub fn aabb(&self, t : &Transform2D) -> Aabb {
+    pub fn aabb(&self, t: &Transform2D) -> Aabb {
         if let Some(sat) = self.sat() {
             sat.aabb(t)
         }
@@ -301,7 +301,7 @@ impl CollisionShape {
         }
     }
 
-    pub fn ray(&self, trans : &Transform2D, ray_origin : Vec2, ray_cast : Vec2) -> Option<f32> {
+    pub fn ray(&self, trans: &Transform2D, ray_origin: Vec2, ray_cast: Vec2) -> Option<f32> {
         if let Some(sat) = self.sat() {
             sat.ray(trans, ray_origin, ray_cast)
         }
@@ -327,13 +327,13 @@ mod sat_tests {
     use std::f32::consts::PI;
     // Use a much higher value of epsilon due to the trigo functions in the rotation calculations having
     //  around 0.0000005 miss
-    const EPSILON : f32 = 0.001;
+    const EPSILON: f32 = 0.001;
 
     #[test]
     fn squares() {
         let s1 = Square {
-            offset : Vec2::ZERO,
-            extents : Vec2::splat(1.0),
+            offset: Vec2::ZERO,
+            extents: Vec2::splat(1.0),
         };
 
         let t1 = Transform2D::new(
@@ -343,8 +343,8 @@ mod sat_tests {
         );
 
         let s2 = Square {
-            offset : Vec2::ZERO,
-            extents : Vec2::splat(1.0),
+            offset: Vec2::ZERO,
+            extents: Vec2::splat(1.0),
         };
 
         let t2 = Transform2D::new(
@@ -368,8 +368,8 @@ mod sat_tests {
     #[test]
     fn squares_rotation() {
         let a = Square {
-            offset : Vec2::ZERO,
-            extents : Vec2::splat(1.0),
+            offset: Vec2::ZERO,
+            extents: Vec2::splat(1.0),
         };
         let ta = Transform2D::new(
             Vec2::ZERO,
@@ -378,8 +378,8 @@ mod sat_tests {
         );
 
         let b = Square {
-            offset : Vec2::ZERO,
-            extents : Vec2::splat(1.0),
+            offset: Vec2::ZERO,
+            extents: Vec2::splat(1.0),
         };
         let tb = Transform2D::new(
             Vec2::new(2.0, 0.5),

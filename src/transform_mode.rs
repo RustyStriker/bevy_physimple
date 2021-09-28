@@ -19,7 +19,7 @@ impl TransformMode {
     /// Returns the position from a given `&GlobalTransform` and `TransformMode`
     pub fn get_global_position(
         &self,
-        transform : &GlobalTransform,
+        transform: &GlobalTransform,
     ) -> Vec2 {
         let t = transform.translation;
 
@@ -32,7 +32,7 @@ impl TransformMode {
     /// Returns the rotation from a given `&GlobalTransform` and `TransformMode`
     pub fn get_global_rotation(
         &self,
-        transform : &GlobalTransform,
+        transform: &GlobalTransform,
     ) -> f32 {
         let q = transform.rotation;
 
@@ -54,7 +54,7 @@ impl TransformMode {
     /// Returns the scale from a given `&GlobalTransform` and `TransformMode`
     pub fn get_global_scale(
         &self,
-        transform : &GlobalTransform,
+        transform: &GlobalTransform,
     ) -> Vec2 {
         let t = transform.scale;
 
@@ -67,7 +67,7 @@ impl TransformMode {
     /// Returns the position from a given `&Transform` and `TransformMode`
     pub fn get_position(
         &self,
-        transform : &Transform,
+        transform: &Transform,
     ) -> Vec2 {
         let t = transform.translation;
 
@@ -80,7 +80,7 @@ impl TransformMode {
     /// Returns the rotation from a given `&Transform` and `TransformMode`
     pub fn get_rotation(
         &self,
-        transform : &Transform,
+        transform: &Transform,
     ) -> f32 {
         let q = transform.rotation;
 
@@ -102,7 +102,7 @@ impl TransformMode {
     /// Returns the scale from a given `&Transform` and `TransformMode`
     pub fn get_scale(
         &self,
-        transform : &Transform,
+        transform: &Transform,
     ) -> Vec2 {
         let t = transform.scale;
 
@@ -115,8 +115,8 @@ impl TransformMode {
     /// Sets position based on `TransformMode`
     pub fn set_position(
         &self,
-        transform : &mut Transform,
-        pos : Vec2,
+        transform: &mut Transform,
+        pos: Vec2,
     ) {
         let t = transform.translation;
 
@@ -129,8 +129,8 @@ impl TransformMode {
     /// Sets rotation based on `TransformMode` (erase previous rotation)
     pub fn set_rotation(
         &self,
-        transform : &mut Transform,
-        rot : f32,
+        transform: &mut Transform,
+        rot: f32,
     ) {
         // This doesnt persist along other axes, but making it persist requires quite the overhead(and might not be useful at all)
         transform.rotation = match self {
@@ -142,8 +142,8 @@ impl TransformMode {
     /// Adds rotation based on `TransformMode` (doesnt erase previous rotation)
     pub fn add_rotation(
         &self,
-        transform : &mut Transform,
-        rot : f32,
+        transform: &mut Transform,
+        rot: f32,
     ) {
         let rot = match self {
             TransformMode::XY => Quat::from_rotation_z(rot),

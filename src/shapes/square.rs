@@ -7,31 +7,31 @@ use super::Transform2D;
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct Square {
     /// Offset from the `Transform` transltion component
-    pub offset : Vec2,
+    pub offset: Vec2,
     /// Square's extents
     ///
     /// `extents = Vec2::new(half width, half height)`
-    pub extents : Vec2,
+    pub extents: Vec2,
 }
 impl Square {
     /// Constructs a new square
-    pub fn new(extents : Vec2) -> Self {
+    pub fn new(extents: Vec2) -> Self {
         Square {
-            offset : Vec2::ZERO,
+            offset: Vec2::ZERO,
             extents,
         }
     }
     /// Constructs a new square from absolute size(ie. width and height)
-    pub fn size(size : Vec2) -> Self {
+    pub fn size(size: Vec2) -> Self {
         Square {
-            offset : Vec2::ZERO,
-            extents : size * 0.5,
+            offset: Vec2::ZERO,
+            extents: size * 0.5,
         }
     }
     /// Offset from the `Transform` transltion component
     pub fn with_offset(
         mut self,
-        offset : Vec2,
+        offset: Vec2,
     ) -> Self {
         self.offset = offset;
         self
@@ -45,13 +45,13 @@ impl Default for Square {
 }
 
 impl super::SAT for Square {
-    fn get_normals(&self, trans : &Transform2D) -> Vec<Vec2> {
+    fn get_normals(&self, trans: &Transform2D) -> Vec<Vec2> {
         let rot = Mat2::from_angle(trans.rotation());
 
         Vec::from([rot * Vec2::Y, rot * Vec2::X])
     }
 
-    fn project(&self, trans : &Transform2D, normal : Vec2) -> (f32,f32) {
+    fn project(&self, trans: &Transform2D, normal: Vec2) -> (f32,f32) {
         let rot = Mat2::from_angle(trans.rotation());
         let offset = rot * self.offset;
 
@@ -76,7 +76,7 @@ impl super::SAT for Square {
         (min, max)
     }
 
-    fn get_closest_vertex(&self, trans : &Transform2D, vertex : Vec2) -> Vec2 {
+    fn get_closest_vertex(&self, trans: &Transform2D, vertex: Vec2) -> Vec2 {
         let rot = Mat2::from_angle(trans.rotation());
         let offset = rot * self.offset;
     
@@ -103,7 +103,7 @@ impl super::SAT for Square {
         closest
     }
 
-    fn ray(&self, trans : &Transform2D, ro : Vec2, rc :  Vec2) -> Option<f32> {
+    fn ray(&self, trans: &Transform2D, ro: Vec2, rc:  Vec2) -> Option<f32> {
         let rot = Mat2::from_angle(-trans.rotation());
 
         // IDEA: rotate the ray (the opposite direction) and then you can do simple ray vs aabb collision
@@ -159,7 +159,7 @@ mod square_tests {
     use crate::prelude::SAT;
 
     use super::*;
-    const EPSILON : f32 = 0.0001;
+    const EPSILON: f32 = 0.0001;
 
     #[test]
     fn square_ray() {

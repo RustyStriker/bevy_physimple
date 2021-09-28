@@ -72,8 +72,8 @@ So in our startup system we gonna add some physical bodies with sprites:
 
 ```rs
 fn startup(
-    mut coms : Commands,
-    mut materials : ResMut<Assets<ColorMaterial>>,
+    mut coms: Commands,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     // Spawn a camera in case we didnt add 1 already
     coms.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -81,23 +81,23 @@ fn startup(
     // Spawn a floor
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(600.0, 30.0)),
-            material : materials.add(Color::BLACK.into()),
-            transform : Transform::from_xyz(150.0, -200.0, 0.0),
+            sprite: Sprite::new(Vec2::new(600.0, 30.0)),
+            material: materials.add(Color::BLACK.into()),
+            transform: Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         }) // The sprite bundle already inserts the `Global/Transform` components
         .insert_bundle(StaticBundle {
-            marker : StaticBody, // This is an empty struct
-            shape : CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
-            coll_layer : CollisionLayer::default(),
+            marker: StaticBody, // This is an empty struct
+            shape: CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
+            coll_layer: CollisionLayer::default(),
         })
         ;
     
     // And we gonna spawn a simple cube using continuous collision
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(35.0)),
-            material : another_color.clone(),
+            sprite: Sprite::new(Vec2::splat(35.0)),
+            material: another_color.clone(),
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
@@ -108,8 +108,8 @@ fn startup(
     // Spawn another cube without contuous collision
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(35.0)),
-            material : another_color.clone(),
+            sprite: Sprite::new(Vec2::splat(35.0)),
+            material: another_color.clone(),
             ..Default::default()
         })
         .insert(CollisionShape::Square(Square::size(Vec2::splat(35.0)))) // The collision shape

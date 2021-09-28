@@ -32,8 +32,8 @@ fn main() {
 }
 
 fn setup(
-    mut coms : Commands,
-    mut mats : ResMut<Assets<ColorMaterial>>,
+    mut coms: Commands,
+    mut mats: ResMut<Assets<ColorMaterial>>,
 ) {
     // camera
     coms.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -53,7 +53,7 @@ fn setup(
         ..Default::default()
     });
 
-    const SIZE : f32 = 40.0;
+    const SIZE: f32 = 40.0;
 
     let c1 = mats.add(Color::RED.into());
     let c2 = mats.add(Color::GREEN.into());
@@ -85,10 +85,10 @@ fn setup(
 }
 
 fn gravity(
-    time : Res<Time>,
+    time: Res<Time>,
     mut q: Query<&mut Vel>,
 ) {
-    const GRAV : f32 = 420.0;
+    const GRAV: f32 = 420.0;
 
     for mut v in q.iter_mut() {
         v.0.y -= GRAV * time.delta_seconds();
@@ -96,9 +96,9 @@ fn gravity(
 }
 fn jumpy(
     mut q: Query<&mut Vel>,
-    mut colls : EventReader<CollisionEvent>,
+    mut colls: EventReader<CollisionEvent>,
 ) {
-    const BOUNCE : f32 = 100.0;
+    const BOUNCE: f32 = 100.0;
 
     for c in colls.iter() {
         let e = if c.normal.dot(Vec2::Y) > 0.0 { c.entity_a } else { c.entity_b };

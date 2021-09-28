@@ -19,9 +19,9 @@ fn main() {
 struct Controller;
 
 fn setup(
-    mut coms : Commands,
-    asset_server : Res<AssetServer>,
-    mut mats : ResMut<Assets<ColorMaterial>>,
+    mut coms: Commands,
+    asset_server: Res<AssetServer>,
+    mut mats: ResMut<Assets<ColorMaterial>>,
 ) {
     let capsule_texture = asset_server.load("capsule_r_100_h_150.png");
 

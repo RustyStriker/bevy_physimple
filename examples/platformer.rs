@@ -3,9 +3,9 @@ use bevy_physimple::prelude::*;
 
 #[derive(Default)]
 pub struct Player {
-    double_jump : bool,
-    on_wall : Option<Vec2>,
-    on_floor : bool
+    double_jump: bool,
+    on_wall: Option<Vec2>,
+    on_floor: bool
 }
 
 pub struct Gravity(Vec2);
@@ -35,9 +35,9 @@ fn main() {
 }
 
 fn setup(
-    mut coms : Commands,
-    mut mats : ResMut<Assets<ColorMaterial>>,
-    a_server : Res<AssetServer>,
+    mut coms: Commands,
+    mut mats: ResMut<Assets<ColorMaterial>>,
+    a_server: Res<AssetServer>,
 ) {
     let wall = mats.add(Color::BLACK.into());
 
@@ -69,8 +69,8 @@ fn setup(
     // Spawn character
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(28.0)),
-            material : mats.add(Color::ALICE_BLUE.into()),
+            sprite: Sprite::new(Vec2::splat(28.0)),
+            material: mats.add(Color::ALICE_BLUE.into()),
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
@@ -96,13 +96,13 @@ fn setup(
     // center floor
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(600.0, 30.0)),
-            material : wall.clone(),
-            transform : Transform::from_xyz(150.0, -200.0, 0.0),
+            sprite: Sprite::new(Vec2::new(600.0, 30.0)),
+            material: wall.clone(),
+            transform: Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
-            shape : CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
+            shape: CollisionShape::Square(Square::size(Vec2::new(600.0, 30.0))),
             ..Default::default()
         })
         ;
@@ -110,9 +110,9 @@ fn setup(
     // side wall
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(40.0, 300.0)),
-            material : wall.clone(),
-            transform : {
+            sprite: Sprite::new(Vec2::new(40.0, 300.0)),
+            material: wall.clone(),
+            transform: {
                 let mut t = Transform::from_xyz(450.0, 0.0, 0.0);
                 t.rotation = Quat::from_rotation_z(-0.1 * 3.14);
                 t
@@ -120,7 +120,7 @@ fn setup(
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
-            shape : CollisionShape::Square(Square::size(Vec2::new(40.0, 300.0))),
+            shape: CollisionShape::Square(Square::size(Vec2::new(40.0, 300.0))),
             ..Default::default()
         })
         ;
@@ -128,13 +128,13 @@ fn setup(
     // smaller other side wall
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::new(30.0, 90.0)),
-            material : wall.clone(),
-            transform : Transform::from_xyz(-150.0, -160.0, 0.0),
+            sprite: Sprite::new(Vec2::new(30.0, 90.0)),
+            material: wall.clone(),
+            transform: Transform::from_xyz(-150.0, -160.0, 0.0),
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
-            shape : CollisionShape::Square(Square::size(Vec2::new(30.0,90.0))),
+            shape: CollisionShape::Square(Square::size(Vec2::new(30.0,90.0))),
             ..Default::default()
         })
         ;
@@ -154,12 +154,12 @@ fn setup(
         ;
 
     // Spawn the sensor
-    const SENSOR_SIZE : f32 = 50.0;
+    const SENSOR_SIZE: f32 = 50.0;
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(SENSOR_SIZE)),
-            material : mats.add(Color::GOLD.into()),
-            transform : Transform::from_xyz(30.0, -150.0, 0.0),
+            sprite: Sprite::new(Vec2::splat(SENSOR_SIZE)),
+            material: mats.add(Color::GOLD.into()),
+            transform: Transform::from_xyz(30.0, -150.0, 0.0),
             ..Default::default()
         })
         .insert_bundle(SensorBundle {
@@ -168,12 +168,12 @@ fn setup(
         });
 
     // Spawn another cube which we will try to push or something
-    const CUBE_SIZE : f32 = 35.0;
+    const CUBE_SIZE: f32 = 35.0;
     coms
         .spawn_bundle(SpriteBundle {
-            sprite : Sprite::new(Vec2::splat(CUBE_SIZE)),
-            material : mats.add(Color::CRIMSON.into()),
-            transform : Transform::from_xyz(100.0,0.0,0.0),
+            sprite: Sprite::new(Vec2::splat(CUBE_SIZE)),
+            material: mats.add(Color::CRIMSON.into()),
+            transform: Transform::from_xyz(100.0,0.0,0.0),
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
@@ -184,9 +184,9 @@ fn setup(
 }
 
 fn gravity(
-    time : Res<Time>,
-    grav : Res<Gravity>,
-    mut q : Query<&mut Vel>,
+    time: Res<Time>,
+    grav: Res<Gravity>,
+    mut q: Query<&mut Vel>,
 ) {
     // Since the lib itself doesnt take care of gravity(for obv reasons) we need to do it here
     let g = grav.0;
@@ -198,8 +198,8 @@ fn gravity(
 }
 
 fn controller_on_stuff(
-    mut query : Query<(Entity, &mut Player)>,
-    mut colls : EventReader<CollisionEvent>,
+    mut query: Query<(Entity, &mut Player)>,
+    mut colls: EventReader<CollisionEvent>,
 ) {
     // Iterate over the collisions and check if the player is on a wall/floor
     let (e, mut c) = query.single_mut().expect("should be only one player :shrug:");
@@ -223,10 +223,10 @@ fn controller_on_stuff(
 }
 
 fn character_system(
-    input : Res<Input<KeyCode>>,
-    time : Res<Time>,
-    gravity : Res<Gravity>,
-    mut query : Query<(&mut Player, &mut Vel)>,
+    input: Res<Input<KeyCode>>,
+    time: Res<Time>,
+    gravity: Res<Gravity>,
+    mut query: Query<(&mut Player, &mut Vel)>,
 ) {
     let gravity = gravity.0;
 
@@ -240,7 +240,7 @@ fn character_system(
             }
         }
         // There are 2 places in which we apply a jump, so i made a little colsure for code reusability
-        let jump = |body : &Player, vel : &mut Vel| {
+        let jump = |body: &Player, vel: &mut Vel| {
             vel.0 = vel.0.slide(gravity.normalize()) - gravity * 0.6;
             let wall = body.on_wall.unwrap_or(Vec2::ZERO) * 250.0;
             vel.0 += wall;
@@ -276,7 +276,7 @@ fn character_system(
         }
 
         // terminal velocity
-        const TERMINAL_X : f32 = 500.0;
+        const TERMINAL_X: f32 = 500.0;
         if vel.0.x.abs() > TERMINAL_X {
             vel.0.x = TERMINAL_X.copysign(vel.0.x); // you can also do `TERMINAL_X * vel.0.x.signum()`
         }
@@ -285,8 +285,8 @@ fn character_system(
 }
 
 fn change_sensor_color(
-    mut materials : ResMut<Assets<ColorMaterial>>,
-    q : Query<(&Sensor, &Handle<ColorMaterial>)>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    q: Query<(&Sensor, &Handle<ColorMaterial>)>,
 ) {
     // Simply change the color of the sensor if something is inside it
     for (s, h) in q.iter() {
@@ -302,8 +302,8 @@ fn change_sensor_color(
 }
 
 fn ray_head(
-    mut ts : Query<&mut Transform, Without<RayCast>>,
-    q : Query<(&RayCast, &Children, &Transform)>,
+    mut ts: Query<&mut Transform, Without<RayCast>>,
+    q: Query<(&RayCast, &Children, &Transform)>,
 ) {
     for (r,c, rt) in q.iter() {
         if let Some(c) = c.first() {

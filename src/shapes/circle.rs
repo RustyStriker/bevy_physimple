@@ -12,22 +12,22 @@ use super::{Aabb, Transform2D};
 #[derive(Clone, Debug, Serialize, Deserialize, Reflect)]
 pub struct Circle {
     /// Offset from the `Transform` translation component
-    pub offset : Vec2,
+    pub offset: Vec2,
 
     /// Circle's radius
-    pub radius : f32,
+    pub radius: f32,
 }
 impl Circle {
-    pub fn new(radius : f32) -> Self {
+    pub fn new(radius: f32) -> Self {
         Circle {
-            offset : Vec2::ZERO,
+            offset: Vec2::ZERO,
             radius,
         }
     }
     /// Offset from the `Transform` translation component
     pub fn with_offset(
         mut self,
-        offset : Vec2,
+        offset: Vec2,
     ) -> Self {
         self.offset = offset;
         self
@@ -35,17 +35,17 @@ impl Circle {
 
     pub fn aabb(
         &self,
-        transform : &Transform2D,
+        transform: &Transform2D,
     ) -> Aabb {
         let rot = Mat2::from_angle(transform.rotation());
 
         Aabb {
-            extents : Vec2::splat(self.radius),
-            position : transform.translation() + rot * self.offset,
+            extents: Vec2::splat(self.radius),
+            position: transform.translation() + rot * self.offset,
         }
     }
 
-    pub fn ray(&self, trans : &Transform2D, ray_origin : Vec2, ray_cast : Vec2) -> Option<f32> {
+    pub fn ray(&self, trans: &Transform2D, ray_origin: Vec2, ray_cast: Vec2) -> Option<f32> {
         let n = ray_cast.normalize();
         let p = n.perp();
 

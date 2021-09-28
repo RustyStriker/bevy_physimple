@@ -4,19 +4,19 @@ pub trait VecOp<T> {
     /// Projects the vector on the given normal
     fn project(
         self,
-        normal : T,
+        normal: T,
     ) -> T;
     /// Slides the vector on the given normal
     fn slide(
         self,
-        normal : T,
+        normal: T,
     ) -> T;
 }
 
 impl VecOp<Vec2> for Vec2 {
     fn project(
         self,
-        n : Vec2,
+        n: Vec2,
     ) -> Vec2 {
         if n.is_normalized() {
             self.dot(n) * n
@@ -27,7 +27,7 @@ impl VecOp<Vec2> for Vec2 {
     }
     fn slide(
         self,
-        n : Vec2,
+        n: Vec2,
     ) -> Vec2 {
         if n.is_normalized() {
             self - self.project(n)

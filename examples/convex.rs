@@ -17,12 +17,12 @@ fn main() {
 }
 
 struct MyTriangle {
-    v1 : Vec2,
-    v2 : Vec2,
-    v3 : Vec2
+    v1: Vec2,
+    v2: Vec2,
+    v3: Vec2
 }
 impl SAT for MyTriangle {
-    fn get_normals(&self, trans : &Transform2D) -> Vec<Vec2> {
+    fn get_normals(&self, trans: &Transform2D) -> Vec<Vec2> {
         let rot = Mat2::from_angle(trans.rotation());
         let edges = [
             rot * (self.v1 - self.v2),
@@ -33,7 +33,7 @@ impl SAT for MyTriangle {
         edges.iter().map(|&e| e.normalize().perp()).collect()
     }
 
-    fn project(&self, trans : &Transform2D, normal : Vec2) -> (f32,f32) {
+    fn project(&self, trans: &Transform2D, normal: Vec2) -> (f32,f32) {
         let rot = Mat2::from_angle(trans.rotation());
         
         let mut min = f32::INFINITY;
@@ -49,7 +49,7 @@ impl SAT for MyTriangle {
         (min,max)
     }
 
-    fn get_closest_vertex(&self, trans : &Transform2D, vertex : Vec2) -> Vec2 {
+    fn get_closest_vertex(&self, trans: &Transform2D, vertex: Vec2) -> Vec2 {
         let rot = Mat2::from_angle(trans.rotation());
 
         let mut c = f32::INFINITY;
@@ -66,7 +66,7 @@ impl SAT for MyTriangle {
         p
     }
 
-    fn ray(&self, _ : &Transform2D, _ : Vec2, _ :  Vec2) -> Option<f32> {
+    fn ray(&self, _: &Transform2D, _: Vec2, _:  Vec2) -> Option<f32> {
         // Doesnt matter for normal collision, but it will break continuous collision and RayCast against this shape
         None
     }
@@ -75,9 +75,9 @@ impl SAT for MyTriangle {
 struct Controller;
 
 fn setup(
-    mut coms : Commands,
-    asset_server : Res<AssetServer>,
-    mut mats : ResMut<Assets<ColorMaterial>>,
+    mut coms: Commands,
+    asset_server: Res<AssetServer>,
+    mut mats: ResMut<Assets<ColorMaterial>>,
 ) {
     let triangle = asset_server.load("triangle.png");
 

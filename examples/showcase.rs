@@ -51,19 +51,19 @@ struct Gravity(Vec2);
 /// Holds colors for the color changing areas
 struct ColorChange {
     coll: Handle<ColorMaterial>,
-    no_coll : Handle<ColorMaterial>,
+    no_coll: Handle<ColorMaterial>,
 }
 /// Resource for holding relevant handles, so we wont lose them
 struct PlayerHandles {
-    capsule_small : Handle<ColorMaterial>,
-    square_no_texture : Handle<ColorMaterial>,
-    circle : Handle<ColorMaterial>,
+    capsule_small: Handle<ColorMaterial>,
+    square_no_texture: Handle<ColorMaterial>,
+    circle: Handle<ColorMaterial>,
 }
 
 fn setup(
-    mut coms : Commands,
-    mut mats : ResMut<Assets<ColorMaterial>>,
-    a_server : Res<AssetServer>,
+    mut coms: Commands,
+    mut mats: ResMut<Assets<ColorMaterial>>,
+    a_server: Res<AssetServer>,
 ) {
     // Camera
     coms.spawn_bundle(OrthographicCameraBundle::new_2d());
@@ -249,9 +249,9 @@ fn setup(
 }
 
 fn change_shape(
-    p_handles : Res<PlayerHandles>,
-    keys : Res<Input<KeyCode>>,
-    mut q : Query<(&mut CollisionShape, &mut Handle<ColorMaterial>, &mut Sprite), With<Player>>,
+    p_handles: Res<PlayerHandles>,
+    keys: Res<Input<KeyCode>>,
+    mut q: Query<(&mut CollisionShape, &mut Handle<ColorMaterial>, &mut Sprite), With<Player>>,
 ) {
     if let Ok((mut s, mut h, mut sp)) = q.single_mut() {
         // Gonna make a simple change shape kinda thing
@@ -279,9 +279,9 @@ fn change_shape(
 }
 
 fn player_movement(
-    time : Res<Time>,
-    keys : Res<Input<KeyCode>>,
-    mut q : Query<&mut Vel, With<Player>>,
+    time: Res<Time>,
+    keys: Res<Input<KeyCode>>,
+    mut q: Query<&mut Vel, With<Player>>,
 ) {
     if let Ok(mut v) = q.single_mut() {
         let mut input = Vec2::ZERO;
@@ -302,7 +302,7 @@ fn player_movement(
         v.0 = v.0.lerp(input * 200.0, time.delta_seconds() * 5.0);
         v.0 += input * 200.0 * time.delta_seconds();
         // Max speed
-        const MAX_SPEED : f32 = 200.0;
+        const MAX_SPEED: f32 = 200.0;
         // If you need to check for max speed, checking for `v.0.length_squared() > MAX_SPEED_SQUARED` is usually a better idea
         // Generally try to avoid using `sqrt()` since square root is rather costly
         if v.0.length() > MAX_SPEED {
@@ -312,7 +312,7 @@ fn player_movement(
 }
 
 fn sensor_colors(
-    mut q : Query<(&mut Handle<ColorMaterial>, &Sensor, &ColorChange)>,
+    mut q: Query<(&mut Handle<ColorMaterial>, &Sensor, &ColorChange)>,
 ) {
     for (mut h, s, c) in q.iter_mut() {
         if s.bodies.len() == 0 {
@@ -325,9 +325,9 @@ fn sensor_colors(
 }
 
 fn sensor_gravity(
-    time : Res<Time>,
-    mut vels : Query<&mut Vel>,
-    q : Query<(&Sensor, &Gravity)>
+    time: Res<Time>,
+    mut vels: Query<&mut Vel>,
+    q: Query<(&Sensor, &Gravity)>
 ) {
     for (s, g) in q.iter() {
         for &e in s.bodies.iter() {
@@ -339,8 +339,8 @@ fn sensor_gravity(
 }
 
 fn ray_head(
-    mut ts : Query<&mut Transform, Without<RayCast>>,
-    q : Query<(&RayCast, &Children, &Transform)>,
+    mut ts: Query<&mut Transform, Without<RayCast>>,
+    q: Query<(&RayCast, &Children, &Transform)>,
 ) {
     for (r,c, rt) in q.iter() {
         if let Some(c) = c.first() {

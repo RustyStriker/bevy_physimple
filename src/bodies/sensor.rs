@@ -5,9 +5,9 @@ use crate::{physics_components::CollisionLayer, prelude::CollisionShape};
 
 #[derive(Bundle, Default)]
 pub struct SensorBundle {
-    pub sensor : Sensor,
-    pub shape : CollisionShape,
-    pub coll_layer : CollisionLayer,
+    pub sensor: Sensor,
+    pub shape: CollisionShape,
+    pub coll_layer: CollisionLayer,
 }
 
 /**
@@ -21,13 +21,13 @@ pub struct SensorBundle {
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct Sensor {
     /// Holds the entities which overlap with the sensor.
-    pub bodies : Vec<Entity>,
+    pub bodies: Vec<Entity>,
 }
 
 impl Sensor {
     pub fn new() -> Self {
         Sensor {
-            bodies : Vec::with_capacity(5),
+            bodies: Vec::with_capacity(5),
         }
     }
 }

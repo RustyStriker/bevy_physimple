@@ -26,7 +26,7 @@ pub struct Transform2D {
     rotation_buffer: f32,
 }
 impl Transform2D {
-    pub fn new(translation : Vec2, rotation : f32, scale : Vec2) -> Transform2D {
+    pub fn new(translation: Vec2, rotation: f32, scale: Vec2) -> Transform2D {
         Transform2D {
             translation,
             rotation,
@@ -47,30 +47,30 @@ impl Transform2D {
     }
     // Adders
     /// Adds to the translation
-    pub fn add_translation(&mut self, amount : Vec2) {
+    pub fn add_translation(&mut self, amount: Vec2) {
         self.translation += amount;
         self.translation_buffer += amount;
     }
     /// Adds to the rotation
-    pub fn add_rotation(&mut self, amount : f32) {
+    pub fn add_rotation(&mut self, amount: f32) {
         self.rotation += amount;
         self.rotation += amount;
     }
     // Setters
     /// Fully sets the translation
-    pub fn set_translation(&mut self, new : Vec2) {
+    pub fn set_translation(&mut self, new: Vec2) {
         let original = self.translation - self.translation_buffer;
         self.translation = new;
         self.translation_buffer = new - original;
     }
     /// Fully sets the rotation
-    pub fn set_rotation(&mut self, new : f32) {
+    pub fn set_rotation(&mut self, new: f32) {
         let original = self.rotation - self.rotation_buffer;
         self.rotation = new;
         self.rotation_buffer = new - original;
     }
     /// Applies the buffers to a `Transform` component.
-    pub fn apply_buffers(&self, transform : &mut Transform, trans_mode : TransformMode) {
+    pub fn apply_buffers(&self, transform: &mut Transform, trans_mode: TransformMode) {
         let (tb, rb) = (self.translation_buffer, self.rotation_buffer);
 
         let t = trans_mode.get_position(transform);
@@ -85,8 +85,8 @@ impl Transform2D {
     ///
     /// Should occur at the start of a physics step
 	pub fn sync_from_global_transform(
-		trans_mode : Res<TransformMode>,
-		mut query : Query<(&mut Transform2D, &GlobalTransform)>,
+		trans_mode: Res<TransformMode>,
+		mut query: Query<(&mut Transform2D, &GlobalTransform)>,
 	) {
 		for (mut t, gt) in query.iter_mut() {
 			*t = (gt, *trans_mode).into();
@@ -96,8 +96,8 @@ impl Transform2D {
     ///
     /// Should occur at the end of a physics step
 	pub fn sync_to_transform(
-		trans_mode : Res<TransformMode>,
-		mut q : Query<(&Transform2D, &mut Transform)>,
+		trans_mode: Res<TransformMode>,
+		mut q: Query<(&Transform2D, &mut Transform)>,
 	) {
 		for (t2, mut mt) in q.iter_mut() {
 			t2.apply_buffers(&mut mt, *trans_mode);
@@ -106,8 +106,8 @@ impl Transform2D {
     /// Automatically inserts a Transform2D component for each new CollisionShape
     #[allow(clippy::type_complexity)]
     pub fn auto_insert_system(
-        mut coms : Commands,
-        q : Query<Entity, Or<(Added<crate::prelude::CollisionShape>, Added<crate::prelude::RayCast>)>>,
+        mut coms: Commands,
+        q: Query<Entity, Or<(Added<crate::prelude::CollisionShape>, Added<crate::prelude::RayCast>)>>,
     ) {
         for e in q.iter() {
             coms.entity(e).insert(Transform2D::default());

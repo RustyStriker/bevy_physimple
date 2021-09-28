@@ -13,13 +13,13 @@ use bevy::prelude::*;
 
 #[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_system(
-    shapes : Query<&CollisionShape>,
-    mut vels : Query<&mut Vel>,
-    mut transforms : Query<&mut Transform2D>,
-    mut sensors : Query<&mut Sensor>,
-    mut broad_data : EventReader<ConBroadData>,
+    shapes: Query<&CollisionShape>,
+    mut vels: Query<&mut Vel>,
+    mut transforms: Query<&mut Transform2D>,
+    mut sensors: Query<&mut Sensor>,
+    mut broad_data: EventReader<ConBroadData>,
     // Writer to throw collision events
-    mut collision_writer : EventWriter<CollisionEvent>,
+    mut collision_writer: EventWriter<CollisionEvent>,
 ) {
     // Loop over kinematic bodies
     // Capture their sensor/static surroundings
@@ -54,7 +54,7 @@ pub fn narrow_phase_system(
 
             let mut normal = Vec2::ZERO;
             let mut remainder = Vec2::ZERO;
-            let mut coll_entity : Option<Entity> = None;
+            let mut coll_entity: Option<Entity> = None;
 
             for (s_entity, _) in broad.area.iter() {
                 let cmove = movement - remainder; // Basically only the movement left without the "recorded" collisions
@@ -167,9 +167,9 @@ pub fn narrow_phase_system(
 
                 // Throw an event
                 collision_writer.send(CollisionEvent {
-                    entity_a : k_entity,
-                    entity_b : se,
-                    is_b_static : true, // we only collide with static bodies here
+                    entity_a: k_entity,
+                    entity_b: se,
+                    is_b_static: true, // we only collide with static bodies here
                     normal,
                 });
             }

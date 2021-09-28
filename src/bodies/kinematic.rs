@@ -10,7 +10,7 @@ use crate::{
 /// Kinematic bodys are practically everything with the `Vel` struct
 #[derive(Bundle, Default)]
 pub struct KinematicBundle {
-    pub vel : Vel,
-    pub shape : CollisionShape,
-    pub collision_layer : CollisionLayer,
+    pub vel: Vel,
+    pub shape: CollisionShape,
+    pub collision_layer: CollisionLayer,
 }

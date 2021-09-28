@@ -7,16 +7,16 @@ pub struct CollPairSensor(Entity, Entity);
 
 #[allow(clippy::too_many_arguments, clippy::type_complexity)]
 pub fn broad_phase_2(
-	shapes : Query<&CollisionShape>,
+	shapes: Query<&CollisionShape>,
 	// bodies
-	kins : Query<(Entity, &Transform2D, &CollisionLayer),(Without<Vel>, Without<StaticBody>, Without<Sensor>)>,
-	kins_con : Query<(Entity, &Transform2D, &CollisionLayer), With<Vel>>,
-	statics : Query<(Entity, &Transform2D, &CollisionLayer),With<StaticBody>>,
-	sensors : Query<(Entity, &Transform2D, &CollisionLayer), With<Sensor>>,
+	kins: Query<(Entity, &Transform2D, &CollisionLayer),(Without<Vel>, Without<StaticBody>, Without<Sensor>)>,
+	kins_con: Query<(Entity, &Transform2D, &CollisionLayer), With<Vel>>,
+	statics: Query<(Entity, &Transform2D, &CollisionLayer),With<StaticBody>>,
+	sensors: Query<(Entity, &Transform2D, &CollisionLayer), With<Sensor>>,
 	// event writers
-	mut pair_kin : EventWriter<CollPairKin>,
-	mut pair_static : EventWriter<CollPairStatic>,
-	mut pair_sensor : EventWriter<CollPairSensor>,
+	mut pair_kin: EventWriter<CollPairKin>,
+	mut pair_static: EventWriter<CollPairStatic>,
+	mut pair_sensor: EventWriter<CollPairSensor>,
 ) {
 	// Someday this function should utilize the different algorithms and data strucs
 	// to make for a better broad phase with superiour performance
@@ -112,16 +112,16 @@ pub fn broad_phase_2(
 #[allow(clippy::too_many_arguments)]
 pub fn narrow_phase_2(
 	// Data we need
-	shapes : Query<&CollisionShape>,
-	mut transforms : Query<&mut Transform2D>,
-	mut sensors : Query<&mut Sensor>,
-	mut vels : Query<&mut Vel>,
+	shapes: Query<&CollisionShape>,
+	mut transforms: Query<&mut Transform2D>,
+	mut sensors: Query<&mut Sensor>,
+	mut vels: Query<&mut Vel>,
 	// Readers(for the entities)
-	mut pair_kin : EventReader<CollPairKin>,
-	mut pair_static : EventReader<CollPairStatic>,
-	mut pair_sensor : EventReader<CollPairSensor>,
+	mut pair_kin: EventReader<CollPairKin>,
+	mut pair_static: EventReader<CollPairStatic>,
+	mut pair_sensor: EventReader<CollPairSensor>,
 	// writers
-	mut coll_writer : EventWriter<CollisionEvent>,
+	mut coll_writer: EventWriter<CollisionEvent>,
 ) {
 	// Solve kinematic pairs
 	for CollPairKin(e1, e2) in pair_kin.iter() {

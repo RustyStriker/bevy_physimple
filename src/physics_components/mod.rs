@@ -43,8 +43,8 @@ use serde::{Deserialize, Serialize};
 */
 #[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
 pub struct CollisionLayer {
-    pub mask : u8,
-    pub layer : u8,
+    pub mask: u8,
+    pub layer: u8,
 }
 
 impl Default for CollisionLayer {
@@ -54,15 +54,15 @@ impl Default for CollisionLayer {
 }
 impl CollisionLayer {
     pub fn new(
-        mask : u8,
-        layer : u8,
+        mask: u8,
+        layer: u8,
     ) -> Self {
         Self { mask, layer }
     }
     /// Checks if 2 `CollisionLayer`s should collide with each other
     pub fn overlap(
         &self,
-        other : &CollisionLayer,
+        other: &CollisionLayer,
     ) -> bool {
         (self.mask & other.layer) | (self.layer & other.mask) != 0
     }

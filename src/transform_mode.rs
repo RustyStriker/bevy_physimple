@@ -126,7 +126,7 @@ impl TransformMode {
             TransformMode::YZ => Vec3::new(t.x, pos.x, pos.y),
         };
     }
-    /// Sets rotation based on `TransformMode` (erase previus rotation)
+    /// Sets rotation based on `TransformMode` (erase previous rotation)
     pub fn set_rotation(
         &self,
         transform : &mut Transform,
@@ -139,7 +139,7 @@ impl TransformMode {
             TransformMode::YZ => Quat::from_rotation_x(rot),
         }
     }
-    /// Adds rotation based on `TransformMode` (doesnt erase previus rotation)
+    /// Adds rotation based on `TransformMode` (doesnt erase previous rotation)
     pub fn add_rotation(
         &self,
         transform : &mut Transform,

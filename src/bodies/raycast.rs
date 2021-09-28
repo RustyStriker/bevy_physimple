@@ -60,7 +60,7 @@ impl RayCast {
     pub fn new(cast : Vec2) -> Self {
         RayCast {
             offset : Vec2::ZERO,
-            cast : cast,
+            cast,
             collide_with_static : true,
             collision : None,
         }

@@ -10,6 +10,14 @@ pub struct SensorBundle {
     pub coll_layer : CollisionLayer,
 }
 
+/**
+    # Sensor
+
+    A Sensor will check each frame what kinematic entites overlap it,
+    and store their `Entity` in the `Sensor.bodies` Vec.
+
+    NOTE: "kinematic entities" qualifies as `Without<StaticBody>, Without<Sensor>`
+*/
 #[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct Sensor {
     /// Holds the entities which overlap with the sensor.

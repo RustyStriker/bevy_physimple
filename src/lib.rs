@@ -16,7 +16,7 @@ pub mod systems {
     //! Re-exports all the systems in the crate for ease of access
     pub use super::broad::broad_phase_1;
     pub use super::narrow::narrow_phase_system;
-    pub use super::normal_coll::{broad_phase_2, narrow_phase_2, ray_phase, CollPairKin, CollPairSensor, CollPairStatic};
+    pub use super::normal_coll::{broad_phase_2, narrow_phase_2, ray_phase};
 }
 
 pub mod prelude {

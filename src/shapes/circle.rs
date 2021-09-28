@@ -4,6 +4,11 @@ use serde::{Deserialize, Serialize};
 
 use super::{Aabb, Transform2D};
 
+/**
+    # Circle
+
+    A Circle is defined as all points with a certain length(radius) from the center point.
+*/
 #[derive(Clone, Debug, Serialize, Deserialize, Reflect)]
 pub struct Circle {
     /// Offset from the `Transform` translation component
@@ -40,27 +45,27 @@ impl Circle {
         }
     }
 
-    pub fn ray(&self, t : &Transform2D, ro : Vec2, rc : Vec2) -> Option<f32> {
-        let n = rc.normalize();
+    pub fn ray(&self, trans : &Transform2D, ray_origin : Vec2, ray_cast : Vec2) -> Option<f32> {
+        let n = ray_cast.normalize();
         let p = n.perp();
 
-        let c = t.translation() + Mat2::from_angle(t.rotation()) * self.offset;
+        let center = trans.translation() + Mat2::from_angle(trans.rotation()) * self.offset;
 
-        let cn = n.dot(c);
-        let cp = p.dot(c);
+        let center_n = n.dot(center);
+        let center_p = p.dot(center);
         
-        let rn = n.dot(ro);
-        let rp = p.dot(ro);
+        let ray_n = n.dot(ray_origin);
+        let ray_p = p.dot(ray_origin);
 
-        if (rp - cp).abs() < self.radius {
-            let d = (self.radius.powi(2) - (rp - cp).powi(2)).sqrt();
+        if (ray_p - center_p).abs() < self.radius {
+            let dis = (self.radius.powi(2) - (ray_p - center_p).powi(2)).sqrt();
             // Why?
             //  We are checking for the edge with the min value(along the n axis) usually,
             //  if it is negative we need to check for the edge with the max value, thus this weird if
-            let d = if cn - d < rn { cn + d } else { cn - d } - rn;
+            let dis = if center_n - dis < ray_n { center_n + dis } else { center_n - dis } - ray_n;
 
-            if n.dot(rc) > d && d > 0.0 {
-                Some(d / n.dot(rc))
+            if n.dot(ray_cast) > dis && dis > 0.0 {
+                Some(dis / n.dot(ray_cast))
             }
             else {
                 None // Ray isnt long enough or the circle is behind the ray 

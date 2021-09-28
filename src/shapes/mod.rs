@@ -149,7 +149,7 @@ fn sat_special(a : &dyn SAT, ta : &Transform2D, b : &CollisionShape, tb : &Trans
 }
 
 fn collide_special(a : &CollisionShape, ta : &Transform2D, b : &CollisionShape, tb : &Transform2D) -> Option<Vec2> {
-    #[allow(clippy::clippy::enum_glob_use)]
+    #[allow(clippy::enum_glob_use)]
     use CollisionShape::*;
     
     match (a, b) {
@@ -261,6 +261,17 @@ fn collide_circle_capsule(a : &Circle, ta : &Transform2D, b : &Capsule, tb : &Tr
     }
 }
 
+/**
+    # CollisionShape
+
+    Enum which can hold all possible collision shapes.
+
+    If you want to use a custom shape,
+    you can do so by implementing the `SAT` trait for your shape(check the `convex` example),
+    and box it.
+    
+    Do note that this library is using the Seperate Axis Theorem, which doesnt work for concave shapes.
+*/
 pub enum CollisionShape {
     Square(Square),
     Circle(Circle),
@@ -322,7 +333,6 @@ mod sat_tests {
     fn squares() {
         let s1 = Square {
             offset : Vec2::ZERO,
-            rotation_offset : 0.0,
             extents : Vec2::splat(1.0),
         };
 
@@ -334,7 +344,6 @@ mod sat_tests {
 
         let s2 = Square {
             offset : Vec2::ZERO,
-            rotation_offset : 0.0,
             extents : Vec2::splat(1.0),
         };
 
@@ -360,7 +369,6 @@ mod sat_tests {
     fn squares_rotation() {
         let a = Square {
             offset : Vec2::ZERO,
-            rotation_offset : 0.0,
             extents : Vec2::splat(1.0),
         };
         let ta = Transform2D::new(
@@ -371,7 +379,6 @@ mod sat_tests {
 
         let b = Square {
             offset : Vec2::ZERO,
-            rotation_offset : 0.0,
             extents : Vec2::splat(1.0),
         };
         let tb = Transform2D::new(

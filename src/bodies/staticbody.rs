@@ -10,10 +10,11 @@ use crate::{
 ///
 /// Static bodies have a couple of interesting differences from non-Static bodies:
 /// - Static bodies are being calculated against with the continuous collision algorithms
-/// - Static bodies aren't being checked for sensor collision
 /// - Static bodies do not move in case of collision
+/// - Static bodies will NOT collide with Sensors
+/// - Unless specified, Static bodies will NOT collide with RayCasts
 ///
-/// So generally, mark as much Staticbodies as possible!
+/// So generally, mark as much Staticbodies as possible, if something doesn't move, mark it!
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct StaticBody;
 

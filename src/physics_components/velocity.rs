@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Linear velocity component
+/// Linear velocity tuple component(access the value using `Vel.0`)
+///
+/// Required for a continuous collision kinematic body 
 ///
 /// Default : `(0.0, 0.0)`
 #[derive(Clone, Default, Reflect, Serialize, Deserialize)]

@@ -4,6 +4,12 @@ use serde::{Deserialize, Serialize};
 
 use super::{Aabb, Transform2D};
 
+/**
+    # Capsule
+
+    A Capsule can be defined as all points with a given length(radius) from a certain line, 
+    capsule here is defined using the length of the middle line(height) and a radius.
+*/
 #[derive(Clone, Debug, Serialize, Deserialize, Reflect)]
 pub struct Capsule {
     /// Offset from the `Transform` translation component
@@ -41,10 +47,10 @@ impl Capsule {
         Aabb { extents, position }
     }
 
-    pub fn ray(&self, t : &Transform2D, ro : Vec2, rc : Vec2) -> Option<f32> {
-        let (a,b) = self.center_line(t);
+    pub fn ray(&self, trans : &Transform2D, ray_origin : Vec2, ray_cast : Vec2) -> Option<f32> {
+        let (a,b) = self.center_line(trans);
         // Make sure the ray is indeed in the correct height
-        let n = rc.normalize();
+        let n = ray_cast.normalize();
         let p = n.perp();
         
 
@@ -53,26 +59,26 @@ impl Capsule {
         let minp = ap.min(bp);
         let maxp = ap.max(bp);
 
-        let rp = p.dot(ro); // p.dot(rc) should be equal p.dot(ro) since we are working on the perp axis to rc
+        let rp = p.dot(ray_origin); // p.dot(rc) should be equal p.dot(ro) since we are working on the perp axis to rc
         let rp = if rp < minp { rp - minp } else if rp > maxp { rp - maxp } else { 0.0 };
 
-        let rc_len = n.dot(rc);
+        let rc_len = n.dot(ray_cast);
 
         if rp.abs() < f32::EPSILON {
             // practically 0, do ray v line(square-ish)
             let yp = (rp - ap) / (bp - ap); // Should be in [0,1]
-            let yn = n.dot(yp * (b - a) + a) - n.dot(ro);
-            let c = if yn - self.radius < 0.0 { yn + self.radius } else { yn - self.radius };
+            let yn = n.dot(yp * (b - a) + a) - n.dot(ray_origin);
+            let dis = if yn - self.radius < 0.0 { yn + self.radius } else { yn - self.radius };
 
-            if c < rc_len && c > 0.0 {
-                Some(c / rc_len)
+            if dis < rc_len && dis > 0.0 {
+                Some(dis / rc_len)
             }
             else {
                 None // either we are behind the ray, or too far
             }
         }
         else if rp.abs() < self.radius {
-            let c = if rp.is_sign_positive() {
+            let center = if rp.is_sign_positive() {
                 if ap > bp {
                     n.dot(a)
                 }            
@@ -85,19 +91,19 @@ impl Capsule {
             }
             else {
                 n.dot(b)
-             } - n.dot(ro);
+             } - n.dot(ray_origin);
 
             // this is a ray v circle kind of thing, but modified a bit
             // we are indeed in range for the circle
-            let d = (self.radius.powi(2) - rp.powi(2)).sqrt();
+            let dis = (self.radius.powi(2) - rp.powi(2)).sqrt();
 
             // Why?
             //  We are checking for the edge with the min value(along the n axis) usually,
             //  if it is negative we need to check for the edge with the max value, thus this weird if
-            let d = if c - d < 0.0 { c + d } else { c - d };
+            let dis = if center - dis < 0.0 { center + dis } else { center - dis };
 
-            if rc_len > d && d > 0.0 {
-                Some(d / rc_len)
+            if rc_len > dis && dis > 0.0 {
+                Some(dis / rc_len)
             }
             else {
                 None

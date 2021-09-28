@@ -8,8 +8,6 @@ use super::Transform2D;
 pub struct Square {
     /// Offset from the `Transform` transltion component
     pub offset : Vec2,
-    /// rotation offset from the `Transform` rotation component
-    pub rotation_offset : f32,
     /// Square's extents
     ///
     /// `extents = Vec2::new(half width, half height)`
@@ -20,7 +18,6 @@ impl Square {
     pub fn new(extents : Vec2) -> Self {
         Square {
             offset : Vec2::ZERO,
-            rotation_offset : 0.0,
             extents,
         }
     }
@@ -28,7 +25,6 @@ impl Square {
     pub fn size(size : Vec2) -> Self {
         Square {
             offset : Vec2::ZERO,
-            rotation_offset : 0.0,
             extents : size * 0.5,
         }
     }
@@ -38,14 +34,6 @@ impl Square {
         offset : Vec2,
     ) -> Self {
         self.offset = offset;
-        self
-    }
-    /// rotation offset from the `Transform` rotation component
-    pub fn with_rotation_offset(
-        mut self,
-        offset : f32,
-    ) -> Self {
-        self.rotation_offset = offset;
         self
     }
 }
@@ -132,15 +120,11 @@ impl super::SAT for Square {
         //      We do this explicit check because the raycast formula i used doesnt handle cases where one of the components is 0
         //       as it would lead to division by 0(thus errors) and the `else NAN` part will make it completly ignore the collision
         //       on that axle
-        if rc.x.abs() < f32::EPSILON {
-            if !(smin.x <= ro.x && smax.x >= ro.x) {
-                return None; // if it doesnt collide on the X axle terminate it early
-            }
+        if rc.x.abs() < f32::EPSILON && !(smin.x <= ro.x && smax.x >= ro.x) {
+            return None; // if it doesnt collide on the X axle terminate it early
         }
-        if rc.y.abs() < f32::EPSILON {
-            if !(smin.y <= ro.y && smax.y >= ro.y) {
-                return None; // if it doesnt collide on the X axle terminate it early
-            }
+        if rc.y.abs() < f32::EPSILON && !(smin.y <= ro.y && smax.y >= ro.y) {
+            return None; // if it doesnt collide on the X axle terminate it early
         }
 
         // The if else's are to make sure we dont divide by 0.0, because if the ray is parallel to one of the axis
@@ -181,7 +165,6 @@ mod square_tests {
     fn square_ray() {
         let s = Square {
             offset: Vec2::ZERO,
-            rotation_offset: 0.0,
             extents: Vec2::splat(10.0),
         };
 

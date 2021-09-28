@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 
 pub trait VecOp<T> {
+    /// Projects the vector on the given normal
     fn project(
         self,
         normal : T,
     ) -> T;
+    /// Slides the vector on the given normal
     fn slide(
         self,
         normal : T,

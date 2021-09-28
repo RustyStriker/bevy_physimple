@@ -154,7 +154,7 @@ pub fn narrow_phase_2(
 				entity_a: *e1, 
 				entity_b: *e2, 
 				is_b_static: false, 
-				normal: normal,
+				normal,
 			});
 			// Maybe move both of them? or should i just move 1 of them?
 			// I also cannot tell which 1 is moving here, so that's a bummer

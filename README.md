@@ -14,20 +14,24 @@ and eventually i want people to be able to use this crate as a simple collisions
 
 ## What is currently working?
 
-- Square and Circle collision shapes
+- Square, Circle, Capsule and custom collision shapes
 - Sensors and Staticbodies
 - Continuous collision
 
 ## What doesnt work/What is currently buggy?
 
-- Scale doesnt affect the shapes(apart from maybe the circle)
-- Overlap detection sometimes acts weird(apperant in Sensor vs Kinematic when the kinematic isn't moving)
+- Scale doesnt affect the shapes
 - You can push objects through walls, if the wall is too thin the object might tunnle through it
-- Probably some more stuff, please tell me when something isn't working properly(and isn't written here)
+- Sometimes if a cube is fast enough and under the right conditions, it will tunnle through(can be noticed in the `platformer` example, tho shouldn't affect normal usuage)
+- Probably some more stuff, please tell me when something isn't working properly(and isn't written here, or has an issue)
 
 ## Quickstart
 
-Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP like the rest of this lib).
+Clone the repo, and run
+
+    cargo run --example showcase --release
+
+Or check out the `GETTING_STARTED.md` file.
 
 ## bevy - physimple versions
 
@@ -42,9 +46,9 @@ Check out the `GETTING_STARTED.md` file in the base of the repo(warning, WIP lik
   - [x] Capsule - Rays
   - [x] Circle - Rays
   - [x] Generic shape(dynamic object)
-- [ ] Update the examples, and better showcase stuff
+- [x] Update the examples, and better showcase stuff
   - [x] n-body example(somewhat n-body)
-  - [ ] General showcase(needs review)
+  - [x] General showcase(needs review)
   - [x] Convex shapes
 - [x] Rotate offsets(and go through everything making sure rotations are included)
 - [ ] Actual docs(this might never be enough)

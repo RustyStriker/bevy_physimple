@@ -53,7 +53,6 @@ impl Capsule {
         let n = ray_cast.normalize();
         let p = n.perp();
         
-
         let ap = p.dot(a);
         let bp = p.dot(b);
         let minp = ap.min(bp);

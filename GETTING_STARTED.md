@@ -1,20 +1,20 @@
 # Getting Started
 
-The plguin's name is `Physics2dPlugin` so in order to use it you need to do `App.add_plugin(Physics2dPlugin);`
+The plugin's name is `Physics2dPlugin` so in order to use it you need to do `App.add_plugin(Physics2dPlugin);`
 
 The plugin contains the following components and bundles(with a brief explanation):
 
 - `CollisionShape`: Enum which holds the collision shape
-- `KinematicBundle`(bundle): Contains the needed components for a continuous collision Kinematicbody
+- `KinematicBundle`(bundle): Contains the needed components for a continuous collision KinematicBody
 - `StaticBundle`(bundle): Contains the needed components for a StaticBody
 - `StaticBody`: Marker component, StaticBody V StaticBody/Sensor collisions cannot occur
 - `SensorBundle`(bundle): Contains the needed components for a Sensor
-- `Sensor`: Marker component, but also holds information about the colliding bodies in a Vec(might be changed in favour of events/hash sets)
+- `Sensor`: Marker component, but also holds information about the colliding bodies in a Vec(might be changed in favor of events/hash sets)
 - `RayCastBundle`(bundle): Contains the needed components for a RayCast
-- `RayCast`: Gets the closest collision occuring on a given ray
+- `RayCast`: Gets the closest collision occurring on a given ray
 - `CollisionLayer`: Which collision layer and mask the body occupies(a collision can occur only if `a.mask & b.layer | a.layer & b.mask != 0`)
 - `Vel`: Used for Continuous collision kinematic bodies, requires more computational power, so not a good idea for small visual particles(like debris), yet good for stuff like bullets
-- `Transform2D`: Used internally, if you are modifying the position/rotation of an object during a physics step, its better to modify this component instead.
+- `Transform2D`: Used internally, if you are modifying the position/rotation of an object during a physics step, it's better to modify this component instead.
 
 You may also use the following events:
 
@@ -39,7 +39,7 @@ What you need to take care of:
 - Applying movement(except for `With<Vel>` entities)
 - Actually reacting to the collision events(solving is done automatically, and `With<Vel>` will slide the movement along the collision normal)
 
-Now I know you might be asking youself:
+Now I know you might be asking yourself:
 
 ```plain
 But why do I have to take care of all those stuff?
@@ -52,11 +52,11 @@ this is my attempt at creating a "minimalistic" physics engine,
 so technically its mostly collision detection and solving(and even that is not that good tbh)
 
 The reason is, games can have funky and different physics,
-whether its a top down shooter with rigid controls,
-or a game which attempts at mimicking `Titanfall 2` 's movement(please make one, even just a demo),
-games have a lot of unrealistic physics, because real physics aint always fun(you can't double jump in real life).
+whether it's a top-down shooter with rigid controls,
+or a game which attempts at mimicking `Titanfall 2`'s movement(please make one, even just a demo),
+games have a lot of unrealistic physics, because real physics ain't always fun(you can't double jump in real life).
 
-I am getting derailed here... Gonna finish this rant somewhen and move it to somewhere more appropriate.
+I am getting derailed here... Gonna finish this rant some when and move it to somewhere more appropriate.
 
 ## Actually using it
 
@@ -68,7 +68,7 @@ app.add_plugin(Physics2dPlugin);
 
 Now we can spawn some physics objects.
 
-So in our startup system we gonna add some physical bodies with sprites:
+So in our startup system we are going to add some physical bodies with sprites:
 
 ```rs
 fn startup(
@@ -122,7 +122,7 @@ fn startup(
 
 ### NOTE
 
-All physical bodies needs both `Transform` and `GlobalTransform` to work,
+All physical bodies need both `Transform` and `GlobalTransform` to work,
 but they are not a part of the given bundles,
 as I assumed you will only use them with a `SpriteBundle` or something else which already holds a `Transform` + `GlobalTransform` with it.
 
@@ -130,9 +130,9 @@ as I assumed you will only use them with a `SpriteBundle` or something else whic
 
 For a more "full" example, please check the only existing example currently named `shapes`
 
-### NOTE - 2
+### NOTE — 2
 
-If you are using non continuous collision kinematic bodies(`Without<Vel>`),
+If you are using non-continuous collision kinematic bodies(`Without<Vel>`),
 and you apply gravity to them, you will need to read the `CollisionEvent`s
 and slide(or reflect/bounce/whatever) the movement along the collision normal
 to prevent the bodies from endlessly accelerating downwards,

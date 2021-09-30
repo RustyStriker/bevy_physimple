@@ -5,3 +5,4 @@ Cargo.lock
 #*#
 workspace.code-workspace
 .vscode/launch.json
+.vscode/ltex.dictionary.en-US.txt

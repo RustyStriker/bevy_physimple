@@ -8,7 +8,7 @@ readme = "README.md"
 homepage = "https://github.com/RustyStriker/bevy_physimple"
 repository = "https://github.com/RustyStriker/bevy_physimple"
 license = "MIT"
-keywords = ["gamedev", "physics", "collision", "2d collision", "real-time"]
+keywords = ["gamedev", "physics", "collision", "real-time"]
 categories = ["game-development"]
 
 [dependencies]

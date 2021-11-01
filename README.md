@@ -39,16 +39,10 @@ Or check out the `GETTING_STARTED.md` file.
 |------|-----------------|
 | 0.5  | 0.1.0 — current |
 
-## 0.2.0 To-do list
+## 0.3.0 To-do list(Unless bevy 0.6.0 is released then it is the 0.4.0 To-do list)
 
-- [x] Rewrite shape overlap
-- [x] Implement the different shapes
-  - [x] Capsule — Rays
-  - [x] Circle — Rays
-  - [x] Generic shape(dynamic object)
-- [x] Update the examples, and better showcase stuff
-  - [x] n-body example(somewhat n-body)
-  - [x] General showcase(needs review)
-  - [x] Convex shapes
-- [x] Rotate offsets(and go through everything making sure rotations are included)
-- [ ] Actual docs(this might never be enough)
+- [ ] Even more docs(Honestly, if something is missing just open an issue in github/@ me in the bevy discord/dm me)
+- [ ] Optimize Broad Phase with cool and flashy algorithms(also research about said algorithms)
+- [ ] Better manual ray casting support
+- [ ] A new simple platformer game example
+- [ ] A new simple top down game example

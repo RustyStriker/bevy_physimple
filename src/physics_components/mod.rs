@@ -53,6 +53,9 @@ impl Default for CollisionLayer {
     }
 }
 impl CollisionLayer {
+    /// CollisionLayer without any layer/mask activated
+    pub const ZERO: CollisionLayer = CollisionLayer { mask: 0, layer: 0};
+
     pub fn new(
         mask: u8,
         layer: u8,

@@ -27,4 +27,6 @@ pub mod prelude {
     pub use crate::physics_components::*;
     pub use crate::bodies::*;
     pub use crate::shapes::*;
+    pub use crate::systems;
+    pub use crate::normal_coll::collide_ray;
 }

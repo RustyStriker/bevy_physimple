@@ -43,6 +43,6 @@ Or check out the `GETTING_STARTED.md` file.
 
 - [ ] Even more docs(Honestly, if something is missing just open an issue in github/@ me in the bevy discord/dm me)
 - [ ] Optimize Broad Phase with cool and flashy algorithms(also research about said algorithms)
-- [ ] Better manual ray casting support
+- [x] Better manual ray casting support
 - [ ] A new simple platformer game example
 - [ ] A new simple top down game example

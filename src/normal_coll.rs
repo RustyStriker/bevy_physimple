@@ -268,84 +268,81 @@ pub fn ray_phase(
 			Err(_) => continue,
 		};
 
-		let r_rot = Mat2::from_angle(rt.rotation());
-		let r_cast = r_rot * r.cast;
-		let r_origin = rt.translation() + r_rot * r.offset;
-
-		r.collision = None;
-
-		let mut shortest = f32::INFINITY;
-		let mut short_entity = None;
-		let mut stt = false;
-
-		// Collide over kins
-		for (ke, ks) in kins.iter() {
-			// Exclude ourselves
-			if ke.id() == re.id() {
-				continue;
-			}
-
-			let kl = match layers.get(ke) {
-				Ok(l) => l,
-				Err(_) => continue,
-			};
-			let kt = match trans.get(ke) {
-				Ok(t) => t,
-				Err(_) => continue,
-			};
-			if rl.overlap(kl) {
-				// TODO add aabb testing or something else first
-				
-				let c = ks.ray(kt, r_origin, r_cast);
-				
-				if let Some(c) = c {
-					if c > 0.0 && c < 1.0 && c < shortest {
-						shortest = c;
-						short_entity = Some(ke);
-					}
-				}
-			}
-		}
-		// Collide for stts only if requested
 		if r.collide_with_static {
-			for (se, ss) in stts.iter() {
-				// Exclude ourselves
-				if se.id() == re.id() {
-					continue;
-				}
-	
-				let sl = match layers.get(se) {
-					Ok(l) => l,
-					Err(_) => continue,
-				};
-				let st = match trans.get(se) {
-					Ok(t) => t,
-					Err(_) => continue,
-				};
-	
-				if rl.overlap(sl) {
-					// TODO add aabb testing or something else first
-	
-					let c = ss.ray(st, r_origin, r_cast);
-	
-					if let Some(c) = c {
-						if c > 0.0 && c < 1.0 && c < shortest {
-							shortest = c;
-							short_entity = Some(se);
-							stt = true;
-						}
-					}
-				}
+			let bodies_iter = kins.iter()
+				.chain(stts.iter())
+				.filter(|(e, ..)| layers.get(*e).unwrap_or(&CollisionLayer::ZERO).overlap(rl))
+				// Make sure everyone have a transform
+				.filter(|(e,..)| trans.get(*e).is_ok()) 
+				.map(|(e, c)| (e, c, trans.get(e).unwrap()));
+			
+			r.collision = collide_ray(&r, rt, bodies_iter);
+		}
+		else {
+			let bodies_iter = kins.iter()
+				.filter(|(e, ..)| layers.get(*e).unwrap_or(&CollisionLayer::ZERO).overlap(rl))
+				// Make sure everyone have a transform
+				.filter(|(e,..)| trans.get(*e).is_ok()) 
+				.map(|(e, c)| (e, c, trans.get(e).unwrap()));
+			
+			r.collision = collide_ray(&r, rt, bodies_iter);
+		}
+	}
+}
+
+/// # collide_ray
+/// 
+/// This function allows you to conjure an iterator where `Item = (Entity, &CollisionShape, &Transform2D)`
+/// eg. every iterator which returns `(Entity, &CollisionShape, &Transform2D)`
+/// 
+/// ## A Couple of notes
+/// 
+/// - This function does not check for layer/mask collision, so it is completely possible to attempt collision
+/// with a shape which normally wouldn't collide with the ray due to different collision layers.
+/// 
+/// - You need to provide it with `Transform2D`, so it you changed the transform of the entity
+/// after the `Transform2D->Transform` sync point, its own `Transform2D` woulnd't update, and so its `GlobalTransform`,
+/// thus you may experience a 1 frame delay/bugs due to checking an exact frame
+/// (generally it is better to work between the sync points and with `Transform2D` instead of `Transform` so everything will
+/// stay updated during physics calculations)
+/// 
+pub fn collide_ray<'a,T>(
+	ray: &RayCast,
+	ray_trans: &Transform2D,
+	mut bodies: T,
+) -> Option<RayCastCollision> 
+where
+	T: Iterator<Item = (Entity, &'a CollisionShape, &'a Transform2D)>
+{
+	let r_rot = Mat2::from_angle(ray_trans.rotation());
+	let r_cast = r_rot * ray.cast;
+	let r_origin = ray_trans.translation() + r_rot * ray.offset;
+
+	let mut shortest = f32::INFINITY;
+	let mut short_entity = None;
+
+	// Collide over kins
+	while let Some((be,bs, bt)) = bodies.next() {
+		// TODO add aabb testing or something else first
+		
+		let c = bs.ray(bt, r_origin, r_cast);
+		
+		if let Some(c) = c {
+			if c > 0.0 && c < 1.0 && c < shortest {
+				shortest = c;
+				short_entity = Some(be);
 			}
 		}
-		// wrap it up and change the collision
-		if let Some(e) = short_entity {
-			r.collision = Some(RayCastCollision {
-				collision_point: shortest * r_cast + r_origin,
-				entity: e,
-				is_static: stt,
-			});
-		}
-		// no need for else since we clean it in the beginning
+	}
+
+	if let Some(e) = short_entity {
+		Some(RayCastCollision {
+			collision_point: shortest * r_cast + r_origin,
+			entity: e,
+			is_static: false, // This needs to be checked by the caller
+		})
+	}
+	else {
+		None
 	}
 }

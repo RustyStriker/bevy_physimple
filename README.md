@@ -42,7 +42,7 @@ Or check out the `GETTING_STARTED.md` file.
 ## 0.3.0 To-do list(Unless bevy 0.6.0 is released then it is the 0.4.0 To-do list)
 
 - [ ] Even more docs(Honestly, if something is missing just open an issue in github/@ me in the bevy discord/dm me)
-- [ ] Optimize Broad Phase with cool and flashy algorithms(also research about said algorithms)
+- [ ] Optimize Broad Phase with cool and flashy algorithms(I dont think those said algorithms will actually help that much)
 - [x] Better manual ray casting support
 - [ ] A new simple platformer game example
 - [ ] A new simple top down game example

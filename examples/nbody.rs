@@ -33,18 +33,20 @@ fn main() {
 
 fn setup(
     mut coms: Commands,
-    mut mats: ResMut<Assets<ColorMaterial>>,
 ) {
     // camera
     coms.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     // do some walls
-    let wall_color = mats.add(Color::BLACK.into());
+    let wall_color = Color::BLACK;
 
     // bottom wall
     coms.spawn_bundle(SpriteBundle {
-        sprite: Sprite::new(Vec2::new(600.0, 40.0)),
-        material: wall_color.clone(),
+        sprite: Sprite {
+            custom_size: Some(Vec2::new(600.0, 40.0)),
+            color: wall_color.clone(),
+            ..Default::default()
+        },
         transform: Transform::from_xyz(0.0, -310.0,0.0),
         ..Default::default()
     })
@@ -55,8 +57,8 @@ fn setup(
 
     const SIZE: f32 = 40.0;
 
-    let c1 = mats.add(Color::RED.into());
-    let c2 = mats.add(Color::GREEN.into());
+    let c1 = Color::RED;
+    let c2 = Color::GREEN;
 
     (0..10).for_each(|i| {
         (0..10).for_each(|k| {
@@ -71,8 +73,11 @@ fn setup(
             };
 
             coms.spawn_bundle(SpriteBundle {
-                sprite: Sprite::new(Vec2::splat(SIZE)),
-                material: c,
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(SIZE)),
+                    color: c,
+                    ..Default::default()
+                },
                 transform: Transform::from_translation(pos.extend(0.0)),
                 ..Default::default()
             })

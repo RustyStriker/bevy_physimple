@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 /// Required for a continuous collision kinematic body 
 ///
 /// Default: `(0.0, 0.0)`
-#[derive(Clone, Default, Reflect, Serialize, Deserialize)]
+#[derive(Clone, Default, Reflect, Serialize, Deserialize, Component)]
 pub struct Vel(pub Vec2);
 
 impl Vel {

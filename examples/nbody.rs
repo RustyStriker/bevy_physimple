@@ -3,7 +3,7 @@ use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy_physimple::prelude::*;
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app.insert_resource(WindowDescriptor {
         title: "N-body".to_string(),

@@ -21,7 +21,7 @@ pub struct RayCastBundle {
     If you need to check for multiple rays per frame, you might find it useful to clone and modify the `ray_phase` system under `normal_coll.rs`
     as currently there is no built in support for it.
 */
-#[derive(Debug, Clone, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Reflect, Serialize, Deserialize, Component)]
 pub struct RayCast {
     /// Offset from the Transform object
     pub offset: Vec2,

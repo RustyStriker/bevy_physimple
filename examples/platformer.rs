@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Component)]
 pub struct Player {
     double_jump: bool,
     on_wall: Option<Vec2>,
@@ -11,7 +11,7 @@ pub struct Player {
 pub struct Gravity(Vec2);
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
     app // Basic setup of the app
         .insert_resource(WindowDescriptor {
             title: "A cool name for an example".to_string(),

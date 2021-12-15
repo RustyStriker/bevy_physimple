@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app.insert_resource(WindowDescriptor {
         width: 1280.0,
@@ -45,8 +45,10 @@ fn main() {
 }
 
 /// Player marker component
+#[derive(Component)]
 struct Player;
 /// Special gravity for sensors to apply
+#[derive(Component)]
 struct Gravity(Vec2);
 /// Holds colors for the color changing areas
 struct ColorChange {

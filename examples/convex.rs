@@ -2,7 +2,7 @@ use bevy::{math::Mat2, prelude::*};
 use bevy_physimple::prelude::*;
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app
         .add_plugins(DefaultPlugins)
@@ -72,6 +72,7 @@ impl SAT for MyTriangle {
     }
 }
 
+#[derive(Component)]
 struct Controller;
 
 fn setup(

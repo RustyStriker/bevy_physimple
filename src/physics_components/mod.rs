@@ -5,7 +5,7 @@ mod transform2d;
 pub use transform2d::Transform2D;
 pub use velocity::Vel;
 
-use bevy::prelude::Reflect;
+use bevy::prelude::{Reflect, Component};
 use serde::{Deserialize, Serialize};
 
 /**
@@ -41,7 +41,7 @@ use serde::{Deserialize, Serialize};
 
     For example, if we want to add layers 2 and 3 in one go, we can do `layer = layer | 0x000_0110`
 */
-#[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Reflect, Serialize, Deserialize, Component)]
 pub struct CollisionLayer {
     pub mask: u8,
     pub layer: u8,

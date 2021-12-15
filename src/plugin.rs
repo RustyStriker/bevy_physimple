@@ -43,7 +43,7 @@ pub mod stage {
 impl Plugin for Physics2dPlugin {
     fn build(
         &self,
-        app: &mut AppBuilder,
+        app: &mut App,
     ) {
         // Stage order goes as follows
         // Joints step -> Physics step -> collision detection -> solve -> sync -> Raycast detection

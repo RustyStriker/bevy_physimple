@@ -272,6 +272,7 @@ fn collide_circle_capsule(a: &Circle, ta: &Transform2D, b: &Capsule, tb: &Transf
     
     Do note that this library is using the Seperate Axis Theorem, which doesnt work for concave shapes.
 */
+#[derive(Component)]
 pub enum CollisionShape {
     Square(Square),
     Circle(Circle),

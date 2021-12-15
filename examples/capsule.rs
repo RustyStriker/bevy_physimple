@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app
         .add_plugins(DefaultPlugins)
@@ -16,6 +16,7 @@ fn main() {
     app.run();
 }
 
+#[derive(Component)]
 struct Controller;
 
 fn setup(

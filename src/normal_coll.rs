@@ -309,7 +309,7 @@ pub fn ray_phase(
 pub fn collide_ray<'a,T>(
 	ray: &RayCast,
 	ray_trans: &Transform2D,
-	mut bodies: T,
+	bodies: T,
 ) -> Option<RayCastCollision> 
 where
 	T: Iterator<Item = (Entity, &'a CollisionShape, &'a Transform2D)>
@@ -322,7 +322,7 @@ where
 	let mut short_entity = None;
 
 	// Collide over kins
-	while let Some((be,bs, bt)) = bodies.next() {
+	for (be,bs, bt) in bodies {
 		// TODO add aabb testing or something else first
 		
 		let c = bs.ray(bt, r_origin, r_cast);
@@ -335,14 +335,9 @@ where
 		}
 	}
 
-	if let Some(e) = short_entity {
-		Some(RayCastCollision {
-			collision_point: shortest * r_cast + r_origin,
-			entity: e,
-			is_static: false, // This needs to be checked by the caller
-		})
-	}
-	else {
-		None
-	}
+	short_entity.map(|e| RayCastCollision {
+		collision_point: shortest * r_cast + r_origin,
+		entity: e,
+		is_static: false,
+	})
 }

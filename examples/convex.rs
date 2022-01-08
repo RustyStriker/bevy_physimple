@@ -2,7 +2,7 @@ use bevy::{math::Mat2, prelude::*};
 use bevy_physimple::prelude::*;
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app
         .add_plugins(DefaultPlugins)
@@ -72,21 +72,19 @@ impl SAT for MyTriangle {
     }
 }
 
+#[derive(Component)]
 struct Controller;
 
 fn setup(
     mut coms: Commands,
     asset_server: Res<AssetServer>,
-    mut mats: ResMut<Assets<ColorMaterial>>,
 ) {
-    let triangle = asset_server.load("triangle.png");
-
     // camera
     coms.spawn_bundle(OrthographicCameraBundle::new_2d());
 
     // triangle
     coms.spawn_bundle(SpriteBundle {
-        material: mats.add(triangle.into()),
+        texture: asset_server.load("triangle.png"),
         ..Default::default()
     })
     .insert_bundle(StaticBundle {
@@ -101,8 +99,11 @@ fn setup(
 
     // spawn a moveable player
     coms.spawn_bundle(SpriteBundle {
-        sprite: Sprite::new(Vec2::splat(30.0)),
-        material: mats.add(Color::MIDNIGHT_BLUE.into()),
+        sprite: Sprite {
+            custom_size: Some(Vec2::splat(30.0)),
+            color: Color::MIDNIGHT_BLUE,
+            ..Default::default()
+        },
         transform: Transform::from_xyz(150.0,150.0,0.0),
         ..Default::default()
     })

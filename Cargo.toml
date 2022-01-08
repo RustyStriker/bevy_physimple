@@ -3,7 +3,7 @@ name = "bevy_physimple"
 description = "A simple 2d physics engine for bevy based on physme"
 version = "0.2.0"
 authors = ["Aviv 'RustyStriker' Romem <avivr903@tutanota.com>"]
-edition = "2018"
+edition = "2021"
 readme = "README.md"
 homepage = "https://github.com/RustyStriker/bevy_physimple"
 repository = "https://github.com/RustyStriker/bevy_physimple"
@@ -13,4 +13,4 @@ categories = ["game-development"]
 
 [dependencies]
 serde = "^1.0"
-bevy = "0.5.0"
+bevy = "0.6.0"

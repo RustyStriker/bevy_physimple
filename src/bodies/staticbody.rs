@@ -15,7 +15,7 @@ use crate::{
 /// - Unless specified, Static bodies will NOT collide with RayCasts
 ///
 /// So generally, mark as much Staticbodies as possible, if something doesn't move, mark it!
-#[derive(Default, Serialize, Deserialize, Clone, Debug)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, Component)]
 pub struct StaticBody;
 
 /// StaticBody for 2D physics(with supposedly infinite mass)

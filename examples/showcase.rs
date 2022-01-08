@@ -11,7 +11,7 @@ use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
 
     app.insert_resource(WindowDescriptor {
         width: 1280.0,
@@ -45,24 +45,25 @@ fn main() {
 }
 
 /// Player marker component
+#[derive(Component)]
 struct Player;
 /// Special gravity for sensors to apply
+#[derive(Component)]
 struct Gravity(Vec2);
 /// Holds colors for the color changing areas
+#[derive(Component)]
 struct ColorChange {
-    coll: Handle<ColorMaterial>,
-    no_coll: Handle<ColorMaterial>,
+    coll: Color,
+    no_coll: Color,
 }
 /// Resource for holding relevant handles, so we wont lose them
 struct PlayerHandles {
-    capsule_small: Handle<ColorMaterial>,
-    square_no_texture: Handle<ColorMaterial>,
-    circle: Handle<ColorMaterial>,
+    capsule_small: Handle<Image>,
+    circle: Handle<Image>,
 }
 
 fn setup(
     mut coms: Commands,
-    mut mats: ResMut<Assets<ColorMaterial>>,
     a_server: Res<AssetServer>,
 ) {
     // Camera
@@ -74,7 +75,7 @@ fn setup(
         color: Color::WHITE,
     };
     let text_align = TextAlignment {
-        vertical: VerticalAlign::Bottom,
+        vertical: VerticalAlign::Top,
         horizontal: HorizontalAlign::Center,
     };
 
@@ -87,20 +88,22 @@ fn setup(
         });
 
     // PlayerHandles
-    let player_capsule = mats.add(a_server.load("capsule_r_25_h_50.png").into());
-    let player_circle = mats.add(a_server.load("circle_50_color.png").into());
-    let player_square = mats.add(Color::CYAN.into());
+    let player_capsule = a_server.load("capsule_r_25_h_50.png");
+    let player_circle = a_server.load("circle_50_color.png");
+    let player_square = Color::CYAN;
 
     coms.insert_resource(PlayerHandles {
         capsule_small: player_capsule,
-        square_no_texture: player_square.clone(), // Cloning this one because it is the default and we want to put it in the player
         circle: player_circle,
     });
     // Player itself :D
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(25.0)),
-            material: player_square,
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(25.0)),
+                color: player_square,
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
@@ -109,9 +112,6 @@ fn setup(
         })
         .insert(Player)
         ;
-
-    // Some objects
-    let black = mats.add(Color::BLACK.into());
 
     // Static text
     coms
@@ -124,9 +124,12 @@ fn setup(
     // Square static
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(100.0)),
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(100.0)),
+                color: Color::BLACK,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(300.0, -250.0,0.0),
-            material: black.clone(),
             ..Default::default()
         })
         .insert_bundle(StaticBundle {
@@ -137,7 +140,7 @@ fn setup(
     // A nice capsule
     coms
         .spawn_bundle(SpriteBundle {
-            material: mats.add(a_server.load("capsule_r_100_h_150.png").into()),
+            texture: a_server.load("capsule_r_100_h_150.png"),
             transform: Transform::from_xyz(300.0, 150.0,0.0),
             ..Default::default()
         })
@@ -149,7 +152,7 @@ fn setup(
     // A (not really) perfect circle
     coms
         .spawn_bundle(SpriteBundle {
-            material: mats.add(a_server.load("circle_50.png").into()),
+            texture: a_server.load("circle_50.png"),
             transform: Transform::from_xyz(300.0,-50.0,0.0),
             ..Default::default()
         })
@@ -172,13 +175,16 @@ fn setup(
 
     // Simple color changer
     let color_changer = ColorChange {
-        coll: mats.add(Color::rgba(1.0,1.0,0.0,0.2).into()),
-        no_coll: mats.add(Color::rgba(1.0,1.0,0.0,0.7).into()),
+        coll: Color::rgba(1.0,1.0,0.0,0.2),
+        no_coll: Color::rgba(1.0,1.0,0.0,0.7),
     };
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(100.0)),
-            material: color_changer.no_coll.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(100.0)),
+                color: color_changer.no_coll,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(-300.0, 150.0,0.0),
             ..Default::default()
         })
@@ -200,8 +206,11 @@ fn setup(
     // A neat gravity push
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(100.0,200.0)),
-            material: mats.add(Color::rgba(0.5,1.0,0.7,0.3).into()),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(100.0,200.0)),
+                color: Color::rgba(0.5,1.0,0.7,0.3),
+                ..Default::default()
+            },
             transform: Transform::from_xyz(-300.0, -100.0,0.0),
             ..Default::default()
         })
@@ -222,15 +231,18 @@ fn setup(
         ;
 
     // Do some rays and such
-    let ray_base = mats.add(Color::rgb(0.5,0.0,0.0).into()); // I want dark red so...
-    let ray_head = mats.add(Color::CRIMSON.into()); // The Crimson Scyth
+    let ray_base = Color::rgb(0.5,0.0,0.0); // I want dark red so...
+    let ray_head = Color::CRIMSON; // The Crimson Scyth
     (0..=30).for_each(|i| {
         let i = (15 - i) as f32; // i32 is kinda useless around here tbh
 
         coms
             .spawn_bundle(SpriteBundle {
-                sprite: Sprite::new(Vec2::splat(10.0)),
-                material: ray_base.clone(),
+                sprite: Sprite { 
+                    custom_size: Some(Vec2::splat(10.0)),
+                    color: ray_base,
+                    ..Default::default()
+                },
                 transform: Transform::from_xyz(i * 11.0, -300.0,10.0),
                 ..Default::default()
             })
@@ -240,8 +252,11 @@ fn setup(
             })
             .with_children(|p| {
                 p.spawn_bundle(SpriteBundle {
-                    sprite: Sprite::new(Vec2::splat(8.0)),
-                    material: ray_head.clone(),
+                    sprite: Sprite { 
+                        custom_size: Some(Vec2::splat(8.0)),
+                        color: ray_head,
+                        ..Default::default()
+                    },
                     ..Default::default()
                 });
             });
@@ -251,14 +266,14 @@ fn setup(
 fn change_shape(
     p_handles: Res<PlayerHandles>,
     keys: Res<Input<KeyCode>>,
-    mut q: Query<(&mut CollisionShape, &mut Handle<ColorMaterial>, &mut Sprite), With<Player>>,
+    mut q: Query<(&mut CollisionShape, &mut Handle<Image>, &mut Sprite), With<Player>>,
 ) {
-    if let Ok((mut s, mut h, mut sp)) = q.single_mut() {
+    if let Ok((mut s, mut h, mut sp)) = q.get_single_mut() {
         // Gonna make a simple change shape kinda thing
         if keys.just_pressed(KeyCode::Tab) {
             match *s {
                 CollisionShape::Square(_) => {
-                    sp.resize_mode = SpriteResizeMode::Automatic;
+                    sp.custom_size = None;
                     *h = p_handles.circle.clone();
                     *s = CollisionShape::Circle(Circle::new(25.0));
                 },
@@ -267,9 +282,8 @@ fn change_shape(
                     *s = CollisionShape::Capsule(Capsule::new(25.0, 12.5));
                 },
                 CollisionShape::Capsule(_) => {
-                    sp.resize_mode = SpriteResizeMode::Manual;
-                    sp.size = Vec2::splat(25.0);
-                    *h = p_handles.square_no_texture.clone();
+                    *h = Handle::<Image>::default(); // need to find a way to reset the handle(without removing it because that is slow)
+                    sp.custom_size = Some(Vec2::splat(25.0));
                     *s = CollisionShape::Square(Square::size(Vec2::splat(25.0)));
                 },
                 _ => unreachable!(),
@@ -283,7 +297,7 @@ fn player_movement(
     keys: Res<Input<KeyCode>>,
     mut q: Query<&mut Vel, With<Player>>,
 ) {
-    if let Ok(mut v) = q.single_mut() {
+    if let Ok(mut v) = q.get_single_mut() {
         let mut input = Vec2::ZERO;
         if keys.pressed(KeyCode::W) {
             input.y += 1.0;
@@ -312,14 +326,14 @@ fn player_movement(
 }
 
 fn sensor_colors(
-    mut q: Query<(&mut Handle<ColorMaterial>, &Sensor, &ColorChange)>,
+    mut q: Query<(&mut Sprite, &Sensor, &ColorChange)>,
 ) {
-    for (mut h, s, c) in q.iter_mut() {
+    for (mut sp, s, c) in q.iter_mut() {
         if s.bodies.len() == 0 {
-            *h = c.no_coll.clone();
+            sp.color = c.no_coll;
         }
         else {
-            *h = c.coll.clone();
+            sp.color = c.coll;
         }
     }
 }

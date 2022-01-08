@@ -18,7 +18,7 @@ pub struct SensorBundle {
 
     NOTE: "kinematic entities" qualifies as `Without<StaticBody>, Without<Sensor>`
 */
-#[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect, Component)]
 pub struct Sensor {
     /// Holds the entities which overlap with the sensor.
     pub bodies: Vec<Entity>,

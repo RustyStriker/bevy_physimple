@@ -17,7 +17,7 @@ use crate::transform_mode::TransformMode;
     then syncs the changes to `Transform`, this allows us to work with 1 component type so we dont have to do some funky stuff
     (will probably stay like that for at least until the `Global/Transform` system is remade in bevy)
 */
-#[derive(Clone, Debug, Reflect, Default)]
+#[derive(Clone, Debug, Reflect, Default, Component)]
 pub struct Transform2D {
     translation: Vec2,
     rotation: f32,

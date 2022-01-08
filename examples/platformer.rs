@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_physimple::prelude::*;
 
-#[derive(Default)]
+#[derive(Default, Component)]
 pub struct Player {
     double_jump: bool,
     on_wall: Option<Vec2>,
@@ -11,7 +11,7 @@ pub struct Player {
 pub struct Gravity(Vec2);
 
 fn main() {
-    let mut app = App::build();
+    let mut app = App::new();
     app // Basic setup of the app
         .insert_resource(WindowDescriptor {
             title: "A cool name for an example".to_string(),
@@ -36,10 +36,9 @@ fn main() {
 
 fn setup(
     mut coms: Commands,
-    mut mats: ResMut<Assets<ColorMaterial>>,
     a_server: Res<AssetServer>,
 ) {
-    let wall = mats.add(Color::BLACK.into());
+    let wall = Color::BLACK;
 
     // insert a gravity struct
     coms.insert_resource(Gravity(Vec2::new(0.0,-540.0)));
@@ -69,8 +68,11 @@ fn setup(
     // Spawn character
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(28.0)),
-            material: mats.add(Color::ALICE_BLUE.into()),
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(28.0)),
+                color: Color::ALICE_BLUE,
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert_bundle(KinematicBundle {
@@ -86,8 +88,11 @@ fn setup(
         .with_children(|p| {
             // We gonna push a little cube for the ray's head
             p.spawn_bundle(SpriteBundle {
-                sprite: Sprite::new(Vec2::splat(10.0)),
-                material: mats.add(Color::MIDNIGHT_BLUE.into()),
+                sprite: Sprite {
+                    custom_size: Some(Vec2::splat(10.0)),
+                    color: Color::MIDNIGHT_BLUE,
+                    ..Default::default()
+                },
                 ..Default::default()
             });
         })
@@ -96,8 +101,11 @@ fn setup(
     // center floor
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(600.0, 30.0)),
-            material: wall.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(600.0, 30.0)),
+                color: wall,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(150.0, -200.0, 0.0),
             ..Default::default()
         })
@@ -110,8 +118,11 @@ fn setup(
     // side wall
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(40.0, 300.0)),
-            material: wall.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(40.0, 300.0)),
+                color: wall,
+                ..Default::default()
+            },
             transform: {
                 let mut t = Transform::from_xyz(450.0, 0.0, 0.0);
                 t.rotation = Quat::from_rotation_z(-0.1 * 3.14);
@@ -128,8 +139,11 @@ fn setup(
     // smaller other side wall
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(30.0, 90.0)),
-            material: wall.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(30.0, 90.0)),
+                color: wall,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(-150.0, -160.0, 0.0),
             ..Default::default()
         })
@@ -142,8 +156,11 @@ fn setup(
     // Floating platform
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::new(200.0,30.0)),
-            material: wall.clone(),
+            sprite: Sprite {
+                custom_size: Some(Vec2::new(200.0,30.0)),
+                color: wall,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(-150.0, 0.0,0.0),
             ..Default::default()
         })
@@ -157,8 +174,11 @@ fn setup(
     const SENSOR_SIZE: f32 = 50.0;
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(SENSOR_SIZE)),
-            material: mats.add(Color::GOLD.into()),
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(SENSOR_SIZE)),
+                color: Color::GOLD,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(30.0, -150.0, 0.0),
             ..Default::default()
         })
@@ -171,8 +191,11 @@ fn setup(
     const CUBE_SIZE: f32 = 35.0;
     coms
         .spawn_bundle(SpriteBundle {
-            sprite: Sprite::new(Vec2::splat(CUBE_SIZE)),
-            material: mats.add(Color::CRIMSON.into()),
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(CUBE_SIZE)),
+                color: Color::CRIMSON,
+                ..Default::default()
+            },
             transform: Transform::from_xyz(100.0,0.0,0.0),
             ..Default::default()
         })
@@ -202,7 +225,7 @@ fn controller_on_stuff(
     mut colls: EventReader<CollisionEvent>,
 ) {
     // Iterate over the collisions and check if the player is on a wall/floor
-    let (e, mut c) = query.single_mut().expect("should be only one player :shrug:");
+    let (e, mut c) = query.single_mut();
 
     // clear the current data on c
     c.on_floor = false;
@@ -285,18 +308,15 @@ fn character_system(
 }
 
 fn change_sensor_color(
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    q: Query<(&Sensor, &Handle<ColorMaterial>)>,
+    mut q: Query<(&Sensor, &mut Sprite)>,
 ) {
     // Simply change the color of the sensor if something is inside it
-    for (s, h) in q.iter() {
-        if let Some(mut m) = materials.get_mut(h) {
-            m.color = if s.bodies.len() == 0 {
-                Color::GOLD
-            }
-            else {
-                Color::rgba(0.0, 0.5, 1.0, 0.5)
-            }
+    for (s, mut h) in q.iter_mut() {
+        h.color = if s.bodies.len() == 0 {
+            Color::GOLD
+        }
+        else {
+            Color::rgba(0.0, 0.5, 1.0, 0.5)
         }
     }
 }

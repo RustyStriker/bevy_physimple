@@ -2,10 +2,6 @@
 
 Bevy_physimple is a collision detection(and solver) plugin for the bevy game engine.
 
-## WARNING
-
-Beware of breaking changes with each update for now, as I am trying to make stuff work better by adding/removing stuff
-
 ## Why?
 
 Because I love physics and I love programming, so what is better? Physics programming!
@@ -15,8 +11,9 @@ and eventually I want people to be able to use this crate as a simple collision 
 ## What is currently working?
 
 - Square, Circle, Capsule and custom collision shapes
-- Sensors and Static bodies
+- Sensors, Static and normal kinematic bodies
 - Continuous collision
+- Rays
 
 ## What doesn't work/is currently buggy?
 
@@ -37,9 +34,11 @@ Or check out the `GETTING_STARTED.md` file.
 
 | bevy | physimple       |
 |------|-----------------|
-| 0.5  | 0.1.0 — current |
+| 0.5  | 0.1.0 — 0.2.0   |
+|------|-----------------|
+| 0.6  | 0.3.0 — current |
 
-## 0.3.0 To-do list(Unless bevy 0.6.0 is released then it is the 0.4.0 To-do list)
+## 0.4.0
 
 - [ ] Even more docs(Honestly, if something is missing just open an issue in github/@ me in the bevy discord/dm me)
 - [ ] Optimize Broad Phase with cool and flashy algorithms(I dont think those said algorithms will actually help that much)

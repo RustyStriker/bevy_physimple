@@ -13,8 +13,4 @@ categories = ["game-development"]
 
 [dependencies]
 serde = "^1.0"
-bevy = "0.5"
-
-[patch.crates-io]
-# override it with bevy from git
-bevy = { git = "https://github.com/bevyengine/bevy" }
+bevy = "0.6.0"

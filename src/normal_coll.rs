@@ -100,7 +100,6 @@ pub fn broad_phase_2(
 					Ok(s) => s.aabb(t2),
 					Err(_) => continue,
 				};
-
 				if aabb1.collides(&aabb2) {
 					pair_sensor.send(CollPairSensor(e1,e2));
 				}

@@ -84,17 +84,17 @@ impl Plugin for Physics2dPlugin {
         // Add the systems themselves for each step
         app.add_system_to_stage(
             stage::COLLISION_DETECTION,
-            Transform2D::sync_from_global_transform.system()
-                .chain(sensor_clean.system())
-                .chain(broad::broad_phase_1.system())
-                .chain(narrow::narrow_phase_system.system())
-                .chain(normal_coll::broad_phase_2.system())
-                .chain(normal_coll::narrow_phase_2.system())
-                .chain(normal_coll::ray_phase.system())
-                .chain(Transform2D::sync_to_transform.system()),
+            Transform2D::sync_from_global_transform
+                .chain(sensor_clean)
+                .chain(broad::broad_phase_1)
+                .chain(narrow::narrow_phase_system)
+                .chain(normal_coll::broad_phase_2)
+                .chain(normal_coll::narrow_phase_2)
+                .chain(normal_coll::ray_phase)
+                .chain(Transform2D::sync_to_transform),
         );
 
-        app.add_system(Transform2D::auto_insert_system.system());
+        app.add_system(Transform2D::auto_insert_system);
     }
 }
 

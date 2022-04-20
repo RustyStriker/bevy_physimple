@@ -19,22 +19,22 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(Physics2dPlugin)
-        .add_system(bevy::input::system::exit_on_esc_system.system())
+        .add_system(bevy::input::system::exit_on_esc_system)
         ;
     app // startup systems
-        .add_startup_system(setup.system())
+        .add_startup_system(setup_sys)
         ;
     app // systems
-        .add_system(controller_on_stuff.system())
-        .add_system(character_system.system())
-        .add_system(change_sensor_color.system())
-        .add_system(gravity.system())
-        .add_system(ray_head.system())
+        .add_system(controller_on_stuff_sys)
+        .add_system(character_system_sys)
+        .add_system(change_sensor_color_sys)
+        .add_system(gravity_sys)
+        .add_system(ray_head_sys)
         ;
     app.run();
 }
 
-fn setup(
+fn setup_sys(
     mut coms: Commands,
     a_server: Res<AssetServer>,
 ) {
@@ -206,7 +206,7 @@ fn setup(
         ;
 }
 
-fn gravity(
+fn gravity_sys(
     time: Res<Time>,
     grav: Res<Gravity>,
     mut q: Query<&mut Vel>,
@@ -220,7 +220,7 @@ fn gravity(
     }
 }
 
-fn controller_on_stuff(
+fn controller_on_stuff_sys(
     mut query: Query<(Entity, &mut Player)>,
     mut colls: EventReader<CollisionEvent>,
 ) {
@@ -245,7 +245,7 @@ fn controller_on_stuff(
     }
 }
 
-fn character_system(
+fn character_system_sys(
     input: Res<Input<KeyCode>>,
     time: Res<Time>,
     gravity: Res<Gravity>,
@@ -307,7 +307,7 @@ fn character_system(
     }
 }
 
-fn change_sensor_color(
+fn change_sensor_color_sys(
     mut q: Query<(&Sensor, &mut Sprite)>,
 ) {
     // Simply change the color of the sensor if something is inside it
@@ -321,7 +321,7 @@ fn change_sensor_color(
     }
 }
 
-fn ray_head(
+fn ray_head_sys(
     mut ts: Query<&mut Transform, Without<RayCast>>,
     q: Query<(&RayCast, &Children, &Transform)>,
 ) {

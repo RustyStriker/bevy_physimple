@@ -36,9 +36,9 @@ pub fn broad_phase_1(
         let aabb = cs.aabb(t);
 
         let circle_center = aabb.position;
-        let circle_radius_sqrd = (inst_vel + aabb.extents).length_squared();
+        let circle_radius_sqrd = (inst_vel.abs() + aabb.extents).length_squared();
 
-        // Get all staticbodies which might collide with use
+        // Get all staticbodies which might collide with us
         let mut st_en: Vec<(Entity, Aabb)> = Vec::new();
         for (se, scs, st, sl) in statics.iter() {
             let saabb = scs.aabb(st);
@@ -51,7 +51,7 @@ pub fn broad_phase_1(
                 st_en.push((se, saabb));
             }
         }
-        // same for sensors(we do the extra calculations for sensors which does not move)
+        // same for sensors(we do the extra calculations for sensors which do not move)
         let mut se_en: Vec<(Entity, Aabb)> = Vec::new();
         for (se, scs, st, sl) in sensors.iter() {
             let saabb = scs.aabb(st);

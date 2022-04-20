@@ -35,13 +35,15 @@ Or check out the `GETTING_STARTED.md` file.
 | bevy | physimple       |
 |------|-----------------|
 | 0.5  | 0.1.0 — 0.2.0   |
-|------|-----------------|
-| 0.6  | 0.3.0 — current |
+| 0.6  | 0.3.0           |
+| 0.7  | 0.4.0 - current |
 
-## 0.4.0
+## Features todo list(hopefully i will get to it in the summer)
 
-- [ ] Even more docs(Honestly, if something is missing just open an issue in github/@ me in the bevy discord/dm me)
-- [ ] Optimize Broad Phase with cool and flashy algorithms(I dont think those said algorithms will actually help that much)
 - [x] Better manual ray casting support
+- [ ] Better/Rewrite continuous collision
+- [ ] Make continuous collision (fully) optional
+- [ ] Start adding 3D support
+- [ ] Add bugs to fix
 - [ ] A new simple platformer game example
 - [ ] A new simple top down game example

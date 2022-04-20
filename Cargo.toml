@@ -1,7 +1,7 @@
 [package]
 name = "bevy_physimple"
 description = "A simple 2d physics engine for bevy based on physme"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["Aviv 'RustyStriker' Romem <avivr903@tutanota.com>"]
 edition = "2021"
 readme = "README.md"
@@ -13,4 +13,4 @@ categories = ["game-development"]
 
 [dependencies]
 serde = "^1.0"
-bevy = "0.6.0"
+bevy = "0.7.0"

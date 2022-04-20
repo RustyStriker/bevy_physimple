@@ -28,17 +28,17 @@ fn main() {
 
     // startup systems
     app
-        .add_startup_system(setup.system())
+        .add_startup_system(setup_sys)
         ;
 
     // normal systems
     app
-        .add_system(bevy::input::system::exit_on_esc_system.system())
-        .add_system(change_shape.system())
-        .add_system(player_movement.system())
-        .add_system(sensor_colors.system())
-        .add_system(sensor_gravity.system())
-        .add_system(ray_head.system())
+        .add_system(bevy::input::system::exit_on_esc_system)
+        .add_system(change_shape_sys)
+        .add_system(player_movement_sys)
+        .add_system(sensor_colors_sys)
+        .add_system(sensor_gravity_sys)
+        .add_system(ray_head_sys)
         ;
 
     app.run();
@@ -62,7 +62,7 @@ struct PlayerHandles {
     circle: Handle<Image>,
 }
 
-fn setup(
+fn setup_sys(
     mut coms: Commands,
     a_server: Res<AssetServer>,
 ) {
@@ -263,7 +263,7 @@ fn setup(
     });
 }
 
-fn change_shape(
+fn change_shape_sys(
     p_handles: Res<PlayerHandles>,
     keys: Res<Input<KeyCode>>,
     mut q: Query<(&mut CollisionShape, &mut Handle<Image>, &mut Sprite), With<Player>>,
@@ -292,7 +292,7 @@ fn change_shape(
     }
 }
 
-fn player_movement(
+fn player_movement_sys(
     time: Res<Time>,
     keys: Res<Input<KeyCode>>,
     mut q: Query<&mut Vel, With<Player>>,
@@ -325,7 +325,7 @@ fn player_movement(
     }
 }
 
-fn sensor_colors(
+fn sensor_colors_sys(
     mut q: Query<(&mut Sprite, &Sensor, &ColorChange)>,
 ) {
     for (mut sp, s, c) in q.iter_mut() {
@@ -338,7 +338,7 @@ fn sensor_colors(
     }
 }
 
-fn sensor_gravity(
+fn sensor_gravity_sys(
     time: Res<Time>,
     mut vels: Query<&mut Vel>,
     q: Query<(&Sensor, &Gravity)>
@@ -352,7 +352,7 @@ fn sensor_gravity(
     }
 }
 
-fn ray_head(
+fn ray_head_sys(
     mut ts: Query<&mut Transform, Without<RayCast>>,
     q: Query<(&RayCast, &Children, &Transform)>,
 ) {

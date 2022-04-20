@@ -7,11 +7,11 @@ fn main() {
     app
         .add_plugins(DefaultPlugins)
         .add_plugin(Physics2dPlugin)
-        .add_system(bevy::input::system::exit_on_esc_system.system());
+        .add_system(bevy::input::system::exit_on_esc_system);
 
     app
-        .add_startup_system(setup.system())
-        .add_system(move_controller.system());
+        .add_startup_system(setup_sys)
+        .add_system(move_controller_sys);
 
     app.run();
 }
@@ -19,7 +19,7 @@ fn main() {
 #[derive(Component)]
 struct Controller;
 
-fn setup(
+fn setup_sys(
     mut coms: Commands,
     asset_server: Res<AssetServer>,
 ) {
@@ -55,7 +55,7 @@ fn setup(
     .insert(Controller);
 }
 
-fn move_controller(
+fn move_controller_sys(
     time: Res<Time>,
     keyboard: Res<Input<KeyCode>>,
     mut q: Query<&mut Transform, With<Controller>>,

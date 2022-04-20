@@ -9,7 +9,6 @@ fn main() {
         title: "N-body".to_string(),
         width: 600.0,
         height: 600.0,
-        vsync: false,
         ..Default::default()
     });
 
@@ -24,14 +23,14 @@ fn main() {
         ;
 
     app
-        .add_startup_system(setup.system())
-        .add_system(gravity.system())
-        .add_system(jumpy.system());
+        .add_startup_system(setup_sys)
+        .add_system(gravity_sys)
+        .add_system(jumpy_sys);
 
     app.run();
 }
 
-fn setup(
+fn setup_sys(
     mut coms: Commands,
 ) {
     // camera
@@ -89,7 +88,7 @@ fn setup(
     })
 }
 
-fn gravity(
+fn gravity_sys(
     time: Res<Time>,
     mut q: Query<&mut Vel>,
 ) {
@@ -99,7 +98,7 @@ fn gravity(
         v.0.y -= GRAV * time.delta_seconds();
     }
 }
-fn jumpy(
+fn jumpy_sys(
     mut q: Query<&mut Vel>,
     mut colls: EventReader<CollisionEvent>,
 ) {

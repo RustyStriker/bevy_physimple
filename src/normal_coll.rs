@@ -66,18 +66,18 @@ pub fn broad_phase_2(
 		}
 
 		// x Kinematic_con
-		for (e2, t2, l2) in kins_con.iter() {
-			if l1.overlap(l2) {
-				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.aabb(t2),
-					Err(_) => continue,
-				};
+		// for (e2, t2, l2) in kins_con.iter() {
+		// 	if l1.overlap(l2) {
+		// 		let aabb2 = match shapes.get(e2) {
+		// 			Ok(s) => s.aabb(t2),
+		// 			Err(_) => continue,
+		// 		};
 
-				if aabb1.collides(&aabb2) {
-					pair_kin.send(CollPairKin(e1,e2));
-				}
-			}
-		}
+		// 		if aabb1.collides(&aabb2) {
+		// 			pair_kin.send(CollPairKin(e1,e2));
+		// 		}
+		// 	}
+		// }
 
 		// x Statics
 		for (e2, t2, l2) in statics.iter() {
@@ -154,6 +154,7 @@ pub fn narrow_phase_2(
 				entity_b: *e2, 
 				is_b_static: false, 
 				normal,
+				penetration: -pen,
 			});
 			// Maybe move both of them? or should i just move 1 of them?
 			// I also cannot tell which 1 is moving here, so that's a bummer
@@ -207,6 +208,7 @@ pub fn narrow_phase_2(
 				entity_b: *es,
 				is_b_static: true,
 				normal: pen.normalize(),
+				penetration: -pen,
 			});
 
 			if let Ok(mut t) = transforms.get_mut(*ek) {

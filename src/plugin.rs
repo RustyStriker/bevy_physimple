@@ -7,7 +7,7 @@
 use crate::bodies::*;
 use crate::physics_components::Transform2D;
 use crate::transform_mode::TransformMode;
-use crate::{broad, narrow};
+// use crate::{broad, narrow};
 use bevy::prelude::*;
 use crate::normal_coll;
 
@@ -15,6 +15,7 @@ use crate::normal_coll;
 pub struct Physics2dPlugin;
 
 /// General collision event that happens between 2 bodies.
+#[derive(Debug, Clone)]
 pub struct CollisionEvent {
     /// First entity, will always be a non-staticbody entity
     pub entity_a: Entity,
@@ -24,6 +25,8 @@ pub struct CollisionEvent {
     pub is_b_static: bool,
     /// Normal of the collision(from `entity_a`'s perspective)
     pub normal: Vec2,
+    /// How much entity_a penetrated entity_b, also can be seen as the movement remainder
+    pub penetration: Vec2,
 }
 
 /// labels for the physics stages(boi i am excited stageless and also am scared of it)
@@ -48,29 +51,14 @@ impl Plugin for Physics2dPlugin {
         // Stage order goes as follows
         // Joints step -> Physics step -> collision detection -> solve -> sync -> Raycast detection
 
-        app.add_stage_before(
+        app.add_stage_after(
             CoreStage::Update,
-            stage::PHYSICS_STEP,
-            SystemStage::single_threaded(),
-        )
-        .add_stage_before(
-            stage::PHYSICS_STEP,
-            stage::JOINT_STEP,
-            SystemStage::single_threaded(),
-        )
-        .add_stage_after(
-            stage::PHYSICS_STEP,
             stage::COLLISION_DETECTION,
-            SystemStage::single_threaded(),
-        )
-        .add_stage_after(
-            stage::COLLISION_DETECTION,
-            stage::RAYCAST_DETECTION,
             SystemStage::single_threaded(),
         );
 
         // Add the event type
-        app.add_event::<broad::ConBroadData>(); // internal event for passing data
+        // app.add_event::<broad::ConBroadData>(); // internal event for passing data
         app.add_event::<CollisionEvent>(); // Collision event to also be viewed outside
         // Collision pairs - broad_phase_2 -> narrow_phase_2
         app.add_event::<normal_coll::CollPairKin>();
@@ -86,8 +74,8 @@ impl Plugin for Physics2dPlugin {
             stage::COLLISION_DETECTION,
             Transform2D::sync_from_global_transform
                 .chain(sensor_clean)
-                .chain(broad::broad_phase_1)
-                .chain(narrow::narrow_phase_system)
+                // .chain(broad::broad_phase_1)
+                // .chain(narrow::narrow_phase_system)
                 .chain(normal_coll::broad_phase_2)
                 .chain(normal_coll::narrow_phase_2)
                 .chain(normal_coll::ray_phase)

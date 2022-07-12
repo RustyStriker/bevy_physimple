@@ -171,6 +171,7 @@ pub fn narrow_phase_system(
                     entity_b: se,
                     is_b_static: true, // we only collide with static bodies here
                     normal,
+                    penetration: Vec2::ZERO,
                 });
             }
             else {

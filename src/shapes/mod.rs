@@ -5,11 +5,13 @@ mod aabb;
 mod circle;
 mod square;
 mod capsule;
+mod triangle;
 
 pub use aabb::*;
 pub use circle::*;
 pub use square::*;
 pub use capsule::*;
+pub use triangle::*;
 
 pub trait SAT {
     /// Gets the Axis Aligned Bounding Box of the shape
@@ -29,7 +31,7 @@ pub trait SAT {
     /// Gets the normals to use in the SAT algorithm(should simply be the normals of the edges)
     ///
     /// HINT: there is no need to give 2 parallel normals(as they produce the same results) 
-    fn get_normals(&self, trans: &Transform2D) -> Vec<Vec2>;
+    fn get_normals(&self, trans: &Transform2D) -> Box<dyn Iterator<Item = Vec2> + '_>;
 
     /// Gets the projection of the shape on the given normal
     ///
@@ -69,8 +71,7 @@ fn sat_normal(a: &dyn SAT, ta: &Transform2D, b: &dyn SAT, tb: &Transform2D) -> O
     let mut minimal_dis = f32::INFINITY;
     let mut minimal_n = Vec2::ZERO;
 
-    for n in na.iter().chain(nb.iter()) {
-        let n = *n;
+    for n in na.chain(nb) {
         let (mina, maxa) = a.project(ta, n);
         let (minb, maxb) = b.project(tb, n);
 
@@ -114,8 +115,7 @@ fn sat_special(a: &dyn SAT, ta: &Transform2D, b: &CollisionShape, tb: &Transform
     let mut minimal_dis = f32::INFINITY;
     let mut minimal_n = Vec2::ZERO;
 
-    for n in na.iter().chain([nb].iter()) {
-        let n = *n;
+    for n in na.chain([nb]) {
         let (mina, maxa) = a.project(ta, n);
         let (minb, maxb) = match b {
             CollisionShape::Circle(c) => {
@@ -275,6 +275,7 @@ fn collide_circle_capsule(a: &Circle, ta: &Transform2D, b: &Capsule, tb: &Transf
 #[derive(Component)]
 pub enum CollisionShape {
     Square(Square),
+    Triangle(Triangle),
     Circle(Circle),
     Capsule(Capsule),
     Convex(Box<dyn SAT + Send + Sync>),
@@ -283,6 +284,7 @@ impl CollisionShape {
     pub fn sat(&self) -> Option<&dyn SAT> {
         match self {
             CollisionShape::Square(s) => Some(s),
+            CollisionShape::Triangle(t) => Some(t),
             CollisionShape::Circle(_) => None,
             CollisionShape::Capsule(_) => None,
             CollisionShape::Convex(s) => Some(s.as_ref())

@@ -21,8 +21,9 @@ struct MyTriangle {
     v2: Vec2,
     v3: Vec2
 }
+// Just a note: I wrote this example before making the `triangle` collision shape so ¯\_(ツ)_/¯
 impl SAT for MyTriangle {
-    fn get_normals(&self, trans: &Transform2D) -> Vec<Vec2> {
+    fn get_normals(&self, trans: &Transform2D) -> Box<dyn Iterator<Item = bevy::prelude::Vec2> + '_> {
         let rot = Mat2::from_angle(trans.rotation());
         let edges = [
             rot * (self.v1 - self.v2),
@@ -30,7 +31,7 @@ impl SAT for MyTriangle {
             rot * (self.v3 - self.v1)
         ];
         
-        edges.iter().map(|&e| e.normalize().perp()).collect()
+        Box::new(edges.into_iter().map(|e| e.normalize().perp()))
     }
 
     fn project(&self, trans: &Transform2D, normal: Vec2) -> (f32,f32) {

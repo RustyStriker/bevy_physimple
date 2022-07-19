@@ -14,6 +14,8 @@ pub struct Square {
     pub extents: Vec2,
 }
 impl Square {
+    const NORMALS: [Vec2; 2] = [Vec2::X, Vec2::Y];
+
     /// Constructs a new square
     pub fn new(extents: Vec2) -> Self {
         Square {
@@ -45,10 +47,10 @@ impl Default for Square {
 }
 
 impl super::SAT for Square {
-    fn get_normals(&self, trans: &Transform2D) -> Vec<Vec2> {
+    fn get_normals(&self, trans: &Transform2D) -> Box<(dyn Iterator<Item = bevy::prelude::Vec2> + '_)> {
         let rot = Mat2::from_angle(trans.rotation());
 
-        Vec::from([rot * Vec2::Y, rot * Vec2::X])
+        Box::new(Square::NORMALS.iter().map(move |n| rot * *n))
     }
 
     fn project(&self, trans: &Transform2D, normal: Vec2) -> (f32,f32) {

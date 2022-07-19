@@ -22,6 +22,10 @@ impl Aabb {
             position,
         }
     }
+    /// Creates a new AABB object from a minimum and maximum extents
+    pub fn from_min_max(min: Vec2, max: Vec2) -> Aabb {
+        Aabb::size(max - min, (min + max) * 0.5)
+    }
 
     pub fn min_max(&self) -> (Vec2,Vec2) {
         (self.position - self.extents, self.position + self.extents)

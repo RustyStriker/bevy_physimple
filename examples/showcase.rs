@@ -35,7 +35,8 @@ fn main() {
     app
         .add_system(bevy::input::system::exit_on_esc_system)
         .add_system(change_shape_sys)
-        .add_system(player_movement_sys)
+        .add_system(move_player_sys)
+        .add_system(player_movement_sys.after(move_player_sys))
         .add_system(sensor_colors_sys)
         .add_system(sensor_gravity_sys)
         .add_system(ray_head_sys)
@@ -159,6 +160,31 @@ fn setup_sys(
         .insert_bundle(StaticBundle {
             shape: CollisionShape::Circle(Circle::new(25.0)),
             ..Default::default()
+        })
+        ;
+    
+    // Multiple collision shapes in 1!
+    coms
+        .spawn_bundle(StaticBundle {
+            shape: CollisionShape::Multiple(Vec::from([
+                CollisionShape::Square(Square::size(Vec2::new(50.0, 100.0))),
+                CollisionShape::Square(Square::size(Vec2::splat(50.0)).with_offset(Vec2::new(50.0, 25.0)))
+            ])),
+            ..Default::default()
+        })
+        .insert(GlobalTransform::default())
+        .insert(Transform::from_xyz(450.0, 0.0, 0.0))
+        // Spawn the kids, 2 sprites to show our beautiful collider
+        .with_children(|p| {
+            p.spawn_bundle(SpriteBundle { 
+                sprite: Sprite { custom_size: Some(Vec2::new(50.0, 100.0)), color: Color::BLACK, ..Default::default() }, 
+                ..Default::default()
+            });
+            p.spawn_bundle(SpriteBundle { 
+                sprite: Sprite { custom_size: Some(Vec2::splat(50.0)), color: Color::BLACK, ..Default::default() },
+                transform: Transform::from_xyz(50.0, 25.0, 0.0),
+                ..Default::default()
+            });
         })
         ;
     
@@ -322,6 +348,16 @@ fn player_movement_sys(
         if v.0.length() > MAX_SPEED {
             v.0 = v.0.normalize_or_zero() * MAX_SPEED; 
         }
+    }
+}
+
+// We need this system since Vel is currently disabled internally
+fn move_player_sys(
+    time: Res<Time>,
+    mut q: Query<(&Vel, &mut Transform)>
+) {
+    for (v, mut t) in q.iter_mut() {
+        t.translation += v.0.extend(0.0) * time.delta_seconds();
     }
 }
 

@@ -9,8 +9,8 @@ pub struct CollPairSensor(Entity, Entity);
 pub fn broad_phase_2(
 	shapes: Query<&CollisionShape>,
 	// bodies
-	kins: Query<(Entity, &Transform2D, &CollisionLayer),(Without<Vel>, Without<StaticBody>, Without<Sensor>)>,
-	kins_con: Query<(Entity, &Transform2D, &CollisionLayer), With<Vel>>,
+	kins: Query<(Entity, &Transform2D, &CollisionLayer),(/* Without<Vel>, */ Without<StaticBody>, Without<Sensor>)>,
+	// kins_con: Query<(Entity, &Transform2D, &CollisionLayer), With<Vel>>,
 	statics: Query<(Entity, &Transform2D, &CollisionLayer),With<StaticBody>>,
 	sensors: Query<(Entity, &Transform2D, &CollisionLayer), With<Sensor>>,
 	// event writers
@@ -24,25 +24,25 @@ pub fn broad_phase_2(
 	// Current imlp is for something that just works, without too much hassle
 
 	// Kinematic_con x kinematic_con
-	for (i, (e1, t1, l1)) in kins_con.iter().enumerate() {
-		let aabb1 = match shapes.get(e1) {
-			Ok(s) => s.aabb(t1),
-			Err(_) => continue,
-		};
+	// for (i, (e1, t1, l1)) in kins_con.iter().enumerate() {
+	// 	let aabb1 = match shapes.get(e1) {
+	// 		Ok(s) => s.aabb(t1),
+	// 		Err(_) => continue,
+	// 	};
 
-		for (e2, t2, l2) in kins_con.iter().skip(i + 1) {
-			if l1.overlap(l2) {
-				let aabb2 = match shapes.get(e2) {
-					Ok(s) => s.aabb(t2),
-					Err(_) => continue,
-				};
+	// 	for (e2, t2, l2) in kins_con.iter().skip(i + 1) {
+	// 		if l1.overlap(l2) {
+	// 			let aabb2 = match shapes.get(e2) {
+	// 				Ok(s) => s.aabb(t2),
+	// 				Err(_) => continue,
+	// 			};
 
-				if aabb1.collides(&aabb2) {
-					pair_kin.send(CollPairKin(e1,e2));
-				}
-			}
-		}
-	}
+	// 			if aabb1.collides(&aabb2) {
+	// 				pair_kin.send(CollPairKin(e1,e2));
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	// Kinematic x _
 	for (i, (e1, t1, l1)) in kins.iter().enumerate() {

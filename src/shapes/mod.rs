@@ -53,6 +53,43 @@ pub trait SAT {
 ///
 /// MTV - Minimal Tranlsation Vector
 pub fn collide(a: &CollisionShape, trans_a: &Transform2D, b: &CollisionShape, trans_b: &Transform2D) -> Option<Vec2> {
+    if let CollisionShape::Multiple(v) = a {
+        // If a is multiple shapes just break it up and attempt to combine the output
+        let mut sum = Vec2::ZERO;
+        for s in v {
+            if let Some(c) = collide(s, trans_a, b, trans_b) {
+                // I know we want to better check if we arnt already exiting the shape
+                // but it seems like way to much extra complexity for now
+                sum += c; 
+            }
+        }
+        if sum.length_squared() < 0.01 {
+            return None;
+        }
+        else {
+            return Some(sum);
+        }
+        
+    }
+    // It looks weird i know, but we need to check for both a and b, if both are multiple we need to check on all T_T
+    if let CollisionShape::Multiple(v) = b {
+        // If a is multiple shapes just break it up and attempt to combine the output
+        let mut sum = Vec2::ZERO;
+        for s in v {
+            if let Some(c) = collide(a, trans_a, s, trans_b) {
+                // I know we want to better check if we arnt already exiting the shape
+                // but it seems like way to much extra complexity for now
+                sum += c; 
+            }
+        }
+        if sum.length_squared() < 0.01 {
+            return None;
+        }
+        else {
+            return Some(sum);
+        }
+    }
+
     let sat_a = a.sat();
     let sat_b = b.sat();
 
@@ -278,6 +315,7 @@ pub enum CollisionShape {
     Triangle(Triangle),
     Circle(Circle),
     Capsule(Capsule),
+    Multiple(Vec<CollisionShape>),
     Convex(Box<dyn SAT + Send + Sync>),
 }
 impl CollisionShape {
@@ -287,6 +325,7 @@ impl CollisionShape {
             CollisionShape::Triangle(t) => Some(t),
             CollisionShape::Circle(_) => None,
             CollisionShape::Capsule(_) => None,
+            CollisionShape::Multiple(_) => None,
             CollisionShape::Convex(s) => Some(s.as_ref())
         }
     }
@@ -299,6 +338,20 @@ impl CollisionShape {
             match self {
                 CollisionShape::Circle(c) => c.aabb(t),
                 CollisionShape::Capsule(c) => c.aabb(t),
+                CollisionShape::Multiple(v) => {
+                    // Make sure we have at least 1 shape :D
+                    assert!(v.len() != 0, "CollisionShape::Multiple cannot be empty!");
+
+                    let (mut min, mut max) = v[0].aabb(t).min_max();
+
+                    // Skip the first as we already checked him
+                    for s in v.iter().skip(1) {
+                        let (sn, sx) = s.aabb(t).min_max();
+                        min = min.min(sn);
+                        max = max.max(sx);
+                    }
+                    Aabb::from_min_max(min, max)
+                }
                 _ => panic!("Something is missing, please report on github(with the shape used)"),
             }
         }
@@ -312,6 +365,20 @@ impl CollisionShape {
             match self {
                 CollisionShape::Circle(c) => c.ray(trans, ray_origin, ray_cast),
                 CollisionShape::Capsule(c) => c.ray(trans, ray_origin, ray_cast),
+                CollisionShape::Multiple(v) => {
+                    // Make sure we have at least 1 shape :D
+                    assert!(v.len() != 0, "CollisionShape::Multiple cannot be empty!");
+                    
+                    let mut res = None;
+                    for s in v {
+                        if let Some(r) = s.ray(trans, ray_origin, ray_cast) {
+                            if r < res.unwrap_or(f32::INFINITY) {
+                                res = Some(r);
+                            }
+                        }
+                    }
+                    res
+                }
                 _ => panic!("Something is missing, please report on github(with the shape used)"),
             }
         }

@@ -93,7 +93,7 @@ fn startup(
         })
         ;
     
-    // And we gonna spawn a simple cube using continuous collision
+    // And we gonna spawn a simple cube using KinematicBundle
     coms
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::splat(35.0)),
@@ -105,7 +105,7 @@ fn startup(
             ..Default::default()
         })
         ;
-    // Spawn another cube without contuous collision
+    // Spawn another cube without KinematicBundle
     coms
         .spawn_bundle(SpriteBundle {
             sprite: Sprite::new(Vec2::splat(35.0)),
@@ -128,14 +128,16 @@ as I assumed you will only use them with a `SpriteBundle` or something else whic
 
 (You can create your own bundles quite easily, as they hold 3 components each)
 
-For a more "full" example, please check the only existing example currently named `shapes`
+For a more "full" example, you can always check the examples directory.
 
 ### NOTE — 2
 
-If you are using non-continuous collision kinematic bodies(`Without<Vel>`),
-and you apply gravity to them, you will need to read the `CollisionEvent`s
+When moving bodies/objects, you will need to read the `CollisionEvent`s
 and slide(or reflect/bounce/whatever) the movement along the collision normal
 to prevent the bodies from endlessly accelerating downwards,
-eventually causing them to be too fast for `Without<Vel>` to handle.
+eventually causing them to be too fast to handle.
+
+You will also want to move them the remainder of the last movement probably(aka, the penetration value in `CollisionEvent`)
+but do remember to slide/reflect it along the collision normal.
 
 Lastly, if you have any questions feel free to @ me on the bevy discord.

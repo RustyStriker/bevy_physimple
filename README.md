@@ -12,14 +12,13 @@ and eventually I want people to be able to use this crate as a simple collision 
 
 - Square, Circle, Capsule and custom collision shapes
 - Sensors, Static and normal kinematic bodies
-- Continuous collision
 - Rays
 
 ## What doesn't work/is currently buggy?
 
+- Continuous collision is now disabled and awaiting a rewrite
 - Scale doesn't affect the shapes
 - You can push objects through walls, if the wall is too thin the object might tunnel through it
-- Sometimes if a cube is fast enough and under the right conditions, it will tunnel through(can be noticed in the `platformer` example, tho shouldn't affect normal usage)
 - Probably some more stuff, please tell me when something isn't working properly(and isn't written here, or has an issue)
 
 ## Quickstart
@@ -41,6 +40,7 @@ Or check out the `GETTING_STARTED.md` file.
 ## Features todo list(hopefully i will get to it in the summer)
 
 - [x] Better manual ray casting support
+- [x] Support multiple shapes on the same object(now possible with `CollisionShape::Multiple`)
 - [ ] Better/Rewrite continuous collision
 - [ ] Make continuous collision (fully) optional
 - [ ] Start adding 3D support

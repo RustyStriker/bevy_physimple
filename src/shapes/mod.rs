@@ -306,6 +306,9 @@ fn collide_circle_capsule(a: &Circle, ta: &Transform2D, b: &Capsule, tb: &Transf
     If you want to use a custom shape,
     you can do so by implementing the `SAT` trait for your shape(check the `convex` example),
     and box it.
+
+    Alternatively, you can build it from a vector of `CollisionShape`,
+    using `CollisionShape::Multiple`(see `showcase` example)
     
     Do note that this library is using the Seperate Axis Theorem, which doesnt work for concave shapes.
 */

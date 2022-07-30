@@ -21,7 +21,7 @@ impl TransformMode {
         &self,
         transform: &GlobalTransform,
     ) -> Vec2 {
-        let t = transform.translation;
+        let t = transform.translation();
 
         match self {
             TransformMode::XY => Vec2::new(t.x, t.y),
@@ -34,7 +34,7 @@ impl TransformMode {
         &self,
         transform: &GlobalTransform,
     ) -> f32 {
-        let q = transform.rotation;
+        let q = transform.to_scale_rotation_translation().1;
 
         match self {
             TransformMode::XY => (2.0 * (q.w * q.z + q.x * q.y))
@@ -56,7 +56,7 @@ impl TransformMode {
         &self,
         transform: &GlobalTransform,
     ) -> Vec2 {
-        let t = transform.scale;
+        let t = transform.to_scale_rotation_translation().0;
 
         match self {
             TransformMode::XY => Vec2::new(t.x, t.y),

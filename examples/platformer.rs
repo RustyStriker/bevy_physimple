@@ -19,7 +19,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(Physics2dPlugin)
-        .add_system(bevy::input::system::exit_on_esc_system)
+        .add_system(bevy::window::close_on_esc)
         ;
     app // startup systems
         .add_startup_system(setup_sys)
@@ -44,7 +44,7 @@ fn setup_sys(
     coms.insert_resource(Gravity(Vec2::new(0.0,-540.0)));
 
     // Spawn the damn camera
-    coms.spawn_bundle(OrthographicCameraBundle::new_2d());
+    coms.spawn_bundle(Camera2dBundle::default());
     
     // Controls
     let style = TextStyle {
@@ -52,14 +52,10 @@ fn setup_sys(
         font_size: 32.0,
         color: Color::ANTIQUE_WHITE,
     };
-    let alignment = TextAlignment {
-        vertical: VerticalAlign::Bottom,
-        horizontal: HorizontalAlign::Left,
-    };
     let text = "A/D - Movement\nSpace/W - Jump/Double jump\nS - Stomp(when mid air)";
     coms
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section(text, style, alignment),
+            text: Text::from_section(text, style),
             transform: Transform::from_xyz(-270.0, 360.0, 0.0),
             ..Default::default()
         })

@@ -1,16 +1,16 @@
 [package]
 name = "bevy_physimple"
 description = "A simple 2d physics engine for bevy based on physme"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Aviv 'RustyStriker' Romem <avivr903@tutanota.com>"]
 edition = "2021"
 readme = "README.md"
 homepage = "https://github.com/RustyStriker/bevy_physimple"
 repository = "https://github.com/RustyStriker/bevy_physimple"
 license = "MIT"
-keywords = ["gamedev", "physics", "collision", "real-time"]
+keywords = ["gamedev", "physics", "collision"]
 categories = ["game-development"]
 
 [dependencies]
 serde = "^1.0"
-bevy = "0.7.0"
+bevy = "0.8.0"

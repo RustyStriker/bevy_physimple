@@ -7,7 +7,7 @@ fn main() {
     app
         .add_plugins(DefaultPlugins)
         .add_plugin(Physics2dPlugin)
-        .add_system(bevy::input::system::exit_on_esc_system);
+        .add_system(bevy::window::close_on_esc);
 
     app
         .add_startup_system(setup_sys)
@@ -24,7 +24,7 @@ fn setup_sys(
     asset_server: Res<AssetServer>,
 ) {
     // camera
-    coms.spawn_bundle(OrthographicCameraBundle::new_2d());
+    coms.spawn_bundle(Camera2dBundle::default());
 
     // triangle
     coms.spawn_bundle(SpriteBundle {

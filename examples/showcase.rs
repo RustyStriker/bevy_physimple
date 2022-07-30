@@ -33,7 +33,7 @@ fn main() {
 
     // normal systems
     app
-        .add_system(bevy::input::system::exit_on_esc_system)
+        .add_system(bevy::window::close_on_esc)
         .add_system(change_shape_sys)
         .add_system(move_player_sys)
         .add_system(player_movement_sys.after(move_player_sys))
@@ -68,7 +68,7 @@ fn setup_sys(
     a_server: Res<AssetServer>,
 ) {
     // Camera
-    coms.spawn_bundle(OrthographicCameraBundle::new_2d());
+    coms.spawn_bundle(Camera2dBundle::default());
 
     let  text_style = TextStyle {
         font: a_server.load("fonts/FiraSans-Bold.ttf"),
@@ -83,7 +83,7 @@ fn setup_sys(
     // Hello text dump
     coms
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section("Hello and Welcome\n\nUse [TAB] to\ncycle between shapes", text_style.clone(), text_align),
+            text: Text::from_section("Hello and Welcome\n\nUse [TAB] to\ncycle between shapes", text_style.clone()).with_alignment(text_align),
             transform: Transform::from_xyz(0.0, 300.0,0.0),
             ..Default::default()
         });
@@ -117,7 +117,7 @@ fn setup_sys(
     // Static text
     coms
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section("These are static bodies\nFeel free to\ntest the collisions", text_style.clone(), text_align),
+            text: Text::from_section("These are static bodies\nFeel free to\ntest the collisions", text_style.clone()).with_alignment(text_align),
             transform: Transform::from_xyz(300.0, 350.0,0.0),
             ..Default::default()
         });
@@ -193,7 +193,7 @@ fn setup_sys(
     // Color changer sensor text
     coms
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section("This sensor will change\ncolor when you enter it", text_style.clone(), text_align),
+            text: Text::from_section("This sensor will change\ncolor when you enter it", text_style.clone()).with_alignment(text_align),
             transform: Transform::from_xyz(-350.0,300.0,0.0),
             ..Default::default()
         })
@@ -223,7 +223,7 @@ fn setup_sys(
     // Gravity thing text dump
     coms
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section("This sensor will push\nyou downwards gently\nif you stand in it", text_style.clone(), text_align),
+            text: Text::from_section("This sensor will push\nyou downwards gently\nif you stand in it", text_style.clone()).with_alignment(text_align),
             transform: Transform::from_xyz(-350.0, -210.0,0.0),
             ..Default::default()
         })
@@ -250,7 +250,7 @@ fn setup_sys(
     // Some text about rays(well, its just rays)
     coms
         .spawn_bundle(Text2dBundle {
-            text: Text::with_section("Some RayCasts\nDark Red - Base\nCrimson - Head", text_style, text_align),
+            text: Text::from_section("Some RayCasts\nDark Red - Base\nCrimson - Head", text_style).with_alignment(text_align),
             transform: Transform::from_xyz(0.0, -170.0,0.0),
             ..Default::default()
         })

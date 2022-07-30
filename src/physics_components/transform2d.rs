@@ -118,9 +118,7 @@ impl Transform2D {
 
 impl From<(&GlobalTransform, TransformMode)> for Transform2D {
     fn from((trans, mode): (&GlobalTransform, TransformMode)) -> Self {
-        let t = trans.translation;
-        let q = trans.rotation;
-        let s = trans.scale;
+        let (s, q, t) = trans.to_scale_rotation_translation();
 
         // the weird conversion is from - it actually works...
         // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles#Quaternion_to_Euler_angles_conversion

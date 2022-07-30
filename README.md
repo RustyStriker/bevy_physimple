@@ -2,6 +2,13 @@
 
 Bevy_physimple is a collision detection(and solver) plugin for the bevy game engine.
 
+## Current state
+
+I keep updating it wwith every bevy update, and  will probably continue to
+do so for as long as I can spare the time for it(which is for quite some time currently),
+but I shifted focus to making/trying to make games in my free time,
+so the big stuff I need/want to do will have to wait for now.
+
 ## Why?
 
 Because I love physics and I love programming, so what is better? Physics programming!
@@ -35,9 +42,10 @@ Or check out the `GETTING_STARTED.md` file.
 |------|-----------------|
 | 0.5  | 0.1.0 — 0.2.0   |
 | 0.6  | 0.3.0           |
-| 0.7  | 0.4.0 - current |
+| 0.7  | 0.4.0           |
+| 0.8  | 0.5.0 - current |
 
-## Features todo list(hopefully i will get to it in the summer)
+## Features todo list
 
 - [x] Better manual ray casting support
 - [x] Support multiple shapes on the same object(now possible with `CollisionShape::Multiple`)

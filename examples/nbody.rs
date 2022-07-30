@@ -34,7 +34,7 @@ fn setup_sys(
     mut coms: Commands,
 ) {
     // camera
-    coms.spawn_bundle(OrthographicCameraBundle::new_2d());
+    coms.spawn_bundle(Camera2dBundle::default());
 
     // do some walls
     let wall_color = Color::BLACK;

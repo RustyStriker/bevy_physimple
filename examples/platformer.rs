@@ -30,6 +30,8 @@ fn main() {
         .add_system(change_sensor_color_sys)
         .add_system(gravity_sys)
         .add_system(ray_head_sys)
+        .add_system(move_player_sys)
+        .add_system(slide_movement_sys)
         ;
     app.run();
 }
@@ -200,6 +202,34 @@ fn setup_sys(
             ..Default::default()
         })
         ;
+}
+
+// We need this system since Vel is currently disabled internally
+fn move_player_sys(
+    time: Res<Time>,
+    mut q: Query<(&Vel, &mut Transform)>
+) {
+    for (v, mut t) in q.iter_mut() {
+        t.translation += v.0.extend(0.0) * time.delta_seconds();
+    }
+}
+
+pub fn slide_movement_sys(
+    mut coll_events: EventReader<CollisionEvent>,
+    mut query: Query<&mut Vel>,
+) {
+    for c in coll_events.iter() {
+        if let Ok(mut v) = query.get_mut(c.entity_a) {
+            if v.0.dot(c.normal) < 0.0 {
+                v.0 = v.0.slide(c.normal);
+            }
+        }
+        if let Ok(mut v) = query.get_mut(c.entity_b) {
+            if v.0.dot(-c.normal) < 0.0 {
+                v.0 = v.0.slide(c.normal);
+            }
+        }
+    }
 }
 
 fn gravity_sys(
